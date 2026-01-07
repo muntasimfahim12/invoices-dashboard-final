@@ -1,3 +1,4 @@
+  
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -135,8 +136,8 @@ export default function CreateClientPage() {
             {paymentType === "installment" && (
               <div className="space-y-6">
                 {milestones.map((m, index) => (
-                  <div key={index} className="flex flex-col md:flex-row gap-5 p-6 bg-slate-50/50 rounded-3xl border border-slate-200/60 group relative hover:bg-white hover:shadow-lg transition-all">
-                    <div className="flex-2 w-full"><InputGroup label="Milestone Title" placeholder="Title" /></div>
+                  <div key={index} className="flex flex-col md:flex-row gap-5 p-6 bg-slate-50/50 rounded-[24px] border border-slate-200/60 group relative hover:bg-white hover:shadow-lg transition-all">
+                    <div className="flex-[2] w-full"><InputGroup label="Milestone Title" placeholder="Title" /></div>
                     <div className="flex-1 w-full"><InputGroup label="Amount" type="number" icon={<DollarSign size={16}/>} /></div>
                     <div className="flex-1 w-full"><InputGroup label="Due Date" type="date" icon={<Calendar size={16}/>} /></div>
                     {milestones.length > 1 && (
@@ -176,7 +177,7 @@ export default function CreateClientPage() {
           {/* ACTIONS */}
           <div className="flex items-center justify-end gap-6 pt-10 pb-20">
             <button className="text-slate-400 font-black hover:text-slate-800 transition-colors uppercase text-xs tracking-widest">Discard Draft</button>
-            <button className="px-12 py-5 bg-[#EB9C2C] text-white rounded-2xl font-black shadow-lg shadow-[#EB9C2C]/30 hover:scale-105 active:scale-95 transition-all uppercase text-xs tracking-widest">
+            <button className="px-12 py-5 bg-[#EB9C2C] text-white rounded-2xl font-black shadow-lg shadow-[#EB9C2C]/30 hover:scale-105 active:scale-95 transition-all uppercase text-xs tracking-[0.1em]">
               Create Client & Project
             </button>
           </div>
@@ -246,9 +247,9 @@ function CreateClientSkeleton() {
       <div className="max-w-6xl mx-auto space-y-10">
         <div className="h-48 bg-slate-200 rounded-[40px]" />
         <div className="grid grid-cols-1 gap-8">
-          <div className="h-64 bg-white rounded-4xl border border-slate-100" />
-          <div className="h-64 bg-white rounded-4xl border border-slate-100" />
-          <div className="h-64 bg-white rounded-4xl border border-slate-100" />
+          <div className="h-64 bg-white rounded-[32px] border border-slate-100" />
+          <div className="h-64 bg-white rounded-[32px] border border-slate-100" />
+          <div className="h-64 bg-white rounded-[32px] border border-slate-100" />
         </div>
       </div>
     </div>
