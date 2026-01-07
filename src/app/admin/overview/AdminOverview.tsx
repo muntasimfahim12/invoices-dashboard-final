@@ -1,9 +1,9 @@
 "use client";
 
-import ActionButton from "@/src/shared/ActionButton";
-import InvoiceTable from "@/src/shared/InvoiceTable";
-import ListItem from "@/src/shared/ListItem";
-import SectionTitle from "@/src/shared/SectionTitle";
+import ActionButton from "@/src/components/adminDashboard/ActionButton";
+import InvoiceTable from "@/src/components/adminDashboard/InvoiceTable";
+import ListItem from "@/src/components/adminDashboard/ListItem";
+import SectionTitle from "@/src/components/adminDashboard/SectionTitle";
 import StatCard from "@/src/shared/StatCard";
 
 
