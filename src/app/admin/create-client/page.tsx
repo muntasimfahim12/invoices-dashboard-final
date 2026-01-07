@@ -56,7 +56,7 @@ export default function CreateClientPage() {
           {/* 1. CLIENT INFORMATION */}
           <FormSection icon={<UserPlus />} title="Client Information" subtitle="Primary identity and contact details">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <InputGroup  label="Company Name" placeholder="e.g. Acme Inc" />
+              <InputGroup label="Company Name" placeholder="e.g. Acme Inc" />
               <InputGroup label="Client Email" type="email" icon={<Mail size={18}/>} placeholder="client@acme.com" />
               <InputGroup label="Contact Number" icon={<Phone size={18}/>} placeholder="+880 1XXX-XXXXXX" />
               <InputGroup label="Location" icon={<MapPin size={18}/>} placeholder="Dhaka, Bangladesh" />
@@ -183,7 +183,6 @@ export default function CreateClientPage() {
           margin-bottom: 8px;
           margin-left: 2px;
         }
-        /* Applied the Premium Select styling logic to the standard Inputs */
         .premium-input {
           width: 100%;
           padding: 0.9rem 1.1rem;
@@ -191,7 +190,6 @@ export default function CreateClientPage() {
           border: 2px solid #F1F5F9;
           background: #F8FAFC;
           font-size: 15px;
-          /* Matches the Select Style: Bold & Primary Color */
           font-weight: 700;
           color: #4177BC; 
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -258,7 +256,10 @@ function FormSection({ title, subtitle, icon, children }: any) {
       <div className="p-8 md:p-12">
         <div className="flex items-start gap-6 mb-10">
           <div className="w-14 h-14 bg-gradient-to-br from-[#4177BC]/10 to-[#4177BC]/5 rounded-2xl flex items-center justify-center text-[#4177BC] shrink-0 shadow-inner">
-            {React.cloneElement(icon as React.ReactElement, { size: 28, strokeWidth: 2.5 })}
+            {/* FIX: Check if icon is valid element before cloning */}
+            {React.isValidElement(icon) 
+              ? React.cloneElement(icon as React.ReactElement<any>, { size: 28, strokeWidth: 2.5 })
+              : icon}
           </div>
           <div>
             <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none">{title}</h2>
