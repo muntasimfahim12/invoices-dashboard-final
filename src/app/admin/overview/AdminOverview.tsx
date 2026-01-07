@@ -1,79 +1,183 @@
 "use client";
 
-import ActionButton from "@/src/components/adminDashboard/ActionButton";
-import InvoiceTable from "@/src/components/adminDashboard/InvoiceTable";
-import ListItem from "@/src/components/adminDashboard/ListItem";
-import SectionTitle from "@/src/components/adminDashboard/SectionTitle";
-import StatCard from "@/src/shared/StatCard";
-
-
+import React, { useState, useEffect } from "react";
+// Path gulo tomar folder structure onujayi match kore nio
+import ActionButton from "../../../components/adminDashboard/ActionButton";
+import InvoiceTable from "../../../components/adminDashboard/InvoiceTable";
+import ListItem from "../../../components/adminDashboard/ListItem";
+import SectionTitle from "../../../components/adminDashboard/SectionTitle";
+import StatCard from "@/src/shared/StatCard"; 
+import { 
+  LayoutDashboard, 
+  TrendingUp, 
+  PlusCircle, 
+  ArrowUpRight 
+} from "lucide-react";
 
 export default function AdminOverview() {
+  const [loading, setLoading] = useState(true);
+
+  // Modern Reload/Skeleton Effect (Foodpanda style)
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) return <DashboardSkeleton />;
+
   return (
-    <div className="space-y-8">
-      {/* HEADER */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          Dashboard Overview
-        </h1>
-        <p className="text-slate-500 mt-2">
-          Quick summary of clients, projects, invoices and payments.
-        </p>
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 md:pb-10 font-sans animate-in fade-in duration-700">
+      
+      {/* --- HEADER SECTION --- */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        <div>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-[#4177BC]/10 rounded-xl text-[#4177BC]">
+              <LayoutDashboard size={20} />
+            </div>
+            <span className="text-[10px] font-black text-[#4177BC] uppercase tracking-[0.2em]">Management Console</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight">
+            Dashboard <span className="text-[#4177BC]">Overview</span>
+          </h1>
+          <p className="text-slate-500 mt-3 text-base md:text-lg font-medium max-w-2xl">
+            Quick summary of clients, projects, invoices and payments.
+          </p>
+        </div>
+
+        {/* Real-time Indicator Badge */}
+        <div className="flex items-center gap-4 bg-white px-6 py-4 rounded-3xl border border-slate-100 shadow-sm w-fit">
+          <div className="relative flex h-3 w-3">
+            <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></div>
+            <div className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></div>
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">System Status</p>
+            <p className="text-sm font-extrabold text-slate-700 mt-1">Live Updates Active</p>
+          </div>
+        </div>
       </div>
 
-      {/* STATS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Revenue" value="$12,500" />
-        <StatCard title="Total Due" value="$3,200" />
-        <StatCard title="Active Clients" value="18" />
-        <StatCard title="Active Projects" value="9" />
+      {/* --- STATS SECTION --- */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-12">
+        <StatCard title="Total Revenue" value="$12,500" trend="+12%" icon="revenue" compact />
+        <StatCard title="Total Due" value="$3,200" trend="Urgent" icon="due" color="#EB9C2C" compact />
+        <StatCard title="Active Clients" value="18" trend="3 New" icon="clients" compact />
+        <StatCard title="Active Projects" value="09" trend="On Track" icon="projects" compact />
       </div>
 
-      {/* GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="card">
-          <SectionTitle title="Recent Clients" />
-          <ul className="space-y-3">
+      {/* --- TOP GRID --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-12">
+        <div className="premium-card group">
+          <div className="flex items-center justify-between mb-8">
+            <SectionTitle title="Recent Clients" />
+            <ArrowUpRight className="text-slate-300 group-hover:text-[#4177BC] transition-colors" size={20} />
+          </div>
+          <div className="space-y-2">
             <ListItem title="Infinity Wellness" meta="Active" />
             <ListItem title="TX Pavers & Turf" meta="Active" />
             <ListItem title="Jordan Eagle Transport" meta="Pending Payment" />
-          </ul>
+          </div>
         </div>
 
-        <div className="card">
-          <SectionTitle title="Active Projects" />
-          <ul className="space-y-3">
+        <div className="premium-card group">
+          <div className="flex items-center justify-between mb-8">
+            <SectionTitle title="Active Projects" />
+            <ArrowUpRight className="text-slate-300 group-hover:text-[#4177BC] transition-colors" size={20} />
+          </div>
+          <div className="space-y-2">
             <ListItem title="Website Redesign" meta="$3,000 • Installments" />
             <ListItem title="SEO Monthly Retainer" meta="$800 / month" />
             <ListItem title="Mobile App UI" meta="Final stage" />
-          </ul>
+          </div>
         </div>
 
-        <div className="card">
-          <SectionTitle title="Payments Status" />
-          <ul className="space-y-3">
-            <ListItem title="Paid Invoices" meta="24" />
-            <ListItem title="Pending Invoices" meta="6" />
-            <ListItem title="Overdue Invoices" meta="3" />
-          </ul>
+        <div className="premium-card group">
+          <div className="flex items-center justify-between mb-8">
+            <SectionTitle title="Payments Status" />
+            <TrendingUp className="text-[#EB9C2C]" size={20} />
+          </div>
+          <div className="space-y-2">
+            <ListItem title="Paid Invoices" meta="24 Total" />
+            <ListItem title="Pending Invoices" meta="6 Awaiting" />
+            <ListItem title="Overdue Invoices" meta="3 Urgent" />
+          </div>
         </div>
       </div>
 
-      {/* INVOICES */}
-      <div className="card">
-        <SectionTitle title="Recent Invoices" />
-        <InvoiceTable />
+      {/* --- INVOICES TABLE --- */}
+      <div className="premium-card mb-12 overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+          <SectionTitle title="Recent Invoices" />
+          <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl text-[10px] font-black text-slate-400 border border-slate-100 uppercase tracking-widest">
+            Last 30 Days Data
+          </div>
+        </div>
+        <div className="w-full overflow-x-auto">
+           <InvoiceTable />
+        </div>
       </div>
 
-      {/* ACTIONS */}
-      <div className="card">
-        <SectionTitle title="Quick Actions" />
-        <div className="flex flex-wrap gap-4">
-          <ActionButton label="Add Client" />
-          <ActionButton label="Create Project" />
-          <ActionButton label="Create Invoice" />
-          <ActionButton label="Record Payment" />
+      {/* --- QUICK ACTIONS SECTION --- */}
+      <div className="bg-[#FFFFF] rounded-[35px] md:rounded-[45px] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+        {/* Background Gradients */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#4177BC] opacity-20 rounded-full -mr-32 -mt-32 blur-[100px]" />
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-4 mb-10">
+            <PlusCircle className="text-[#EB9C2C]" size={32} />
+            <h2 className="text-2xl md:text-3xl font-black text-black tracking-tight">Quick Actions</h2>
+          </div>
+          
+          <div className="flex flex-wrap gap-4 md:gap-6">
+            <ActionButton label="Add Client" />
+            <ActionButton label="Create Project" />
+            <ActionButton label="Create Invoice" />
+            <ActionButton label="Record Payment" />
+          </div>
         </div>
+      </div>
+
+      <style jsx global>{`
+        .premium-card {
+          background: #FFFFFF;
+          border-radius: 28px;
+          border: 1px solid #F1F5F9;
+          padding: 1.5rem;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @media (min-width: 768px) {
+          .premium-card {
+            border-radius: 35px;
+            padding: 2rem;
+          }
+        }
+        .premium-card:hover {
+          box-shadow: 0 30px 60px -15px rgba(65, 119, 188, 0.12);
+          transform: translateY(-4px);
+          border-color: #4177BC20;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// Compact Skeleton Loader
+function DashboardSkeleton() {
+  return (
+    <div className="p-8 animate-pulse">
+      <div className="h-4 w-32 bg-slate-200 rounded mb-4" />
+      <div className="h-12 w-64 bg-slate-200 rounded-xl mb-12" />
+      <div className="grid grid-cols-4 gap-6 mb-12">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-32 bg-slate-200 rounded-[28px]" />
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-64 bg-slate-200 rounded-[28px]" />
+        ))}
       </div>
     </div>
   );
