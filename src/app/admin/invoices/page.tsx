@@ -28,7 +28,7 @@ export default function InvoicesPage() {
     );
 
     return (
-        <div className="space-y-8 pb-10 min-h-screen px-4 md:px-0 bg-white">
+        <div className="space-y-8 pb-10 min-h-screen px-4 md:px-0 ">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>

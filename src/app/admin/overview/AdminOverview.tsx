@@ -46,7 +46,7 @@ export default function AdminOverview() {
         </div>
 
         {/* Real-time Indicator Badge */}
-        <div className="flex items-center gap-4 bg-white px-6 py-4 rounded-[24px] border border-slate-100 shadow-sm w-fit">
+        <div className="flex items-center gap-4 bg-white px-6 py-4 rounded-3xl border border-slate-100 shadow-sm w-fit">
           <div className="relative flex h-3 w-3">
             <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></div>
             <div className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></div>
@@ -109,7 +109,7 @@ export default function AdminOverview() {
       <div className="premium-card mb-12 overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <SectionTitle title="Recent Invoices" />
-          <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl text-[10px] font-black text-slate-400 border border-slate-100 uppercase tracking-[0.1em]">
+          <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl text-[10px] font-black text-slate-400 border border-slate-100 uppercase tracking-widest">
             Last 30 Days Data
           </div>
         </div>
