@@ -33,3 +33,48 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
 }
+
+.input {
+  @apply w-full rounded-lg border border-slate-200 bg-slate-50
+  px-4 py-3 text-sm text-slate-900
+  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white
+  transition;
+}
+
+.card {
+  @apply bg-white rounded-2xl border border-slate-200
+  p-6 mb-6 shadow-sm;
+}
+
+.btn-primary {
+  @apply px-6 py-3 rounded-lg bg-blue-600 text-white text-sm font-semibold
+  hover:bg-blue-700 transition;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 rounded-lg border border-slate-300
+  text-sm font-medium text-slate-700 hover:bg-slate-100 transition;
+}
+.card {
+  @apply bg-white border border-slate-200 rounded-2xl p-6 mb-6 shadow-sm;
+}
+
+.input {
+  @apply w-full rounded-lg border border-slate-200 bg-slate-50
+  px-4 py-3 text-sm text-slate-900
+  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition;
+}
+
+.btn-primary {
+  @apply px-6 py-3 rounded-lg bg-blue-600 text-white text-sm font-semibold
+  hover:bg-blue-700 transition;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 rounded-lg border border-slate-300 text-slate-700
+  text-sm font-medium hover:bg-slate-100 transition;
+}
+
+.icon-btn {
+  @apply p-3 rounded-lg border border-slate-200 hover:bg-slate-100 transition;
+}

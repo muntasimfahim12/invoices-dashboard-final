@@ -1,25 +1,16 @@
-import DashboardStats from "../../components/admin/DashboardStats";
-import ClientTable from "../../components/admin/ClientTable"; 
+import StatCard from "@/src/shared/StatCard";
 
 export default function AdminDashboard() {
   return (
-    <div className="space-y-8">
-      {/* Welcome Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Dashboard Overview</h1>
-          <p className="text-slate-500">Welcome back, here is what&apos;s happening today.</p>
-        </div>
-        <button className="bg-brand-orange text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-brand-orange/20 hover:scale-105 transition-all active:scale-95">
-          + New Invoice
-        </button>
+    <>
+      <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard title="Total Revenue" value="$12,500" />
+        <StatCard title="Total Due" value="$3,200" />
+        <StatCard title="Active Projects" value="8" />
+        <StatCard title="Overdue Invoices" value="3" />
       </div>
-
-      {/* Stats Components */}
-      <DashboardStats />
-
-      {/* Client Table Component (এখানে এখন আপনার নতুন টেবিলটি দেখাবে) */}
-      <ClientTable />
-    </div>
+    </>
   );
 }
