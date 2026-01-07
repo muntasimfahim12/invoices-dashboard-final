@@ -1,18 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Plus, Trash2, UserPlus, Briefcase, CreditCard, 
   ShieldCheck, Mail, Phone, MapPin, DollarSign, 
-  Calendar, Lock, Wallet 
+  Calendar, Lock, Wallet, Eye, EyeOff 
 } from "lucide-react";
 
 export default function CreateClientPage() {
+  const [loading, setLoading] = useState(true);
   const [paymentType, setPaymentType] = useState("full");
+  const [showPassword, setShowPassword] = useState(false); // Password visibility state
   const [milestones, setMilestones] = useState([
     { title: "", amount: "", dueDate: "" },
   ]);
+
+  // Foodpanda Style Loading Logic
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const addMilestone = () => {
     setMilestones([...milestones, { title: "", amount: "", dueDate: "" }]);
@@ -22,27 +30,26 @@ export default function CreateClientPage() {
     setMilestones(milestones.filter((_, i) => i !== index));
   };
 
+  if (loading) return <CreateClientSkeleton />;
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 text-slate-900 font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 text-slate-900 font-sans animate-in fade-in duration-700">
+      
       {/* HEADER SECTION */}
       <div className="bg-[#4177BC] pt-16 pb-40 px-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl" />
-        
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight">Create New Client</h1>
               <p className="text-blue-100/80 mt-3 text-lg font-medium max-w-xl leading-relaxed">
-                Setup workspace, project parameters, and billing logic for your next big partnership.
+                Setup workspace, project parameters, and billing logic for your next partnership.
               </p>
             </div>
-            <div className="hidden md:block">
-              <div className="bg-white/10 p-5 rounded-2xl border border-white/20 backdrop-blur-xl shadow-2xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                  <p className="text-white text-sm font-bold">Draft Auto-saved</p>
-                </div>
-                <p className="text-white/60 text-xs mt-1 font-medium text-right">Today: 12:45 PM</p>
+            <div className="bg-white/10 p-5 rounded-2xl border border-white/20 backdrop-blur-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <p className="text-white text-sm font-bold uppercase tracking-widest">Draft Auto-saved</p>
               </div>
             </div>
           </div>
@@ -63,7 +70,7 @@ export default function CreateClientPage() {
             </div>
             <div className="mt-8">
               <label className="field-label">Internal Admin Notes</label>
-              <textarea className="premium-textarea" placeholder="Add private notes about this client..."></textarea>
+              <textarea className="premium-textarea h-28" placeholder="Add private notes about this client..."></textarea>
             </div>
           </FormSection>
 
@@ -71,7 +78,28 @@ export default function CreateClientPage() {
           <FormSection icon={<ShieldCheck />} title="Portal Credentials" subtitle="Login details for the client dashboard">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl">
               <InputGroup label="Login Email" icon={<Mail size={18}/>} placeholder="portal-access@domain.com" />
-              <InputGroup label="Temporary Password" type="password" icon={<Lock size={18}/>} placeholder="••••••••" />
+              
+              {/* Password Field with Eye Icon */}
+              <div className="w-full">
+                <label className="field-label">Temporary Password</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors z-10">
+                    <Lock size={18} />
+                  </div>
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    className="premium-input with-icon pr-12" 
+                    placeholder="••••••••"
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#4177BC] transition-colors z-10"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
             </div>
           </FormSection>
 
@@ -105,34 +133,19 @@ export default function CreateClientPage() {
             </div>
 
             {paymentType === "installment" && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="space-y-6">
                 {milestones.map((m, index) => (
-                  <div key={index} className="flex flex-col md:flex-row gap-5 p-6 bg-slate-50/50 rounded-2xl border border-slate-200/60 group relative hover:bg-white hover:shadow-lg transition-all">
-                    <div className="flex-[2] w-full">
-                      <InputGroup label="Milestone Title" placeholder="Title (e.g. Design Approved)" />
-                    </div>
-                    <div className="flex-1 w-full">
-                      <InputGroup label="Amount" type="number" icon={<DollarSign size={16}/>} placeholder="0.00" />
-                    </div>
-                    <div className="flex-1 w-full">
-                      <InputGroup label="Due Date" type="date" icon={<Calendar size={16}/>} />
-                    </div>
+                  <div key={index} className="flex flex-col md:flex-row gap-5 p-6 bg-slate-50/50 rounded-[24px] border border-slate-200/60 group relative hover:bg-white hover:shadow-lg transition-all">
+                    <div className="flex-[2] w-full"><InputGroup label="Milestone Title" placeholder="Title" /></div>
+                    <div className="flex-1 w-full"><InputGroup label="Amount" type="number" icon={<DollarSign size={16}/>} /></div>
+                    <div className="flex-1 w-full"><InputGroup label="Due Date" type="date" icon={<Calendar size={16}/>} /></div>
                     {milestones.length > 1 && (
-                      <button 
-                        onClick={() => removeMilestone(index)}
-                        className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all self-end mb-1"
-                      >
-                        <Trash2 size={22} />
-                      </button>
+                      <button onClick={() => removeMilestone(index)} className="p-3 text-red-400 hover:bg-red-50 rounded-xl self-end mb-1"><Trash2 size={22} /></button>
                     )}
                   </div>
                 ))}
-                <button 
-                  onClick={addMilestone}
-                  className="group flex items-center gap-3 text-[#4177BC] font-bold text-sm hover:opacity-80 transition-all p-3 border-2 border-dashed border-[#4177BC]/20 rounded-2xl w-full justify-center bg-[#4177BC]/5"
-                >
-                  <Plus size={20} className="bg-[#4177BC] text-white rounded-full p-0.5 group-hover:rotate-90 transition-transform" /> 
-                  Add another payment step
+                <button onClick={addMilestone} className="w-full p-4 border-2 border-dashed border-[#4177BC]/20 rounded-2xl text-[#4177BC] font-bold text-sm hover:bg-[#4177BC]/5 transition-all flex items-center justify-center gap-2">
+                  <Plus size={20} /> Add Milestone Step
                 </button>
               </div>
             )}
@@ -146,128 +159,116 @@ export default function CreateClientPage() {
 
           {/* 5. INITIAL PAYMENT RECORD */}
           <FormSection icon={<Wallet />} title="Initial Payment" subtitle="Log any payment already received">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl">
-                <InputGroup label="Amount Paid" type="number" icon={<DollarSign size={18}/>} placeholder="0.00" />
-                <div className="w-full">
-                  <label className="field-label">Payment Method</label>
-                  <select className="premium-select">
-                    <option>Bank Transfer</option>
-                    <option>Cash</option>
-                    <option>PayPal</option>
-                    <option>Stripe</option>
-                  </select>
-                </div>
-             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl">
+              <InputGroup label="Amount Paid" type="number" icon={<DollarSign size={18}/>} placeholder="0.00" />
+              <div className="w-full">
+                <label className="field-label">Payment Method</label>
+                <select className="premium-select">
+                  <option>Bank Transfer</option>
+                  <option>Cash</option>
+                  <option>PayPal</option>
+                  <option>Stripe</option>
+                </select>
+              </div>
+            </div>
           </FormSection>
 
           {/* ACTIONS */}
           <div className="flex items-center justify-end gap-6 pt-10 pb-20">
-            <button className="text-slate-400 font-bold hover:text-slate-800 transition-colors tracking-tight text-sm uppercase">
-              Discard Draft
-            </button>
-            <button className="px-12 py-5 bg-[#EB9C2C] text-white rounded-2xl font-black shadow-[0_10px_30px_-10px_rgba(235,156,44,0.5)] hover:bg-[#d88d24] transition-all transform hover:-translate-y-1 active:scale-95 tracking-tight uppercase text-sm">
+            <button className="text-slate-400 font-black hover:text-slate-800 transition-colors uppercase text-xs tracking-widest">Discard Draft</button>
+            <button className="px-12 py-5 bg-[#EB9C2C] text-white rounded-2xl font-black shadow-lg shadow-[#EB9C2C]/30 hover:scale-105 active:scale-95 transition-all uppercase text-xs tracking-[0.1em]">
               Create Client & Project
             </button>
           </div>
         </div>
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
         .field-label {
           display: block;
-          font-size: 11px;
-          font-weight: 800;
+          font-size: 10px;
+          font-weight: 900;
           color: #94A3B8;
           text-transform: uppercase;
-          letter-spacing: 0.08em;
-          margin-bottom: 8px;
-          margin-left: 2px;
+          letter-spacing: 0.15em;
+          margin-bottom: 10px;
+          margin-left: 4px;
         }
-        .premium-input {
+        .premium-input, .premium-select {
           width: 100%;
-          padding: 0.9rem 1.1rem;
-          border-radius: 14px;
+          padding: 1rem 1.25rem;
+          border-radius: 20px;
           border: 2px solid #F1F5F9;
           background: #F8FAFC;
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 700;
-          color: #4177BC; 
+          color: #1E293B; 
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           outline: none;
+          appearance: none;
         }
-        .premium-input::placeholder {
-          color: #CBD5E1;
-          font-weight: 400;
+        .with-icon {
+          padding-left: 3.2rem !important;
         }
-        .premium-input:focus {
+        .premium-input:focus, .premium-select:focus, .premium-textarea:focus {
           background: #FFFFFF;
           border-color: #4177BC;
-          box-shadow: 0 10px 20px -10px rgba(65, 119, 188, 0.15);
+          box-shadow: 0 10px 25px -10px rgba(65, 119, 188, 0.15);
         }
         .premium-textarea {
           width: 100%;
           padding: 1.2rem;
-          border-radius: 18px;
+          border-radius: 22px;
           border: 2px solid #F1F5F9;
           background: #F8FAFC;
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 600;
           color: #1E293B;
           outline: none;
           transition: all 0.3s;
           resize: none;
         }
-        .premium-textarea:focus {
-          background: #FFFFFF;
-          border-color: #4177BC;
-          box-shadow: 0 10px 20px -10px rgba(65, 119, 188, 0.15);
-        }
         .premium-select {
-          width: 100%;
-          padding: 0.9rem 1.1rem;
-          border-radius: 14px;
-          border: 2px solid #F1F5F9;
-          background: #F8FAFC;
-          font-weight: 700;
-          color: #4177BC;
-          outline: none;
-          cursor: pointer;
-          appearance: none;
           background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234177BC' stroke-width='3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
           background-repeat: no-repeat;
           background-position: right 1.2rem center;
           background-size: 1rem;
-          transition: all 0.3s;
-        }
-        .premium-select:focus {
-          background-color: #FFFFFF;
-          border-color: #4177BC;
         }
       `}</style>
     </div>
   );
 }
 
-/* ---------- REUSABLE SUB-COMPONENTS ---------- */
+// SKELETON LOADING COMPONENT
+function CreateClientSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] p-8 animate-pulse">
+      <div className="max-w-6xl mx-auto space-y-10">
+        <div className="h-48 bg-slate-200 rounded-[40px]" />
+        <div className="grid grid-cols-1 gap-8">
+          <div className="h-64 bg-white rounded-[32px] border border-slate-100" />
+          <div className="h-64 bg-white rounded-[32px] border border-slate-100" />
+          <div className="h-64 bg-white rounded-[32px] border border-slate-100" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
+/* REUSABLE SUB-COMPONENTS */
 function FormSection({ title, subtitle, icon, children }: any) {
   return (
-    <div className="bg-white rounded-[32px] border border-slate-200/50 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/40">
-      <div className="p-8 md:p-12">
-        <div className="flex items-start gap-6 mb-10">
-          <div className="w-14 h-14 bg-gradient-to-br from-[#4177BC]/10 to-[#4177BC]/5 rounded-2xl flex items-center justify-center text-[#4177BC] shrink-0 shadow-inner">
-            {/* FIX: Check if icon is valid element before cloning */}
-            {React.isValidElement(icon) 
-              ? React.cloneElement(icon as React.ReactElement<any>, { size: 28, strokeWidth: 2.5 })
-              : icon}
-          </div>
-          <div>
-            <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-none">{title}</h2>
-            <p className="text-slate-400 text-sm mt-2 font-medium">{subtitle}</p>
-          </div>
+    <div className="bg-white rounded-[35px] border border-slate-200/50 shadow-sm p-8 md:p-12 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/40">
+      <div className="flex items-start gap-6 mb-10">
+        <div className="w-14 h-14 bg-[#4177BC]/10 rounded-2xl flex items-center justify-center text-[#4177BC] shrink-0">
+          {React.isValidElement(icon) ? React.cloneElement(icon as any, { size: 28, strokeWidth: 2.5 }) : icon}
         </div>
-        <div className="md:pl-1">{children}</div>
+        <div>
+          <h2 className="text-2xl font-black text-slate-800 tracking-tight">{title}</h2>
+          <p className="text-slate-400 text-sm font-medium mt-1">{subtitle}</p>
+        </div>
       </div>
+      <div>{children}</div>
     </div>
   );
 }
@@ -278,11 +279,14 @@ function InputGroup({ label, icon, ...props }: any) {
       <label className="field-label">{label}</label>
       <div className="relative group">
         {icon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors duration-300">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors z-10">
             {icon}
           </div>
         )}
-        <input className={`premium-input ${icon ? 'pl-12' : 'pl-5'}`} {...props} />
+        <input 
+          className={`premium-input ${icon ? 'with-icon' : ''}`} 
+          {...props} 
+        />
       </div>
     </div>
   );
