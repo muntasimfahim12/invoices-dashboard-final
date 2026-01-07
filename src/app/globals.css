@@ -78,3 +78,27 @@ body {
 .icon-btn {
   @apply p-3 rounded-lg border border-slate-200 hover:bg-slate-100 transition;
 }
+
+
+
+
+.input {
+  @apply w-full px-4 py-3 rounded-lg border border-slate-300
+  text-sm text-slate-900
+  focus:outline-none focus:ring-2 focus:ring-[#4177BC]
+  transition;
+}
+
+.btn-primary {
+  @apply px-6 py-3 rounded-lg bg-[#4177BC] text-white
+  font-semibold text-sm hover:opacity-90 transition;
+}
+
+.card {
+  @apply bg-white border border-slate-200 rounded-xl p-6 shadow-sm;
+}
+
+
+
+
+
