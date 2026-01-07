@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion"; // Framer Motion use korchi liquid animation-er jonno
+import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
@@ -35,11 +35,11 @@ export default function AdminSidebar() {
         <div className="w-full flex flex-col">
           <div className="h-24 flex items-center px-8">
             <div className="flex items-center gap-2 group cursor-pointer">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-6 transition-transform">
+              <div className="w-10 h-10 bg-[#4177BC] rounded-xl flex items-center justify-center shadow-lg shadow-[#4177BC]/20 group-hover:rotate-6 transition-transform">
                 <Receipt className="text-white" size={22} />
               </div>
               <span className="text-2xl font-black tracking-tight text-slate-800">
-                Invo<span className="text-blue-600">ly</span>
+                Invo<span className="text-[#4177BC]">ly</span>
               </span>
             </div>
           </div>
@@ -53,37 +53,27 @@ export default function AdminSidebar() {
                   key={item.href}
                   href={item.href}
                   className={`group relative flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[13px] font-bold transition-all duration-300
-                    ${active ? "text-blue-600" : "text-slate-500 hover:text-slate-900"}`}
+                    ${active ? "text-[#4177BC]" : "text-slate-500 hover:text-slate-900"}`}
                 >
                   {active && (
                     <motion.div 
                       layoutId="desktopActive"
-                      className="absolute inset-0 bg-blue-50 rounded-2xl border border-blue-100/50 -z-10"
+                      className="absolute inset-0 bg-blue-50/50 rounded-2xl border border-[#4177BC]/10 -z-10"
                       transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
                   )}
-                  <item.icon size={20} className={`${active ? "text-blue-600" : "text-slate-400 group-hover:text-slate-900"}`} />
+                  <item.icon size={20} className={`${active ? "text-[#4177BC]" : "text-slate-400 group-hover:text-slate-900"}`} />
                   {item.name}
                 </Link>
               );
             })}
           </nav>
-
-          <div className="p-4 border-t border-slate-50">
-             <div className="bg-slate-50 rounded-2xl p-4 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200" />
-                <div>
-                  <p className="text-xs font-bold text-slate-800">Admin User</p>
-                  <p className="text-[10px] text-slate-400 font-medium tracking-tight">System Manager</p>
-                </div>
-             </div>
-          </div>
         </div>
       </aside>
 
-      {/* ================= MOBILE BOTTOM NAV (iPhone 17 Pro Style) ================= */}
-      <div className="md:hidden fixed bottom-8 left-6 right-6 z-[100]">
-        <nav className="relative bg-white/70 backdrop-blur-2xl border border-white/40 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] rounded-[35px] px-3 py-3 flex justify-between items-center overflow-hidden">
+      {/* ================= MOBILE BOTTOM NAV (Strict Bottom Style) ================= */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100]">
+        <nav className="relative bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-[0_-5px_20px_rgba(0,0,0,0.03)] px-4 pb-6 pt-3 flex justify-around items-center">
           
           {mobileMenu.map((item) => {
             const active = pathname === item.href;
@@ -92,29 +82,21 @@ export default function AdminSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative flex-1 flex flex-col items-center justify-center py-2 transition-all duration-500 z-10`}
+                className="relative flex flex-col items-center justify-center py-1 transition-all duration-300"
               >
-                {/* Active Liquid Background */}
-                {active && (
-                  <motion.div
-                    layoutId="mobileLiquid"
-                    className="absolute inset-0 mx-1 bg-blue-600 rounded-[24px] shadow-lg shadow-blue-400/30"
-                    transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
-                  />
-                )}
-
-                <div className={`transition-all duration-300 ${active ? "text-white scale-110 -translate-y-0.5" : "text-slate-400"}`}>
-                  <item.icon size={22} strokeWidth={active ? 2.5 : 2} />
+                <div className={`transition-all duration-400 ${
+                    active ? "text-[#4177BC] scale-110" : "text-slate-300"
+                  }`}>
+                  <item.icon size={26} strokeWidth={active ? 2.5 : 2} />
                 </div>
                 
+                {/* Active Indicator Line/Dot */}
                 {active && (
-                  <motion.span 
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-[9px] font-black text-white uppercase tracking-tighter mt-1"
-                  >
-                    {item.name}
-                  </motion.span>
+                  <motion.div 
+                    layoutId="mobileActiveLine"
+                    className="absolute -bottom-1 w-5 h-1 bg-[#4177BC] rounded-full"
+                    transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
+                  />
                 )}
               </Link>
             );
