@@ -30,7 +30,7 @@ export default function ClientDetails({ params }: PageProps) {
       </Link>
 
       {/* Main Profile Card */}
-      <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5 sm:p-8">
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-8">
         <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
             <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-[1.2rem] bg-slate-900 flex items-center justify-center text-3xl text-white font-black italic shadow-lg shadow-slate-200">
@@ -73,7 +73,7 @@ export default function ClientDetails({ params }: PageProps) {
         ))}
       </div>
 
-      <div className="bg-white p-5 sm:p-8 rounded-[1.5rem] border border-slate-100 shadow-sm">
+      <div className="bg-white p-5 sm:p-8 rounded-3xl border border-slate-100 shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-sm sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2 uppercase">
             <div className="h-4 w-1 bg-brand-blue rounded-full"></div> Projects
@@ -105,7 +105,7 @@ export default function ClientDetails({ params }: PageProps) {
 
       {/* --- Professional Modal (Project Form) --- */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6">
           {/* Backdrop with strong blur */}
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIsFormOpen(false)} />
           
@@ -150,7 +150,7 @@ export default function ClientDetails({ params }: PageProps) {
               </div>
 
               {/* Professional Dark Budget Card */}
-              <div className="p-6 rounded-[2rem] bg-slate-900 text-white shadow-xl space-y-5">
+              <div className="p-6 rounded-4xl bg-slate-900 text-white shadow-xl space-y-5">
                 <div className="flex justify-between items-center">
                   <div className="space-y-1">
                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Valuation</label>
@@ -194,7 +194,7 @@ export default function ClientDetails({ params }: PageProps) {
 
             {/* Modal Footer */}
             <div className="p-8 border-t border-slate-50 bg-slate-50/30">
-              <button className="w-full bg-slate-900 text-white py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-brand-blue hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3">
+              <button className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-brand-blue hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3">
                 <CheckCircle2 size={20} /> Deploy Project
               </button>
             </div>
