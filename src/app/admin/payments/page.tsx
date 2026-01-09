@@ -6,8 +6,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Plus, CreditCard, Banknote, Search, 
-  ArrowUpRight, DollarSign, Trash2, User, 
+  Plus, Search, ArrowUpRight, DollarSign, Trash2, User, 
   Filter, Download, X, Globe, Zap, 
   ShieldCheck, Briefcase, Mail, Tag, ChevronDown, Menu
 } from "lucide-react";
@@ -30,12 +29,10 @@ export default function PaymentsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Form States
   const [amount, setAmount] = useState("");
   const [payer, setPayer] = useState("");
   const [email, setEmail] = useState("");
   const [category, setCategory] = useState("SERVICE");
-  const [method, setMethod] = useState("BANK");
 
   useEffect(() => {
     const saved = localStorage.getItem("payments");
@@ -57,11 +54,10 @@ export default function PaymentsPage() {
     e.preventDefault();
     const newPayment: Payment = {
       id: `PAY-${Math.floor(100000 + Math.random() * 900000)}`,
-      amount: Number(amount), payer, email, category, method,
+      amount: Number(amount), payer, email, category, method: "BANK",
       status: "PAID",
       date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
     };
-
     const updated = [newPayment, ...payments];
     setPayments(updated);
     localStorage.setItem("payments", JSON.stringify(updated));
@@ -80,29 +76,27 @@ export default function PaymentsPage() {
   );
 
   return (
-    <div className=" min-h-screen pb-24 md:pb-10">
+    <div className="min-h-screen bg-[#FAFBFF] pb-40 md:pb-10">
       
-      {/* --- Responsive Header --- */}
-      <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-2xl border-b border-slate-100/50 px-6 py-4 md:px-16 md:py-8 transition-all">
+      {/* --- Header --- */}
+      <header className="sticky top-0 z-30   border-b border-slate-100/50 px-6 py-4 md:px-16 md:py-8 transition-all">
         <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="w-full md:w-auto flex justify-between items-center">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="bg-[#4177BC] text-white px-3 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg shadow-blue-200">Live Ledger</span>
+                <span className="bg-[#4177BC] text-white px-3 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg">Live Ledger</span>
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
               </div>
               <h1 className="text-3xl md:text-5xl font-black text-slate-800 tracking-tighter italic uppercase">
                 Finance <span className="text-[#4177BC]">Hub</span>
               </h1>
             </div>
-            <button className="md:hidden p-3 bg-slate-50 rounded-2xl text-slate-400">
-              <Menu size={20} />
-            </button>
+            <button className="md:hidden p-3 bg-slate-50 rounded-2xl text-slate-400"><Menu size={20} /></button>
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
              <div className="relative flex-1 md:w-80 group">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors" size={18} />
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                 <input 
                   type="text" 
                   placeholder="Search ledger..." 
@@ -120,7 +114,7 @@ export default function PaymentsPage() {
 
       <main className="max-w-[1400px] mx-auto px-6 md:px-16 pt-8 md:pt-12">
         
-        {/* --- Dynamic Stats --- */}
+        {/* --- Dynamic Stats (Horizontal Scroll Preserved) --- */}
         <section className="flex md:grid md:grid-cols-4 gap-4 md:gap-8 overflow-x-auto pb-6 md:pb-0 no-scrollbar">
           {loading ? [1,2,3,4].map(i => <Skeleton key={i} className="min-w-[280px] md:min-w-0 h-40 rounded-[40px]" />) : (
             <>
@@ -132,21 +126,16 @@ export default function PaymentsPage() {
           )}
         </section>
 
-        {/* --- Data View Control --- */}
+        {/* --- Ledger View --- */}
         <div className="mt-12 mb-6 flex items-center justify-between">
-            <h3 className="font-black text-slate-800 text-lg md:text-xl tracking-tight uppercase italic">
-              Record <span className="text-[#4177BC]">Manifest</span>
-            </h3>
+            <h3 className="font-black text-slate-800 text-lg md:text-xl tracking-tight uppercase italic">Record <span className="text-[#4177BC]">Manifest</span></h3>
             <div className="flex gap-2">
                <button className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-[#4177BC] transition-all"><Filter size={18}/></button>
                <button className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-[#EB9C2C] transition-all"><Download size={18}/></button>
             </div>
         </div>
 
-        {/* --- The Ledger --- */}
         <div className="bg-white md:border border-slate-100 rounded-[35px] md:rounded-[50px] shadow-2xl shadow-blue-900/5 overflow-hidden">
-          
-          {/* Mobile View */}
           <div className="md:hidden divide-y divide-slate-50">
             {filteredPayments.map((p) => (
                <Link href={`/admin/payments/${p.id}`} key={p.id} className="p-6 flex items-center justify-between active:bg-slate-50 transition-colors">
@@ -165,13 +154,11 @@ export default function PaymentsPage() {
             ))}
           </div>
 
-          {/* Desktop View */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50/50">
                   <th className="px-10 py-6 text-left">Entity</th>
-                  <th className="px-10 py-6 text-left">Email</th>
                   <th className="px-10 py-6 text-left">Class</th>
                   <th className="px-10 py-6 text-left">Amount</th>
                   <th className="px-10 py-6 text-right">Actions</th>
@@ -182,29 +169,20 @@ export default function PaymentsPage() {
                   <motion.tr layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={p.id} className="hover:bg-blue-50/20 transition-all group">
                     <td className="px-10 py-8">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center font-black text-[#4177BC] shadow-sm group-hover:bg-[#4177BC] group-hover:text-white transition-all duration-500">
+                        <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center font-black text-[#4177BC] shadow-sm group-hover:bg-[#4177BC] group-hover:text-white transition-all">
                           {p.payer.charAt(0)}
                         </div>
                         <p className="font-black text-slate-800 text-sm tracking-tight">{p.payer}</p>
                       </div>
                     </td>
-                    <td className="px-10 py-8 text-xs font-bold text-slate-400">{p.email}</td>
                     <td className="px-10 py-8">
-                       <span className={`text-[9px] font-black px-3 py-1.5 rounded-lg uppercase border ${p.category === 'SERVICE' ? 'border-blue-100 text-[#4177BC]' : 'border-orange-100 text-[#EB9C2C]'}`}>
-                          {p.category}
-                       </span>
+                       <span className={`text-[9px] font-black px-3 py-1.5 rounded-lg uppercase border ${p.category === 'SERVICE' ? 'border-blue-100 text-[#4177BC]' : 'border-orange-100 text-[#EB9C2C]'}`}>{p.category}</span>
                     </td>
-                    <td className="px-10 py-8 font-black text-slate-800 text-lg tracking-tighter italic">
-                      ${p.amount.toLocaleString()}
-                    </td>
+                    <td className="px-10 py-8 font-black text-slate-800 text-lg italic">${p.amount.toLocaleString()}</td>
                     <td className="px-10 py-8 text-right">
                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                         <Link href={`/admin/payments/${p.id}`} className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:text-[#4177BC] transition-all">
-                           <ArrowUpRight size={18} />
-                         </Link>
-                         <button onClick={() => deletePayment(p.id)} className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:text-red-500 transition-all">
-                           <Trash2 size={18} />
-                         </button>
+                         <Link href={`/admin/payments/${p.id}`} className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:text-[#4177BC] transition-all"><ArrowUpRight size={18} /></Link>
+                         <button onClick={() => deletePayment(p.id)} className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:text-red-500 transition-all"><Trash2 size={18} /></button>
                        </div>
                     </td>
                   </motion.tr>
@@ -215,13 +193,13 @@ export default function PaymentsPage() {
         </div>
       </main>
 
-      {/* --- Mobile FAB --- */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-md md:hidden z-40">
+      {/* --- Mobile Fixed Button (Moved up from bottom bar) --- */}
+      <div className="fixed bottom-[100px] left-0 right-0 px-6 md:hidden z-40">
         <button 
           onClick={() => setIsModalOpen(true)}
           className="w-full py-5 bg-[#4177BC] text-white rounded-[25px] font-black text-[12px] uppercase tracking-[0.2em] shadow-2xl shadow-blue-500/40 flex items-center justify-center gap-3 active:scale-95 transition-transform"
         >
-          <Plus size={20} strokeWidth={3} /> Record Transaction
+          <Plus size={20} strokeWidth={3} /> NEW ENTRY
         </button>
       </div>
 
@@ -235,49 +213,47 @@ export default function PaymentsPage() {
               animate={{ y: 0 }} 
               exit={{ y: "100%" }} 
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 md:top-0 md:bottom-0 left-0 right-0 m-auto w-full md:max-w-xl h-[85vh] md:h-fit bg-white rounded-t-[40px] md:rounded-[40px] shadow-2xl z-[51] overflow-hidden"
+              className="fixed bottom-0 md:top-0 md:bottom-0 left-0 right-0 m-auto w-full md:max-w-xl h-[90vh] md:h-fit bg-white rounded-t-[40px] md:rounded-[40px] shadow-2xl z-[51] overflow-hidden flex flex-col"
             >
-              <div className="p-8 md:p-12 overflow-y-auto h-full no-scrollbar">
-                <div className="flex justify-between items-start mb-8 md:mb-12">
+              <div className="p-8 md:p-12 overflow-y-auto h-full no-scrollbar pb-32 md:pb-12">
+                <div className="flex justify-between items-start mb-8">
                   <div>
                     <h2 className="text-3xl font-black text-slate-800 tracking-tighter uppercase italic">Secure <span className="text-[#4177BC]">Entry</span></h2>
-                    <p className="text-[#EB9C2C] text-[9px] font-black uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
-                       <ShieldCheck size={14}/> Encrypted Channel
-                    </p>
+                    <p className="text-[#EB9C2C] text-[9px] font-black uppercase tracking-[0.3em] mt-2 flex items-center gap-2"><ShieldCheck size={14}/> Encrypted Channel</p>
                   </div>
-                  <button onClick={() => setIsModalOpen(false)} className="p-3 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 transition-all"><X size={20}/></button>
+                  <button onClick={() => setIsModalOpen(false)} className="p-3 bg-slate-50 text-slate-400 rounded-full"><X size={20}/></button>
                 </div>
 
                 <form onSubmit={createPayment} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Identity</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Identity</label>
                     <div className="relative">
                       <User className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18}/>
-                      <input required type="text" className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none rounded-[20px] text-sm font-bold text-slate-700 outline-none focus:bg-white focus:ring-4 ring-blue-50 transition-all" value={payer} onChange={(e) => setPayer(e.target.value)} placeholder="e.g. Mahfuzur Rahman" />
+                      <input required type="text" className="w-full pl-14 pr-6 py-4 bg-slate-50 rounded-[20px] text-sm font-bold text-slate-700 outline-none" value={payer} onChange={(e) => setPayer(e.target.value)} placeholder="Name" />
                     </div>
                   </div>
 
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">E-mail Address</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address</label>
                     <div className="relative">
                       <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18}/>
-                      <input required type="email" className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none rounded-[20px] text-sm font-bold text-slate-700 outline-none focus:bg-white focus:ring-4 ring-blue-50 transition-all" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@domain.com" />
+                      <input required type="email" className="w-full pl-14 pr-6 py-4 bg-slate-50 rounded-[20px] text-sm font-bold text-slate-700 outline-none" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Amount ($)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount ($)</label>
                     <div className="relative">
                       <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-[#EB9C2C]" size={18}/>
-                      <input required type="number" className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none rounded-[20px] text-sm font-bold text-slate-700 outline-none focus:bg-white focus:ring-4 ring-blue-50 transition-all" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+                      <input required type="number" className="w-full pl-14 pr-6 py-4 bg-slate-50 rounded-[20px] text-sm font-bold text-slate-700 outline-none" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</label>
                     <div className="relative">
                       <Tag className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18}/>
-                      <select className="w-full pl-14 pr-10 py-4 bg-slate-50 border-none rounded-[20px] text-sm font-bold text-slate-700 outline-none appearance-none focus:bg-white focus:ring-4 ring-blue-50 transition-all" value={category} onChange={(e) => setCategory(e.target.value)}>
+                      <select className="w-full pl-14 pr-10 py-4 bg-slate-50 rounded-[20px] text-sm font-bold text-slate-700 outline-none appearance-none" value={category} onChange={(e) => setCategory(e.target.value)}>
                         <option value="SERVICE">Service Fee</option>
                         <option value="PRODUCT">Product Sale</option>
                         <option value="REFUND">Adjustment</option>
@@ -286,8 +262,9 @@ export default function PaymentsPage() {
                     </div>
                   </div>
 
-                  <div className="md:col-span-2 pt-6">
-                    <button type="submit" className="w-full py-5 md:py-6 bg-[#4177BC] text-white rounded-[25px] text-xs font-black uppercase tracking-widest shadow-2xl shadow-blue-200 hover:bg-[#EB9C2C] transition-all">
+                  {/* --- Modal Confirmation Button Fixed for Mobile --- */}
+                  <div className="md:col-span-2 pt-6 sticky bottom-0 bg-white pb-4 md:static md:pb-0">
+                    <button type="submit" className="w-full py-5 md:py-6 bg-[#4177BC] text-white rounded-[25px] text-xs font-black uppercase tracking-widest shadow-2xl hover:bg-[#EB9C2C] transition-all">
                       Confirm & Archive
                     </button>
                   </div>
