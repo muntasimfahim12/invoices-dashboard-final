@@ -23,7 +23,7 @@ const menu = [
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-const mobileMenu = menu.slice(0, 5);
+const mobileMenu = menu.slice(0, 7);
 
 export default function AdminSidebar() {
   const pathname = usePathname();
