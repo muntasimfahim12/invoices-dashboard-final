@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/static-components */
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -10,57 +10,73 @@ import {
   X, Plus, Target, StickyNote, Copy, CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
+import axios from "axios";
 
 type Params = Promise<{ id: string }>;
 
 export default function ClientDetailsPage(props: { params: Params }) {
   const params = use(props.params);
   const clientId = params.id;
+
+  // States
+  const [clientData, setClientData] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  
-  // Foodpanda-style loading state
   const [loading, setLoading] = useState(true);
+  
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+  const fetchClientDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE}/clinets/${clientId}`);
+      setClientData(response.data);
+    } catch (error) {
+      console.error("Error fetching client details:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Artificial delay to show the skeleton effect on reload
-    const timer = setTimeout(() => setLoading(false), 1200);
-    return () => clearTimeout(timer);
-  }, []);
+    fetchClientDetails();
+  }, [clientId]);
 
-  const clientData = {
-    id: clientId,
-    name: "Infinity Wellness",
-    email: "contact@infinity.com",
-    address: "Gulshan, Dhaka, BD",
-    status: "Active",
-    totalPaid: 11300,
-    totalDue: 1200,
-    adminNotes: "Client prefers communication via WhatsApp. Serious about the Q1 deadline.",
-    projects: [
-      { 
-        id: "P-1", 
-        name: "E-commerce Website", 
-        budget: 2000, 
-        type: "Installment", 
-        status: "Active",
-        milestones: [
-          { title: "UI/UX Design", amount: 500, status: "Paid", date: "10 Jan 2024" },
-          { title: "Frontend Dev", amount: 700, status: "Pending", date: "25 Jan 2024" },
-          { title: "Backend & Launch", amount: 800, status: "Pending", date: "10 Feb 2024" },
-        ]
-      },
-      { id: "P-2", name: "Monthly SEO", budget: 500, type: "Monthly", status: "Active" }
-    ]
+  // ২. নতুন প্রজেক্ট তৈরি এবং ডাটাবেসে সেভ করা
+  const handleAddProject = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    const newProject = {
+      projectId: `P-${Math.floor(Math.random() * 9000) + 1000}`,
+      name: formData.get("projectName"),
+      budget: Number(formData.get("budget")),
+      type: formData.get("type"),
+      status: "Active",
+      milestones: [] 
+    };
+
+    try {
+      const updatedProjects = [...(clientData.projects || []), newProject];
+      
+      await axios.put(`${API_BASE}/api/clients/${clientId}`, { 
+        projects: updatedProjects 
+      });
+      
+      setIsModalOpen(false);
+      fetchClientDetails(); 
+    } catch (error) {
+      console.error("Update failed:", error);
+      alert("Could not add project. Please try again.");
+    }
   };
 
   const copyPassword = () => {
-    navigator.clipboard.writeText("TempPass123!");
+    navigator.clipboard.writeText(clientData?.password || "Temp123!");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // --- SKELETON COMPONENT ---
   const Skeleton = ({ className }: { className: string }) => (
     <div className={`animate-pulse bg-slate-200/60 rounded-xl ${className}`} />
   );
@@ -69,7 +85,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
     <div className="flex justify-center bg-[#F8FAFC] min-h-screen py-6 px-4 md:px-8">
       <div className="w-full max-w-[1400px]">
         
-        {/* Navigation Header */}
+        {/* Header Section */}
         <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4 md:gap-6">
             <Link href="/admin/all-clients">
@@ -86,12 +102,14 @@ export default function ClientDetailsPage(props: { params: Params }) {
               ) : (
                 <>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">{clientData.name}</h1>
-                    <span className="px-3 py-1 bg-green-500 text-white text-[10px] font-black uppercase rounded-lg tracking-widest shadow-lg shadow-green-100">{clientData.status}</span>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">{clientData?.name}</h1>
+                    <span className="px-3 py-1 bg-green-500 text-white text-[10px] font-black uppercase rounded-lg tracking-widest shadow-lg shadow-green-100">
+                      {clientData?.status || "Active"}
+                    </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
-                    <p className="text-slate-400 text-[11px] md:text-xs font-bold flex items-center gap-1.5"><Mail size={14}/> {clientData.email}</p>
-                    <p className="text-slate-400 text-[11px] md:text-xs font-bold flex items-center gap-1.5"><MapPin size={14}/> {clientData.address}</p>
+                    <p className="text-slate-400 text-[11px] md:text-xs font-bold flex items-center gap-1.5"><Mail size={14}/> {clientData?.email}</p>
+                    <p className="text-slate-400 text-[11px] md:text-xs font-bold flex items-center gap-1.5"><MapPin size={14}/> {clientData?.address}</p>
                   </div>
                 </>
               )}
@@ -108,20 +126,19 @@ export default function ClientDetailsPage(props: { params: Params }) {
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-10">
           {loading ? [1, 2, 3].map((i) => <Skeleton key={i} className="h-32 rounded-[35px]" />) : (
             <>
-              <DetailCard title="Total Revenue" value={`$${clientData.totalPaid}`} icon={<DollarSign/>} variant="blue" />
-              <DetailCard title="Outstanding" value={`$${clientData.totalDue}`} icon={<Receipt/>} variant="orange" />
-              <DetailCard title="Projects" value={clientData.projects.length} icon={<Briefcase/>} variant="blue" />
+              <DetailCard title="Total Paid" value={`$${clientData?.totalPaid || 0}`} icon={<DollarSign/>} variant="blue" />
+              <DetailCard title="Outstanding" value={`$${clientData?.totalDue || 0}`} icon={<Receipt/>} variant="orange" />
+              <DetailCard title="Projects" value={clientData?.projects?.length || 0} icon={<Briefcase/>} variant="blue" />
             </>
           )}
         </div>
 
-        {/* Main Content */}
+        {/* Content Area */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Project Section */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white border border-slate-100 rounded-[30px] md:rounded-[35px] p-6 md:p-8 shadow-sm">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -137,22 +154,22 @@ export default function ClientDetailsPage(props: { params: Params }) {
               
               <div className="space-y-6">
                 {loading ? [1, 2].map((i) => <Skeleton key={i} className="h-48 w-full rounded-[32px]" />) : (
-                  clientData.projects.map((project) => (
-                    <div key={project.id} className="p-5 md:p-6 bg-[#FBFDFF] border border-slate-50 rounded-[32px] hover:border-blue-100 transition-all">
+                  clientData?.projects?.map((project: any) => (
+                    <div key={project.projectId} className="p-5 md:p-6 bg-[#FBFDFF] border border-slate-50 rounded-[32px] hover:border-blue-100 transition-all">
                         <div className="flex justify-between items-start mb-6">
-                           <div>
+                            <div>
                                 <h4 className="font-black text-slate-700 text-lg mb-1">{project.name}</h4>
                                 <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                     <span className="text-[#4177BC] bg-blue-50 px-2 py-0.5 rounded-md">{project.type}</span>
                                     <span className="font-black text-slate-600">${project.budget} Total</span>
                                 </div>
-                           </div>
-                           <button className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-[#4177BC] transition-all"><ChevronRight size={18}/></button>
+                            </div>
+                            <button className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-[#4177BC] transition-all"><ChevronRight size={18}/></button>
                         </div>
 
-                        {project.milestones && (
+                        {project.milestones?.length > 0 && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-6 border-t border-slate-100">
-                            {project.milestones.map((m, i) => (
+                            {project.milestones.map((m: any, i: number) => (
                               <div key={i} className="bg-white p-4 rounded-2xl border border-slate-50 shadow-sm relative overflow-hidden">
                                 <div className={`absolute top-0 left-0 w-1 h-full ${m.status === 'Paid' ? 'bg-green-500' : 'bg-orange-400'}`} />
                                 <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{m.date}</p>
@@ -176,41 +193,33 @@ export default function ClientDetailsPage(props: { params: Params }) {
                       <StickyNote size={14} className="text-orange-500" /> Internal Admin Notes
                   </h3>
                   {loading ? <Skeleton className="h-20 w-full" /> : (
-                    <>
-                      <div className="p-5 bg-orange-50/50 rounded-2xl border border-orange-100">
-                          <p className="text-xs font-bold text-slate-600 leading-relaxed italic">
-                              &ldquo;{clientData.adminNotes}&ldquo;
-                          </p>
-                      </div>
-                      <button className="w-full mt-4 py-3 border-2 border-dashed border-slate-100 rounded-xl text-[10px] font-black text-slate-400 uppercase hover:bg-slate-50 transition-all">
-                          Edit Notes
-                      </button>
-                    </>
+                    <div className="p-5 bg-orange-50/50 rounded-2xl border border-orange-100">
+                        <p className="text-xs font-bold text-slate-600 leading-relaxed italic">
+                            &ldquo;{clientData?.adminNotes || "No notes available."}&ldquo;
+                        </p>
+                    </div>
                   )}
               </div>
 
               <div className="bg-slate-600 rounded-[35px] p-8 text-white shadow-2xl shadow-slate-200">
                   <h3 className="font-black text-blue-400 text-[10px] uppercase tracking-[0.2em] mb-8">Portal Security</h3>
-                  {loading ? <div className="space-y-4"><Skeleton className="h-10 w-full bg-slate-500" /><Skeleton className="h-24 w-full bg-slate-500" /></div> : (
+                  {loading ? <Skeleton className="h-32 w-full bg-slate-500" /> : (
                     <div className="space-y-8">
                        <div className="flex items-start gap-4">
                           <div className="p-3 bg-white/10 rounded-xl"><ShieldCheck className="text-blue-400" size={20} /></div>
                           <div>
                             <p className="text-sm font-black mb-1">Access Control</p>
-                            <p className="text-[10px] text-slate-400 font-bold leading-relaxed">Portal active for ID: {clientId}.</p>
+                            <p className="text-[10px] text-slate-400 font-bold">Client ID: {clientId.slice(-6).toUpperCase()}</p>
                           </div>
                        </div>
-                       <div className="space-y-3">
-                           <button className="w-full py-4 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-400 hover:text-white transition-all">Reset Password</button>
-                           <button className="w-full py-4 bg-red-500/10 text-red-400 border border-red-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">Disable Access</button>
-                       </div>
+                       <button className="w-full py-4 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-400 hover:text-white transition-all">Reset Password</button>
                     </div>
                   )}
               </div>
           </div>
         </div>
 
-        {/* Modal content remained same as your original code */}
+        {/* Modal Logic */}
         <AnimatePresence>
           {isModalOpen && (
             <>
@@ -220,17 +229,17 @@ export default function ClientDetailsPage(props: { params: Params }) {
                   <div className="flex justify-between items-start mb-8">
                     <div>
                       <h2 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight">New Project</h2>
-                      <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Assign to {clientData.name}</p>
+                      <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Assign to {clientData?.name}</p>
                     </div>
                     <button onClick={() => setIsModalOpen(false)} className="p-2 bg-slate-50 text-slate-400 hover:text-red-500 rounded-full transition-colors"><X size={20}/></button>
                   </div>
 
-                  <form className="space-y-6">
+                  <form onSubmit={handleAddProject} className="space-y-6">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Project Name</label>
                       <div className="relative">
                         <Briefcase className="absolute left-4 top-4 text-slate-300" size={18} />
-                        <input type="text" placeholder="e.g. Modern Portfolio Design" className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-2 ring-blue-100 outline-none" />
+                        <input name="projectName" required type="text" placeholder="e.g. Website Redesign" className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-2 ring-blue-100 outline-none" />
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -238,17 +247,17 @@ export default function ClientDetailsPage(props: { params: Params }) {
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Budget ($)</label>
                         <div className="relative">
                           <DollarSign className="absolute left-4 top-4 text-slate-300" size={18} />
-                          <input type="number" placeholder="5000" className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-2 ring-blue-100 outline-none" />
+                          <input name="budget" required type="number" placeholder="500" className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-2 ring-blue-100 outline-none" />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Payment Type</label>
                         <div className="relative">
                           <Target className="absolute left-4 top-4 text-slate-300" size={18} />
-                          <select className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-2 ring-blue-100 outline-none appearance-none cursor-pointer">
-                            <option>Installment</option>
-                            <option>Monthly</option>
-                            <option>One-time</option>
+                          <select name="type" className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-2 ring-blue-100 outline-none appearance-none cursor-pointer">
+                            <option value="Installment">Installment</option>
+                            <option value="Monthly">Monthly</option>
+                            <option value="One-time">One-time</option>
                           </select>
                         </div>
                       </div>
