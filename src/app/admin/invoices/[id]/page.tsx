@@ -178,10 +178,10 @@ export default function UltimateDigitalLedger() {
     return (
         <div className="min-h-screen bg-[#F8FAFC] text-slate-900 selection:bg-[#4177BC]/10">
             {/* NAVIGATION */}
-            <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 print:hidden">
+            <nav className="sticky top-0 z-50  backdrop-blur-md border-b border-slate-200 px-6 py-4 print:hidden">
                 <div className="max-w-[1400px] mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-5">
-                        <Link href="/" className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-400 hover:text-[#4177BC] transition-all">
+                        <Link href="/admin/invoices" className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-400 hover:text-[#4177BC] transition-all">
                             <ArrowLeft size={18} />
                         </Link>
                         <h1 className="text-xl font-black tracking-tighter uppercase">Ledger<span className="text-[#4177BC]">PRO v2.0</span></h1>
