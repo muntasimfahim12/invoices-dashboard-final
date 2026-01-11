@@ -23,12 +23,14 @@ export default function ClientDetailsPage(props: { params: Params }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false); // লোডিং ইন্ডিকেটর প্রজেক্ট তৈরির জন্য
   
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:5000";
 
   const fetchClientDetails = async () => {
     try {
       setLoading(true);
+      // ব্যাকএন্ডের স্পেলিং 'clinets' এর সাথে মিল রাখা হয়েছে
       const response = await axios.get(`${API_BASE}/clinets/${clientId}`);
       setClientData(response.data);
     } catch (error) {
@@ -42,13 +44,18 @@ export default function ClientDetailsPage(props: { params: Params }) {
     fetchClientDetails();
   }, [clientId]);
 
-  // ২. নতুন প্রজেক্ট তৈরি এবং ডাটাবেসে সেভ করা
+  // নতুন প্রজেক্ট তৈরি এবং ডাটাবেসে সেভ করা
   const handleAddProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
     const formData = new FormData(e.currentTarget);
     
+    // ইউনিক প্রোজেক্ট আইডি তৈরি
+    const newProjectId = `P-${Math.floor(Math.random() * 9000) + 1000}`;
+
     const newProject = {
-      projectId: `P-${Math.floor(Math.random() * 9000) + 1000}`,
+      projectId: newProjectId,
       name: formData.get("projectName"),
       budget: Number(formData.get("budget")),
       type: formData.get("type"),
@@ -59,15 +66,21 @@ export default function ClientDetailsPage(props: { params: Params }) {
     try {
       const updatedProjects = [...(clientData.projects || []), newProject];
       
-      await axios.put(`${API_BASE}/api/clients/${clientId}`, { 
-        projects: updatedProjects 
+      // ব্যাকএন্ড পাথ ঠিক করা হয়েছে (PUT /clinets/:id)
+      await axios.put(`${API_BASE}/clinets/${clientId}`, { 
+        projects: updatedProjects,
+        // প্রজেক্টের সংখ্যা অটোমেটিক আপডেট করার জন্য (যদি ব্যাকএন্ডে ইউজ করেন)
+        activeProjects: updatedProjects.length 
       });
       
       setIsModalOpen(false);
-      fetchClientDetails(); 
+      fetchClientDetails(); // ডাটা রিফ্রেশ করা
+      alert("Project added successfully!");
     } catch (error) {
       console.error("Update failed:", error);
-      alert("Could not add project. Please try again.");
+      alert("Could not add project. Check console for details.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -154,8 +167,9 @@ export default function ClientDetailsPage(props: { params: Params }) {
               
               <div className="space-y-6">
                 {loading ? [1, 2].map((i) => <Skeleton key={i} className="h-48 w-full rounded-[32px]" />) : (
-                  clientData?.projects?.map((project: any) => (
-                    <div key={project.projectId} className="p-5 md:p-6 bg-[#FBFDFF] border border-slate-50 rounded-[32px] hover:border-blue-100 transition-all">
+                  clientData?.projects?.map((project: any, index: number) => (
+                    // ফিক্সড: key এখন ইউনিক (index অথবা projectId ব্যবহার করা হয়েছে)
+                    <div key={project.projectId || index} className="p-5 md:p-6 bg-[#FBFDFF] border border-slate-50 rounded-[32px] hover:border-blue-100 transition-all">
                         <div className="flex justify-between items-start mb-6">
                             <div>
                                 <h4 className="font-black text-slate-700 text-lg mb-1">{project.name}</h4>
@@ -181,6 +195,11 @@ export default function ClientDetailsPage(props: { params: Params }) {
                         )}
                     </div>
                   ))
+                )}
+                {!loading && (!clientData?.projects || clientData.projects.length === 0) && (
+                   <div className="text-center py-10 text-slate-400 text-xs font-bold uppercase tracking-widest border-2 border-dashed border-slate-100 rounded-[32px]">
+                      No projects active for this client
+                   </div>
                 )}
               </div>
             </div>
@@ -219,7 +238,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
           </div>
         </div>
 
-        {/* Modal Logic */}
+        {/* Modal logic updated */}
         <AnimatePresence>
           {isModalOpen && (
             <>
@@ -264,7 +283,9 @@ export default function ClientDetailsPage(props: { params: Params }) {
                     </div>
                     <div className="pt-4 flex flex-col sm:flex-row gap-3">
                       <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-slate-50 text-slate-500 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-100">Cancel</button>
-                      <button type="submit" className="flex-[2] py-4 bg-[#4177BC] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-100 hover:-translate-y-1 transition-all">Confirm & Create</button>
+                      <button disabled={isSubmitting} type="submit" className="flex-[2] py-4 bg-[#4177BC] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-100 hover:-translate-y-1 transition-all flex items-center justify-center">
+                        {isSubmitting ? "Creating..." : "Confirm & Create"}
+                      </button>
                     </div>
                   </form>
                 </div>

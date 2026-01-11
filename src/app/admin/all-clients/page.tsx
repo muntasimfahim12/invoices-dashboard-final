@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -17,30 +18,46 @@ export default function AllClients() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
 
-  // Backend data fetch with fixed URL logic
+  // ডাটা রিফ্রেশ করার ফাংশন
+  const fetchClients = async () => {
+    try {
+      setLoading(true);
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:5000";
+      const res = await axios.get(`${baseUrl}/clinets`);
+      setClients(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Failed to fetch clients:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-        const res = await axios.get(`${baseUrl}/clinets`);
-        setClients(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error("Failed to fetch clients:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchClients();
   }, []);
 
-  // Search and Filter Logic
+  // ডিলিট করার ফাংশন
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this client record?")) {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:5000";
+        await axios.delete(`${baseUrl}/clinets/${id}`);
+        setClients(clients.filter(c => c._id !== id));
+        setActiveMenu(null);
+      } catch (err) {
+        alert("Failed to delete client");
+      }
+    }
+  };
+
   const filteredClients = useMemo(() => {
     return clients.filter(client => {
+      // ব্যাকএন্ডের কি-এর সাথে ম্যাচ করা হয়েছে (name, email)
       const matchesSearch = 
-        client.companyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.email?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesFilter = filterStatus === "All" || client.paymentBehavior === filterStatus;
+      const matchesFilter = filterStatus === "All" || client.status === filterStatus;
       
       return matchesSearch && matchesFilter;
     });
@@ -49,7 +66,7 @@ export default function AllClients() {
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC]">
       <RefreshCcw className="animate-spin text-[#4177BC] mb-4" size={32} />
-      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Accessing Vault...</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Syncing with Vault...</p>
     </div>
   );
 
@@ -69,7 +86,7 @@ export default function AllClients() {
             </h1>
           </div>
 
-          <Link href="/admin/create-client/">
+          <Link href="/admin/create-client">
             <motion.button
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
@@ -89,7 +106,7 @@ export default function AllClients() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by company name or email..."
+              placeholder="Search by name or email..."
               className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-600 placeholder:text-slate-300 outline-none py-3"
             />
           </div>
@@ -102,8 +119,8 @@ export default function AllClients() {
               className="bg-transparent border-none text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] outline-none cursor-pointer"
             >
               <option value="All">All Status</option>
-              <option value="On-time">On-time</option>
-              <option value="Late">Late</option>
+              <option value="Active">Active</option>
+              <option value="Disabled">Disabled</option>
             </select>
           </div>
         </div>
@@ -114,7 +131,7 @@ export default function AllClients() {
             {filteredClients.length > 0 ? (
               filteredClients.map((client, index) => (
                 <motion.div
-                  key={client._id || index}
+                  key={client._id}
                   layout
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -125,10 +142,10 @@ export default function AllClients() {
                   {/* 1. Identity */}
                   <div className="flex items-center gap-5 w-full md:w-1/3">
                     <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-[#4177BC] font-black text-lg group-hover:bg-[#4177BC] group-hover:text-white transition-all duration-500 shadow-sm border border-slate-100">
-                      {client.companyName?.charAt(0) || "C"}
+                      {client.name?.charAt(0) || "C"}
                     </div>
                     <div className="overflow-hidden">
-                      <h3 className="font-black text-slate-800 tracking-tight text-[15px] uppercase italic truncate">{client.companyName}</h3>
+                      <h3 className="font-black text-slate-800 tracking-tight text-[15px] uppercase italic truncate">{client.name}</h3>
                       <p className="text-[11px] text-slate-400 font-bold truncate">{client.email}</p>
                     </div>
                   </div>
@@ -136,15 +153,17 @@ export default function AllClients() {
                   {/* 2. Status Monitoring */}
                   <div className="flex items-center justify-between md:justify-around w-full md:flex-1">
                     <div className="text-center md:text-left">
-                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 italic">Payment Trust</p>
-                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase ${client.paymentBehavior === 'On-time' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                        {client.paymentBehavior === 'On-time' ? <ShieldCheck size={12} /> : <AlertCircle size={12} />}
-                        {client.paymentBehavior || 'Unknown'}
+                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 italic">Status</p>
+                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase ${client.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                        {client.status === 'Active' ? <ShieldCheck size={12} /> : <AlertCircle size={12} />}
+                        {client.status || 'Unknown'}
                       </div>
                     </div>
                     <div className="text-center md:text-left">
                       <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 italic">Engagement</p>
-                      <span className="text-[13px] font-black text-slate-700 tracking-tight">{client.activeProjects || 0} Active Projects</span>
+                      <span className="text-[13px] font-black text-slate-700 tracking-tight">
+                        {client.projects?.length || 0} Active Project(s)
+                      </span>
                     </div>
                   </div>
 
@@ -185,7 +204,10 @@ export default function AllClients() {
                               <Ban size={14} className="text-amber-500" /> Disable Portal
                             </button>
                             <div className="h-[1px] bg-slate-50 my-1.5" />
-                            <button className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black text-red-500 hover:bg-red-50 rounded-xl transition-all uppercase tracking-tighter">
+                            <button 
+                              onClick={() => handleDelete(client._id)}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black text-red-500 hover:bg-red-50 rounded-xl transition-all uppercase tracking-tighter"
+                            >
                               <Trash2 size={14} /> Delete Record
                             </button>
                           </motion.div>
@@ -206,24 +228,6 @@ export default function AllClients() {
             )}
           </AnimatePresence>
         </div>
-
-        {/* Security Info Card */}
-        {/* <div className="mt-12 p-8 bg-slate-900 rounded-[35px] flex flex-col md:flex-row items-center gap-6 text-white overflow-hidden relative shadow-2xl shadow-blue-900/20">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#4177BC]/20 blur-3xl rounded-full" />
-          <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-[#4177BC]">
-            <ShieldCheck size={28} />
-          </div>
-          <div className="flex-1 text-center md:text-left">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#4177BC] mb-1">Encrypted Infrastructure</h4>
-            <p className="text-[13px] font-bold text-slate-300 italic leading-relaxed">
-              All financial and personal data within the <span className="text-white">Vault</span> is protected by 256-bit encryption. Modification logs are kept for compliance audits.
-            </p>
-          </div>
-          <button className="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">
-            Security Logs
-          </button>
-        </div> */}
-
       </div>
     </div>
   );
