@@ -2,11 +2,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { use, useState, useEffect } from "react"; 
+import React, { use, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  ArrowLeft, Briefcase, Receipt, DollarSign, 
-  ChevronRight, ShieldCheck, Mail, Globe, MapPin, 
+import {
+  ArrowLeft, Briefcase, Receipt, DollarSign,
+  ChevronRight, ShieldCheck, Mail, Globe, MapPin,
   X, Plus, Target, StickyNote, Copy, CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
@@ -23,8 +23,8 @@ export default function ClientDetailsPage(props: { params: Params }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false); 
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:5000";
 
   const fetchClientDetails = async () => {
@@ -50,7 +50,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    
+
     // ইউনিক প্রোজেক্ট আইডি তৈরি
     const newProjectId = `P-${Math.floor(Math.random() * 9000) + 1000}`;
 
@@ -60,19 +60,19 @@ export default function ClientDetailsPage(props: { params: Params }) {
       budget: Number(formData.get("budget")),
       type: formData.get("type"),
       status: "Active",
-      milestones: [] 
+      milestones: []
     };
 
     try {
       const updatedProjects = [...(clientData.projects || []), newProject];
-      
+
       // ব্যাকএন্ড পাথ ঠিক করা হয়েছে (PUT /clinets/:id)
-      await axios.put(`${API_BASE}/clinets/${clientId}`, { 
+      await axios.put(`${API_BASE}/clinets/${clientId}`, {
         projects: updatedProjects,
         // প্রজেক্টের সংখ্যা অটোমেটিক আপডেট করার জন্য (যদি ব্যাকএন্ডে ইউজ করেন)
-        activeProjects: updatedProjects.length 
+        activeProjects: updatedProjects.length
       });
-      
+
       setIsModalOpen(false);
       fetchClientDetails(); // ডাটা রিফ্রেশ করা
       alert("Project added successfully!");
@@ -97,7 +97,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
   return (
     <div className="flex justify-center bg-[#F8FAFC] min-h-screen py-6 px-4 md:px-8">
       <div className="w-full max-w-[1400px]">
-        
+
         {/* Header Section */}
         <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4 md:gap-6">
@@ -121,14 +121,14 @@ export default function ClientDetailsPage(props: { params: Params }) {
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
-                    <p className="text-slate-400 text-[11px] md:text-xs font-bold flex items-center gap-1.5"><Mail size={14}/> {clientData?.email}</p>
-                    <p className="text-slate-400 text-[11px] md:text-xs font-bold flex items-center gap-1.5"><MapPin size={14}/> {clientData?.address}</p>
+                    <p className="text-slate-400 text-[11px] md:text-xs font-bold flex items-center gap-1.5"><Mail size={14} /> {clientData?.email}</p>
+                    <p className="text-slate-400 text-[11px] md:text-xs font-bold flex items-center gap-1.5"><MapPin size={14} /> {clientData?.address}</p>
                   </div>
                 </>
               )}
             </div>
           </div>
-          
+
           <div className="flex gap-3">
             {loading ? <Skeleton className="h-12 w-40 rounded-[22px]" /> : (
               <button onClick={copyPassword} className="w-full md:w-auto px-6 py-4 bg-white border-2 border-slate-100 rounded-[22px] text-[10px] font-black text-slate-600 uppercase tracking-widest hover:border-[#4177BC] transition-all flex items-center justify-center gap-2">
@@ -143,9 +143,9 @@ export default function ClientDetailsPage(props: { params: Params }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-10">
           {loading ? [1, 2, 3].map((i) => <Skeleton key={i} className="h-32 rounded-[35px]" />) : (
             <>
-              <DetailCard title="Total Paid" value={`$${clientData?.totalPaid || 0}`} icon={<DollarSign/>} variant="blue" />
-              <DetailCard title="Outstanding" value={`$${clientData?.totalDue || 0}`} icon={<Receipt/>} variant="orange" />
-              <DetailCard title="Projects" value={clientData?.projects?.length || 0} icon={<Briefcase/>} variant="blue" />
+              <DetailCard title="Total Paid" value={`$${clientData?.totalPaid || 0}`} icon={<DollarSign />} variant="blue" />
+              <DetailCard title="Outstanding" value={`$${clientData?.totalDue || 0}`} icon={<Receipt />} variant="orange" />
+              <DetailCard title="Projects" value={clientData?.projects?.length || 0} icon={<Briefcase />} variant="blue" />
             </>
           )}
         </div>
@@ -164,42 +164,42 @@ export default function ClientDetailsPage(props: { params: Params }) {
                   </button>
                 )}
               </div>
-              
+
               <div className="space-y-6">
                 {loading ? [1, 2].map((i) => <Skeleton key={i} className="h-48 w-full rounded-[32px]" />) : (
                   clientData?.projects?.map((project: any, index: number) => (
                     // ফিক্সড: key এখন ইউনিক (index অথবা projectId ব্যবহার করা হয়েছে)
                     <div key={project.projectId || index} className="p-5 md:p-6 bg-[#FBFDFF] border border-slate-50 rounded-[32px] hover:border-blue-100 transition-all">
-                        <div className="flex justify-between items-start mb-6">
-                            <div>
-                                <h4 className="font-black text-slate-700 text-lg mb-1">{project.name}</h4>
-                                <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                    <span className="text-[#4177BC] bg-blue-50 px-2 py-0.5 rounded-md">{project.type}</span>
-                                    <span className="font-black text-slate-600">${project.budget} Total</span>
-                                </div>
-                            </div>
-                            <button className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-[#4177BC] transition-all"><ChevronRight size={18}/></button>
-                        </div>
-
-                        {project.milestones?.length > 0 && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-6 border-t border-slate-100">
-                            {project.milestones.map((m: any, i: number) => (
-                              <div key={i} className="bg-white p-4 rounded-2xl border border-slate-50 shadow-sm relative overflow-hidden">
-                                <div className={`absolute top-0 left-0 w-1 h-full ${m.status === 'Paid' ? 'bg-green-500' : 'bg-orange-400'}`} />
-                                <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{m.date}</p>
-                                <h5 className="text-xs font-black text-slate-700 truncate">{m.title}</h5>
-                                <p className="text-sm font-black text-slate-900 mt-2">${m.amount}</p>
-                              </div>
-                            ))}
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <h4 className="font-black text-slate-700 text-lg mb-1">{project.name}</h4>
+                          <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            <span className="text-[#4177BC] bg-blue-50 px-2 py-0.5 rounded-md">{project.type}</span>
+                            <span className="font-black text-slate-600">${project.budget} Total</span>
                           </div>
-                        )}
+                        </div>
+                        <button className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-[#4177BC] transition-all"><ChevronRight size={18} /></button>
+                      </div>
+
+                      {project.milestones?.length > 0 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-6 border-t border-slate-100">
+                          {project.milestones.map((m: any, i: number) => (
+                            <div key={i} className="bg-white p-4 rounded-2xl border border-slate-50 shadow-sm relative overflow-hidden">
+                              <div className={`absolute top-0 left-0 w-1 h-full ${m.status === 'Paid' ? 'bg-green-500' : 'bg-orange-400'}`} />
+                              <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{m.date}</p>
+                              <h5 className="text-xs font-black text-slate-700 truncate">{m.title}</h5>
+                              <p className="text-sm font-black text-slate-900 mt-2">${m.amount}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
                 {!loading && (!clientData?.projects || clientData.projects.length === 0) && (
-                   <div className="text-center py-10 text-slate-400 text-xs font-bold uppercase tracking-widest border-2 border-dashed border-slate-100 rounded-[32px]">
-                      No projects active for this client
-                   </div>
+                  <div className="text-center py-10 text-slate-400 text-xs font-bold uppercase tracking-widest border-2 border-dashed border-slate-100 rounded-[32px]">
+                    No projects active for this client
+                  </div>
                 )}
               </div>
             </div>
@@ -207,34 +207,34 @@ export default function ClientDetailsPage(props: { params: Params }) {
 
           {/* Sidebar */}
           <div className="space-y-6">
-              <div className="bg-white border border-slate-100 rounded-[35px] p-8 shadow-sm">
-                  <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                      <StickyNote size={14} className="text-orange-500" /> Internal Admin Notes
-                  </h3>
-                  {loading ? <Skeleton className="h-20 w-full" /> : (
-                    <div className="p-5 bg-orange-50/50 rounded-2xl border border-orange-100">
-                        <p className="text-xs font-bold text-slate-600 leading-relaxed italic">
-                            &ldquo;{clientData?.adminNotes || "No notes available."}&ldquo;
-                        </p>
-                    </div>
-                  )}
-              </div>
+            <div className="bg-white border border-slate-100 rounded-[35px] p-8 shadow-sm">
+              <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                <StickyNote size={14} className="text-orange-500" /> Internal Admin Notes
+              </h3>
+              {loading ? <Skeleton className="h-20 w-full" /> : (
+                <div className="p-5 bg-orange-50/50 rounded-2xl border border-orange-100">
+                  <p className="text-xs font-bold text-slate-600 leading-relaxed italic">
+                    &ldquo;{clientData?.adminNotes || "No notes available."}&ldquo;
+                  </p>
+                </div>
+              )}
+            </div>
 
-              <div className="bg-slate-600 rounded-[35px] p-8 text-white shadow-2xl shadow-slate-200">
-                  <h3 className="font-black text-blue-400 text-[10px] uppercase tracking-[0.2em] mb-8">Portal Security</h3>
-                  {loading ? <Skeleton className="h-32 w-full bg-slate-500" /> : (
-                    <div className="space-y-8">
-                       <div className="flex items-start gap-4">
-                          <div className="p-3 bg-white/10 rounded-xl"><ShieldCheck className="text-blue-400" size={20} /></div>
-                          <div>
-                            <p className="text-sm font-black mb-1">Access Control</p>
-                            <p className="text-[10px] text-slate-400 font-bold">Client ID: {clientId.slice(-6).toUpperCase()}</p>
-                          </div>
-                       </div>
-                       <button className="w-full py-4 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-400 hover:text-white transition-all">Reset Password</button>
+            <div className="bg-slate-600 rounded-[35px] p-8 text-white shadow-2xl shadow-slate-200">
+              <h3 className="font-black text-blue-400 text-[10px] uppercase tracking-[0.2em] mb-8">Portal Security</h3>
+              {loading ? <Skeleton className="h-32 w-full bg-slate-500" /> : (
+                <div className="space-y-8">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-white/10 rounded-xl"><ShieldCheck className="text-blue-400" size={20} /></div>
+                    <div>
+                      <p className="text-sm font-black mb-1">Access Control</p>
+                      <p className="text-[10px] text-slate-400 font-bold">Client ID: {clientId.slice(-6).toUpperCase()}</p>
                     </div>
-                  )}
-              </div>
+                  </div>
+                  <button className="w-full py-4 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-400 hover:text-white transition-all">Reset Password</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -250,7 +250,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
                       <h2 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight">New Project</h2>
                       <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Assign to {clientData?.name}</p>
                     </div>
-                    <button onClick={() => setIsModalOpen(false)} className="p-2 bg-slate-50 text-slate-400 hover:text-red-500 rounded-full transition-colors"><X size={20}/></button>
+                    <button onClick={() => setIsModalOpen(false)} className="p-2 bg-slate-50 text-slate-400 hover:text-red-500 rounded-full transition-colors"><X size={20} /></button>
                   </div>
 
                   <form onSubmit={handleAddProject} className="space-y-6">
