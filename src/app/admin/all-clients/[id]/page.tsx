@@ -23,7 +23,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false); // লোডিং ইন্ডিকেটর প্রজেক্ট তৈরির জন্য
+  const [isSubmitting, setIsSubmitting] = useState(false); 
   
   const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:5000";
 
