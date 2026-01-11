@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { 
     Layers, DollarSign, Search, ChevronLeft, ChevronRight,
-    LayoutGrid, Trash2, Edit3, X, Loader2, MoreVertical
+    LayoutGrid, Trash2, Edit3, X, Loader2, Target
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -113,57 +113,60 @@ export default function ProjectsPage() {
     const totalPages = Math.ceil(filtered.length / projectsPerPage);
 
     return (
-        <div className="min-h-screen pb-10 px-4 md:px-8 font-sans text-slate-800 bg-[#F8FAFC]">
+        <div className="min-h-screen pb-10 px-4 md:px-8 font-sans text-slate-800 bg-[#FFFFFF]">
             {/* Header Section */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-end pt-8 mb-8 gap-6">
-                <div className="space-y-2 w-full md:w-auto">
-                    <div className="flex items-center gap-2 bg-white/80 px-3 py-1 rounded-full border border-[#4177BC]/20 w-fit">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-end pt-12 mb-10 gap-8">
+                <div className="space-y-3 w-full md:w-auto">
+                    <div className="flex items-center gap-2 bg-[#4177BC]/5 px-3 py-1.5 rounded-full border border-[#4177BC]/10 w-fit">
                         <div className="w-1.5 h-1.5 bg-[#4177BC] rounded-full animate-pulse" />
-                        <span className="text-[9px] font-bold text-[#4177BC] uppercase tracking-widest">Live Operations</span>
+                        <span className="text-[10px] font-black text-[#4177BC] uppercase tracking-[0.2em]">Operational Console</span>
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-[1000] leading-none tracking-tighter">
-                        Project <span className="text-[#4177BC]">Control</span>
+                    <h1 className="text-4xl md:text-5xl font-[1000] leading-none tracking-tighter text-[#1e3a5f]">
+                        Global <span className="text-[#4177BC]">Projects</span>
                     </h1>
-                    <button 
-                        disabled={loading}
-                        onClick={(e) => { e.preventDefault(); fetchData(); }} 
-                        className="w-full md:w-auto bg-[#EB9C2C] text-white px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-[#EB9C2C]/20 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
-                    >
-                        {loading ? <Loader2 size={12} className="animate-spin" /> : "Sync Dashboard"}
-                    </button>
+                    <p className="text-slate-400 text-xs font-medium tracking-tight">Manage and track your active pipeline and revenue flow.</p>
                 </div>
                 
-                {/* Stats Grid - 2 Columns on Mobile */}
-                <div className="grid grid-cols-2 md:flex gap-3 w-full md:w-auto">
-                    <MiniStat label="Pipeline" value={stats.total} color="#EB9C2C" icon={<Layers size={14}/>} />
-                    <MiniStat label="Revenue" value={`$${(stats.revenue/1000).toFixed(1)}k`} color="#1e3a5f" icon={<DollarSign size={14}/>} />
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 md:flex gap-4 w-full md:w-auto">
+                    <MiniStat label="Live Pipeline" value={stats.total} color="#EB9C2C" icon={<Layers size={18}/>} />
+                    <MiniStat label="Gross Revenue" value={`$${(stats.revenue/1000).toFixed(1)}k`} color="#4177BC" icon={<DollarSign size={18}/>} />
                 </div>
             </header>
 
-            {/* Sticky Search Bar */}
-            <div className="sticky top-4 z-40 mb-6 group">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors" size={18} />
-                <input 
-                    type="text" 
-                    placeholder="Search projects..." 
-                    value={searchTerm}
-                    onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                    className="w-full md:w-[400px] bg-white/90 backdrop-blur-md border border-white pl-14 pr-6 py-4 rounded-2xl shadow-xl shadow-slate-200/50 outline-none focus:ring-4 focus:ring-[#4177BC]/10 focus:border-[#4177BC]/20 transition-all text-sm font-bold"
-                />
+            {/* Actions Bar */}
+            <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between">
+                <div className="relative w-full md:w-[450px] group">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors" size={20} />
+                    <input 
+                        type="text" 
+                        placeholder="Search by project or client..." 
+                        value={searchTerm}
+                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                        className="w-full bg-[#FFFFFF] border-2 border-slate-100 pl-14 pr-6 py-4 rounded-2xl shadow-sm outline-none focus:ring-4 focus:ring-[#4177BC]/5 focus:border-[#4177BC]/30 transition-all text-sm font-bold placeholder:text-slate-300"
+                    />
+                </div>
+                <button 
+                    disabled={loading}
+                    onClick={(e) => { e.preventDefault(); fetchData(); }} 
+                    className="w-full md:w-auto bg-[#1e3a5f] text-white px-8 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.15em] hover:bg-[#4177BC] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-900/10"
+                >
+                    {loading ? <Loader2 size={16} className="animate-spin" /> : <>Sync System <Target size={14}/></>}
+                </button>
             </div>
 
-            {/* Content Area */}
-            <div className="bg-white md:bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-xl shadow-slate-200/40 border border-white overflow-hidden">
+            {/* Main Content Area */}
+            <div className="bg-[#FFFFFF] rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 overflow-hidden">
                 
-                {/* DESKTOP TABLE (Hidden on Mobile) */}
+                {/* DESKTOP TABLE */}
                 <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left table-fixed">
                         <thead>
-                            <tr className="border-b border-slate-50">
-                                <th className="w-[40%] pl-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Identification</th>
-                                <th className="w-[25%] px-6 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Status Hub</th>
-                                <th className="w-[20%] px-6 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Budget</th>
-                                <th className="w-[15%] pr-8 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Actions</th>
+                            <tr className="bg-slate-50/50">
+                                <th className="w-[40%] pl-10 py-6 text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Project Core</th>
+                                <th className="w-[25%] px-6 py-6 text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Deployment Status</th>
+                                <th className="w-[20%] px-6 py-6 text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] text-right">Valuation</th>
+                                <th className="w-[15%] pr-10 py-6 text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] text-center">Manage</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -180,44 +183,43 @@ export default function ProjectsPage() {
                     </table>
                 </div>
 
-                {/* MOBILE CARD LIST (Hidden on Desktop) */}
+                {/* MOBILE CARD LIST */}
                 <div className="md:hidden divide-y divide-slate-100">
                     {loading ? (
-                        [1,2,3].map(i => <div key={i} className="p-6 h-32 animate-pulse bg-slate-50 mb-2 rounded-xl" />)
+                        [1,2,3].map(i => <div key={i} className="p-8 h-40 animate-pulse bg-slate-50" />)
                     ) : (
                         currentProjects.map((item) => (
-                            <div key={`${item.clientId}-${item.name}`} className="p-5 flex flex-col gap-4">
+                            <div key={`${item.clientId}-${item.name}`} className="p-6 flex flex-col gap-5">
                                 <div className="flex justify-between items-start">
-                                    <div className="flex gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-[#1e3a5f] flex items-center justify-center text-white shrink-0">
-                                            <LayoutGrid size={16} />
+                                    <div className="flex gap-4">
+                                        <div className="h-12 w-12 rounded-2xl bg-[#4177BC]/10 flex items-center justify-center text-[#4177BC] shrink-0">
+                                            <LayoutGrid size={20} />
                                         </div>
-                                        <div className="max-w-[180px]">
-                                            <h3 className="font-extrabold text-slate-900 leading-tight truncate">{item.name}</h3>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate">{item.clientName}</p>
+                                        <div>
+                                            <h3 className="font-black text-slate-900 text-lg leading-tight">{item.name}</h3>
+                                            <p className="text-[10px] font-bold text-[#EB9C2C] uppercase tracking-widest mt-1">{item.clientName}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-[1000] text-slate-900 leading-none">${Number(item.budget).toLocaleString()}</p>
-                                        <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">{item.type || 'Fixed'}</p>
+                                        <p className="font-black text-[#1e3a5f] text-lg">${Number(item.budget).toLocaleString()}</p>
                                     </div>
                                 </div>
                                 
-                                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl">
-                                    <div className="flex items-center gap-2">
+                                <div className="flex items-center justify-between bg-slate-50/80 p-4 rounded-2xl">
+                                    <div className="flex items-center gap-3">
                                         <button 
                                             onClick={() => handleStatusToggle(item)}
-                                            className={`w-9 h-5 rounded-full p-1 flex items-center transition-colors ${item.status === 'Completed' ? 'bg-[#EB9C2C]' : 'bg-slate-300'}`}
+                                            className={`w-11 h-6 rounded-full p-1 flex items-center transition-all ${item.status === 'Completed' ? 'bg-[#EB9C2C]' : 'bg-slate-300'}`}
                                         >
-                                            <div className={`h-3 w-3 bg-white rounded-full transition-transform ${item.status === 'Completed' ? 'translate-x-4' : 'translate-x-0'}`} />
+                                            <div className={`h-4 w-4 bg-white rounded-full shadow-sm transition-transform ${item.status === 'Completed' ? 'translate-x-5' : 'translate-x-0'}`} />
                                         </button>
-                                        <span className={`text-[9px] font-black uppercase ${item.status === 'Completed' ? 'text-[#EB9C2C]' : 'text-slate-500'}`}>
+                                        <span className={`text-[10px] font-black uppercase tracking-tighter ${item.status === 'Completed' ? 'text-[#EB9C2C]' : 'text-slate-500'}`}>
                                             {item.status || 'Active'}
                                         </span>
                                     </div>
-                                    <div className="flex gap-1">
-                                        <button onClick={() => { setSelectedProject({...item, oldName: item.name}); setIsEditModalOpen(true); }} className="p-2 text-[#4177BC] bg-blue-50 rounded-lg"><Edit3 size={16}/></button>
-                                        <button onClick={() => handleDelete(item.clientId, item.name)} className="p-2 text-red-500 bg-red-50 rounded-lg"><Trash2 size={16}/></button>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { setSelectedProject({...item, oldName: item.name}); setIsEditModalOpen(true); }} className="p-2.5 text-[#4177BC] bg-[#4177BC]/10 rounded-xl"><Edit3 size={18}/></button>
+                                        <button onClick={() => handleDelete(item.clientId, item.name)} className="p-2.5 text-red-500 bg-red-50 rounded-xl"><Trash2 size={18}/></button>
                                     </div>
                                 </div>
                             </div>
@@ -227,50 +229,64 @@ export default function ProjectsPage() {
 
                 {/* Pagination */}
                 {!loading && totalPages > 1 && (
-                    <div className="p-6 bg-slate-50/50 flex justify-between items-center border-t border-slate-100">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Page {currentPage}/{totalPages}</span>
-                        <div className="flex bg-[#1e3a5f] p-1 rounded-xl">
-                            <button onClick={() => setCurrentPage(p => Math.max(p-1, 1))} disabled={currentPage === 1} className="p-2 text-white disabled:opacity-30"><ChevronLeft size={16}/></button>
-                            <button onClick={() => setCurrentPage(p => Math.min(p+1, totalPages))} disabled={currentPage === totalPages} className="p-2 text-white disabled:opacity-30"><ChevronRight size={16}/></button>
+                    <div className="p-8 bg-slate-50/30 flex justify-between items-center border-t border-slate-100">
+                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Entry {currentPage} of {totalPages}</span>
+                        <div className="flex bg-[#1e3a5f] p-1.5 rounded-2xl shadow-lg shadow-blue-900/20">
+                            <button onClick={() => setCurrentPage(p => Math.max(p-1, 1))} disabled={currentPage === 1} className="p-2.5 text-white disabled:opacity-20 transition-opacity"><ChevronLeft size={20}/></button>
+                            <div className="w-[1px] bg-white/10 mx-1" />
+                            <button onClick={() => setCurrentPage(p => Math.min(p+1, totalPages))} disabled={currentPage === totalPages} className="p-2.5 text-white disabled:opacity-20 transition-opacity"><ChevronRight size={20}/></button>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Modal remains same but width handles mobile */}
+            {/* MODERN MODAL */}
             <AnimatePresence>
                 {isEditModalOpen && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="fixed inset-0 bg-[#1e3a5f]/40 backdrop-blur-md z-50" />
                         <motion.div 
-                            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-                            className="fixed bottom-0 md:top-0 md:right-0 h-[90vh] md:h-full w-full md:max-w-md bg-white z-[51] rounded-t-[2rem] md:rounded-none shadow-2xl p-6 md:p-8 overflow-y-auto"
+                            initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="fixed top-0 right-0 h-full w-full md:max-w-md bg-[#FFFFFF] z-[51] shadow-[-20px_0_50px_rgba(0,0,0,0.1)] p-8 md:p-10 flex flex-col"
                         >
-                            {/* Form content same as before... */}
-                            <div className="flex justify-between items-center mb-8">
-                                <h2 className="text-2xl font-black tracking-tighter">Edit <span className="text-[#4177BC]">Project</span></h2>
-                                <button onClick={() => setIsEditModalOpen(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
+                            <div className="flex justify-between items-center mb-12">
+                                <div>
+                                    <h2 className="text-3xl font-[1000] tracking-tighter text-[#1e3a5f]">Edit <span className="text-[#4177BC]">Project</span></h2>
+                                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Resource ID: {selectedProject?.clientId?.slice(-6)}</p>
+                                </div>
+                                <button onClick={() => setIsEditModalOpen(false)} className="p-3 bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-all"><X size={24}/></button>
                             </div>
-                            <form onSubmit={handleEditSubmit} className="space-y-5">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase text-slate-400">Project Name</label>
-                                    <input required type="text" value={selectedProject?.name || ""} onChange={(e) => setSelectedProject({...selectedProject, name: e.target.value})} className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl outline-none focus:border-[#4177BC] font-bold" />
+
+                            <form onSubmit={handleEditSubmit} className="space-y-8 flex-1">
+                                <div className="space-y-3">
+                                    <label className="text-[11px] font-black uppercase text-[#4177BC] tracking-[0.15em] ml-1">Project Name</label>
+                                    <input required type="text" value={selectedProject?.name || ""} onChange={(e) => setSelectedProject({...selectedProject, name: e.target.value})} className="w-full bg-slate-50 border-2 border-slate-50 p-5 rounded-2xl outline-none focus:border-[#4177BC]/30 focus:bg-white transition-all font-bold text-slate-700 shadow-inner" />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase text-slate-400">Budget ($)</label>
-                                    <input required type="number" value={selectedProject?.budget || ""} onChange={(e) => setSelectedProject({...selectedProject, budget: e.target.value})} className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl outline-none focus:border-[#4177BC] font-bold" />
+                                
+                                <div className="space-y-3">
+                                    <label className="text-[11px] font-black uppercase text-[#4177BC] tracking-[0.15em] ml-1">Allocated Budget ($)</label>
+                                    <div className="relative">
+                                        <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                        <input required type="number" value={selectedProject?.budget || ""} onChange={(e) => setSelectedProject({...selectedProject, budget: e.target.value})} className="w-full bg-slate-50 border-2 border-slate-50 pl-12 p-5 rounded-2xl outline-none focus:border-[#4177BC]/30 focus:bg-white transition-all font-bold text-slate-700 shadow-inner" />
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase text-slate-400">Status</label>
-                                    <select value={selectedProject?.status || "Active"} onChange={(e) => setSelectedProject({...selectedProject, status: e.target.value})} className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl outline-none focus:border-[#4177BC] font-bold appearance-none">
-                                        <option value="Active">Active</option>
-                                        <option value="Completed">Completed</option>
-                                        <option value="On Hold">On Hold</option>
+
+                                <div className="space-y-3">
+                                    <label className="text-[11px] font-black uppercase text-[#4177BC] tracking-[0.15em] ml-1">Lifecycle Status</label>
+                                    <select value={selectedProject?.status || "Active"} onChange={(e) => setSelectedProject({...selectedProject, status: e.target.value})} className="w-full bg-slate-50 border-2 border-slate-50 p-5 rounded-2xl outline-none focus:border-[#4177BC]/30 focus:bg-white transition-all font-bold text-slate-700 shadow-inner appearance-none cursor-pointer">
+                                        <option value="Active">Active Pipeline</option>
+                                        <option value="Completed">Project Completed</option>
+                                        <option value="On Hold">Status: On Hold</option>
                                     </select>
                                 </div>
-                                <button type="submit" disabled={actionLoading === 'updating'} className="w-full bg-[#4177BC] text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest mt-4">
-                                    {actionLoading === 'updating' ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Update Project"}
-                                </button>
+
+                                <div className="pt-10">
+                                    <button type="submit" disabled={actionLoading === 'updating'} className="w-full bg-[#4177BC] text-white py-5 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-[#4177BC]/30 hover:scale-[1.02] active:scale-95 transition-all">
+                                        {actionLoading === 'updating' ? <Loader2 size={20} className="animate-spin mx-auto" /> : "Commit Changes"}
+                                    </button>
+                                    <button type="button" onClick={() => setIsEditModalOpen(false)} className="w-full mt-4 text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:text-slate-600 transition-colors">Discard Adjustments</button>
+                                </div>
                             </form>
                         </motion.div>
                     </>
@@ -280,38 +296,37 @@ export default function ProjectsPage() {
     );
 }
 
-// Sub-components with optimized props
 function ProjectRow({ item, onStatusToggle, onEdit, onDelete }: any) {
     return (
-        <tr className="group hover:bg-[#F8FAFC] transition-colors">
-            <td className="pl-8 py-4">
-                <div className="flex items-center gap-4">
-                    <div className="h-9 w-9 rounded-xl bg-[#1e3a5f] flex items-center justify-center text-white shrink-0">
-                        <LayoutGrid size={14} />
+        <tr className="group hover:bg-slate-50/50 transition-all">
+            <td className="pl-10 py-6">
+                <div className="flex items-center gap-5">
+                    <div className="h-11 w-11 rounded-2xl bg-[#1e3a5f] flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-900/10 group-hover:bg-[#4177BC] transition-colors">
+                        <LayoutGrid size={18} />
                     </div>
-                    <div className="truncate max-w-[200px]">
-                        <p className="text-sm font-extrabold text-[#1e293b] truncate group-hover:text-[#4177BC] transition-colors">{item.name}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase truncate">{item.clientName}</p>
+                    <div className="truncate">
+                        <p className="text-sm font-black text-[#1e3a5f] truncate mb-0.5">{item.name}</p>
+                        <p className="text-[10px] text-[#EB9C2C] font-black uppercase tracking-widest">{item.clientName}</p>
                     </div>
                 </div>
             </td>
-            <td className="px-6 py-4">
-                <div className="flex items-center gap-3 w-[120px]">
-                    <button onClick={() => onStatusToggle(item)} className={`w-10 h-5 rounded-full p-1 flex items-center transition-colors ${item.status === 'Completed' ? 'bg-[#EB9C2C]' : 'bg-slate-200'}`}>
-                        <div className={`h-3 w-3 bg-white rounded-full transition-transform ${item.status === 'Completed' ? 'translate-x-5' : 'translate-x-0'}`} />
+            <td className="px-6 py-6">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => onStatusToggle(item)} className={`w-11 h-6 rounded-full p-1 flex items-center transition-all ${item.status === 'Completed' ? 'bg-[#EB9C2C]' : 'bg-slate-200'}`}>
+                        <div className={`h-4 w-4 bg-white rounded-full shadow-sm transition-transform ${item.status === 'Completed' ? 'translate-x-5' : 'translate-x-0'}`} />
                     </button>
-                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${item.status === 'Completed' ? 'text-[#EB9C2C] bg-[#EB9C2C]/10' : 'text-slate-400 bg-slate-100'}`}>
+                    <span className={`text-[10px] font-black uppercase tracking-tight px-3 py-1 rounded-full ${item.status === 'Completed' ? 'text-[#EB9C2C] bg-[#EB9C2C]/10' : 'text-slate-400 bg-slate-100'}`}>
                         {item.status || 'Active'}
                     </span>
                 </div>
             </td>
-            <td className="px-6 py-4 text-right">
-                <p className="text-sm font-black text-[#1e293b] tracking-tighter">${Number(item.budget).toLocaleString()}</p>
+            <td className="px-6 py-6 text-right">
+                <p className="text-base font-black text-[#1e3a5f] tracking-tighter">${Number(item.budget).toLocaleString()}</p>
             </td>
-            <td className="pr-8 py-4">
-                <div className="flex items-center justify-center gap-2">
-                    <button onClick={() => onEdit(item)} className="p-2 text-slate-400 hover:text-[#4177BC] hover:bg-blue-50 rounded-lg"><Edit3 size={16} /></button>
-                    <button onClick={() => onDelete(item.clientId, item.name)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button>
+            <td className="pr-10 py-6">
+                <div className="flex items-center justify-center gap-3">
+                    <button onClick={() => onEdit(item)} className="p-2.5 text-slate-300 hover:text-[#4177BC] hover:bg-[#4177BC]/5 rounded-xl transition-all"><Edit3 size={18} /></button>
+                    <button onClick={() => onDelete(item.clientId, item.name)} className="p-2.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
                 </div>
             </td>
         </tr>
@@ -320,13 +335,13 @@ function ProjectRow({ item, onStatusToggle, onEdit, onDelete }: any) {
 
 function MiniStat({ label, value, color, icon }: any) {
     return (
-        <div className="bg-white p-3 md:p-4 rounded-2xl flex items-center gap-3 shadow-sm border border-white flex-1">
-            <div className={`p-2 rounded-xl text-white shadow-lg shrink-0`} style={{ backgroundColor: color }}>
+        <div className="bg-[#FFFFFF] p-5 rounded-[2rem] flex items-center gap-5 shadow-[0_10px_30px_rgba(0,0,0,0.03)] border border-slate-50 flex-1 min-w-[160px]">
+            <div className={`p-3.5 rounded-2xl text-white shadow-xl shrink-0`} style={{ backgroundColor: color }}>
                 {icon}
             </div>
             <div className="min-w-0">
-                <p className="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-widest truncate">{label}</p>
-                <p className="text-sm md:text-lg font-[1000] text-slate-800 leading-none truncate">{value}</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] mb-1 truncate">{label}</p>
+                <p className="text-xl md:text-2xl font-[1000] text-[#1e3a5f] leading-none tracking-tighter truncate">{value}</p>
             </div>
         </div>
     );
