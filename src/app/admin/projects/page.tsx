@@ -9,7 +9,9 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 
-const API_BASE = "http://localhost:5000";
+// .env থেকে ইউআরএল নেওয়া এবং শেষের এক্সট্রা স্ল্যাশ থাকলে তা রিমুভ করা
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE = RAW_API_URL.endsWith('/') ? RAW_API_URL.slice(0, -1) : RAW_API_URL;
 
 export default function ProjectsPage() {
     const [loading, setLoading] = useState(true);
@@ -23,31 +25,42 @@ export default function ProjectsPage() {
     const projectsPerPage = 8;
 
     const fetchData = useCallback(async (isSilent = false) => {
+        if (!API_BASE) {
+            console.error("Critical: NEXT_PUBLIC_API_URL is missing in .env");
+            return;
+        }
+
         try {
             if (!isSilent) setLoading(true);
+            
+            // এপিআই কল - এখানে ${API_BASE}/clinets ব্যবহার করা হয়েছে
             const response = await axios.get(`${API_BASE}/clinets`);
+            
             const projectsList: any[] = [];
-
-            response.data.forEach((client: any) => {
-                if (client.projects && Array.isArray(client.projects)) {
-                    client.projects.forEach((prj: any) => {
-                        projectsList.push({
-                            ...prj,
-                            clientId: client._id,
-                            clientName: client.name || "Client",
+            if (response.data && Array.isArray(response.data)) {
+                response.data.forEach((client: any) => {
+                    if (client.projects && Array.isArray(client.projects)) {
+                        client.projects.forEach((prj: any) => {
+                            projectsList.push({
+                                ...prj,
+                                clientId: client._id,
+                                clientName: client.name || "Unknown Client",
+                            });
                         });
-                    });
-                }
-            });
+                    }
+                });
+            }
             setAllProjects(projectsList);
-        } catch (error) {
-            console.error("Fetch Error:", error);
+        } catch (error: any) {
+            console.error("Fetch Error:", error.response?.status, error.message);
         } finally {
             setLoading(false);
         }
     }, []);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const stats = useMemo(() => {
         const total = allProjects.length;
@@ -57,15 +70,17 @@ export default function ProjectsPage() {
 
     const handleDelete = async (clientId: string, projectName: string) => {
         if (!window.confirm(`Are you sure you want to delete "${projectName}"?`)) return;
+        
         const originalProjects = [...allProjects];
         setAllProjects(prev => prev.filter(p => !(p.clientId === clientId && p.name === projectName)));
+        
         try {
             const clientResponse = await axios.get(`${API_BASE}/clinets/${clientId}`);
             const updatedProjects = clientResponse.data.projects.filter((p: any) => p.name !== projectName);
             await axios.put(`${API_BASE}/clinets/${clientId}`, { projects: updatedProjects });
         } catch (error) {
             setAllProjects(originalProjects);
-            alert("Delete failed.");
+            alert("Delete failed. Please try again.");
         }
     };
 
@@ -93,6 +108,7 @@ export default function ProjectsPage() {
         setAllProjects(prev => prev.map(p => 
             (p.clientId === project.clientId && p.name === project.name) ? { ...p, status: newStatus } : p
         ));
+        
         try {
             const clientResponse = await axios.get(`${API_BASE}/clinets/${project.clientId}`);
             const updatedProjects = clientResponse.data.projects.map((p: any) => 
@@ -127,14 +143,13 @@ export default function ProjectsPage() {
                     <p className="text-slate-400 text-xs font-medium tracking-tight">Manage and track your active pipeline and revenue flow.</p>
                 </div>
                 
-                {/* Stats Grid */}
                 <div className="grid grid-cols-2 md:flex gap-4 w-full md:w-auto">
                     <MiniStat label="Live Pipeline" value={stats.total} color="#EB9C2C" icon={<Layers size={18}/>} />
                     <MiniStat label="Gross Revenue" value={`$${(stats.revenue/1000).toFixed(1)}k`} color="#4177BC" icon={<DollarSign size={18}/>} />
                 </div>
             </header>
 
-            {/* Actions Bar */}
+            {/* Action Bar */}
             <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between">
                 <div className="relative w-full md:w-[450px] group">
                     <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors" size={20} />
@@ -148,7 +163,7 @@ export default function ProjectsPage() {
                 </div>
                 <button 
                     disabled={loading}
-                    onClick={(e) => { e.preventDefault(); fetchData(); }} 
+                    onClick={() => fetchData()} 
                     className="w-full md:w-auto bg-[#1e3a5f] text-white px-8 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.15em] hover:bg-[#4177BC] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-900/10"
                 >
                     {loading ? <Loader2 size={16} className="animate-spin" /> : <>Sync System <Target size={14}/></>}
@@ -157,8 +172,7 @@ export default function ProjectsPage() {
 
             {/* Main Content Area */}
             <div className="bg-[#FFFFFF] rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 overflow-hidden">
-                
-                {/* DESKTOP TABLE */}
+                {/* Desktop View */}
                 <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left table-fixed">
                         <thead>
@@ -183,7 +197,7 @@ export default function ProjectsPage() {
                     </table>
                 </div>
 
-                {/* MOBILE CARD LIST */}
+                {/* Mobile View */}
                 <div className="md:hidden divide-y divide-slate-100">
                     {loading ? (
                         [1,2,3].map(i => <div key={i} className="p-8 h-40 animate-pulse bg-slate-50" />)
@@ -204,7 +218,6 @@ export default function ProjectsPage() {
                                         <p className="font-black text-[#1e3a5f] text-lg">${Number(item.budget).toLocaleString()}</p>
                                     </div>
                                 </div>
-                                
                                 <div className="flex items-center justify-between bg-slate-50/80 p-4 rounded-2xl">
                                     <div className="flex items-center gap-3">
                                         <button 
@@ -240,7 +253,7 @@ export default function ProjectsPage() {
                 )}
             </div>
 
-            {/* MODERN MODAL */}
+            {/* Modal Components */}
             <AnimatePresence>
                 {isEditModalOpen && (
                     <>
@@ -296,6 +309,7 @@ export default function ProjectsPage() {
     );
 }
 
+// Sub-components
 function ProjectRow({ item, onStatusToggle, onEdit, onDelete }: any) {
     return (
         <tr className="group hover:bg-slate-50/50 transition-all">
