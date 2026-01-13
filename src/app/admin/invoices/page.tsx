@@ -1,51 +1,100 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { 
     Plus, Search, FileText, Download, 
-    Filter, CheckCircle2, 
+    CheckCircle2, Trash2, Loader2,
     Clock, AlertCircle, ArrowUpRight, ChevronRight
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import axios from "axios";
 
-// API Base URL from .env
+// TypeScript Interfaces for Error-free code
+interface Client {
+    name: string;
+}
+
+interface Invoice {
+    _id: string;
+    invoiceId: string;
+    client: Client;
+    projectTitle: string;
+    createdAt: string;
+    status: 'Paid' | 'Pending' | 'Overdue';
+    currency: string;
+    grandTotal: number;
+    remainingDue: number;
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function InvoicesPage() {
     const [loading, setLoading] = useState(true);
-    const [invoices, setInvoices] = useState<any[]>([]);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
 
-    // 1. Fetch Data from API
+    // 1. Fetch Invoices
+    const fetchInvoices = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get(`${API_BASE}/invoices`);
+            setInvoices(response.data);
+        } catch (error) {
+            console.error("Error fetching invoices:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchInvoices = async () => {
-            try {
-                setLoading(true);
-                const response = await axios.get(`${API_BASE}/invoices`);
-                setInvoices(response.data);
-            } catch (error) {
-                console.error("Error fetching invoices:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchInvoices();
     }, []);
 
-    // 2. Calculate Real-time Stats
+    // 2. Professional Actions
+    const handleDelete = async (id: string) => {
+        if (!window.confirm("Are you sure you want to delete this invoice?")) return;
+        try {
+            setActionLoading(id);
+            await axios.delete(`${API_BASE}/invoices/${id}`);
+            setInvoices(prev => prev.filter(inv => inv._id !== id));
+        } catch (error) {
+            console.error("Delete error:", error);
+            alert("Delete failed.");
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleDownload = async (id: string, invoiceId: string) => {
+        try {
+            setActionLoading(id);
+            const response = await axios.get(`${API_BASE}/invoices/${id}/download`, {
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Invoice-${invoiceId}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error("Download failed:", error);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    // 3. Stats Calculation
     const stats = useMemo(() => {
         const total = invoices.reduce((acc, curr) => acc + (curr.grandTotal || 0), 0);
-        const paid = invoices.reduce((acc, curr) => acc + (curr.receivedAmount || 0), 0);
+        const paid = invoices.reduce((acc, curr) => acc + (curr.grandTotal - (curr.remainingDue || 0)), 0);
         const pending = invoices.reduce((acc, curr) => acc + (curr.remainingDue || 0), 0);
         const overdue = invoices.filter(inv => inv.status === 'Overdue').reduce((acc, curr) => acc + (curr.remainingDue || 0), 0);
-        
         return { total, paid, pending, overdue };
     }, [invoices]);
 
-    // 3. Filter Logic
     const filteredInvoices = invoices.filter(inv => 
         inv.invoiceId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         inv.client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -58,7 +107,7 @@ export default function InvoicesPage() {
 
     return (
         <div className="space-y-8 pb-10 min-h-screen px-4 md:px-0">
-            {/* Header */}
+            {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h1 className="text-4xl font-[1000] text-slate-900 tracking-tighter uppercase">Invoices</h1>
@@ -75,7 +124,7 @@ export default function InvoicesPage() {
                 </Link>
             </div>
 
-            {/* Billing Stats (Dynamic) */}
+            {/* Billing Stats Section */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 {loading ? (
                     [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28" />)
@@ -89,9 +138,8 @@ export default function InvoicesPage() {
                 )}
             </div>
 
-            {/* Main Content Area */}
+            {/* Main Table Area */}
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-                {/* Filters Row */}
                 <div className="p-6 border-b border-slate-50 flex flex-col md:flex-row gap-4 justify-between bg-slate-50/30">
                     <div className="relative flex-1 max-w-md">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
@@ -105,9 +153,8 @@ export default function InvoicesPage() {
                     </div>
                 </div>
 
-                {/* Table */}
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left min-w-[800px] md:min-w-full">
+                    <table className="w-full text-left min-w-[900px]">
                         <thead className="bg-white border-b border-slate-50">
                             <tr>
                                 <th className="px-8 py-5 text-[9px] font-black uppercase text-slate-400 tracking-widest">Invoice Details</th>
@@ -119,67 +166,73 @@ export default function InvoicesPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-50 font-bold text-sm">
                             {loading ? (
-                                [1, 2, 3].map((i) => (
-                                    <tr key={i}><td colSpan={5} className="px-8 py-6"><Skeleton className="h-14 w-full" /></td></tr>
-                                ))
-                            ) : filteredInvoices.length > 0 ? (
-                                filteredInvoices.map((inv) => (
-                                    <tr key={inv._id} className="group hover:bg-slate-50/50 transition-all">
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="h-11 w-11 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-[#4177BC] group-hover:text-white transition-all shadow-inner">
-                                                    <FileText size={20} />
-                                                </div>
-                                                <div>
-                                                    <Link href={`/admin/invoices/${inv._id}`}>
-                                                        <p className="text-slate-900 leading-none mb-1 font-black text-base hover:text-[#4177BC] transition-colors">
-                                                            {inv.invoiceId}
-                                                        </p>
-                                                    </Link>
-                                                    <p className="text-[10px] text-slate-400 uppercase tracking-tighter font-bold">
-                                                        {inv.client?.name} • {new Date(inv.createdAt).toLocaleDateString()}
+                                [1, 2, 3].map((i) => <tr key={i}><td colSpan={5} className="p-8"><Skeleton className="h-12 w-full" /></td></tr>)
+                            ) : filteredInvoices.map((inv) => (
+                                <tr key={inv._id} className="group hover:bg-slate-50/50 transition-all">
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-11 w-11 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-[#4177BC] group-hover:text-white transition-all">
+                                                <FileText size={20} />
+                                            </div>
+                                            <div>
+                                                <Link href={`/admin/invoices/${inv._id}`}>
+                                                    <p className="text-slate-900 leading-none mb-1 font-black text-base hover:text-[#4177BC]">
+                                                        {inv.invoiceId}
                                                     </p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <StatusBadge status={inv.status} />
-                                        </td>
-                                        <td className="px-8 py-6 hidden sm:table-cell">
-                                            <p className="text-slate-600 text-[11px] font-black uppercase flex items-center gap-1 group-hover:text-[#4177BC] transition-colors cursor-pointer">
-                                                {inv.projectTitle} <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-all" />
-                                            </p>
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <p className="text-slate-900 font-[1000] text-base">
-                                                {inv.currency} {inv.grandTotal?.toLocaleString()}
-                                            </p>
-                                            <p className="text-[9px] text-amber-600 uppercase font-black">
-                                                Due: {inv.remainingDue}
-                                            </p>
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <div className="flex justify-end items-center gap-2">
-                                                <button className="p-3 bg-slate-50 text-slate-400 hover:text-[#4177BC] hover:bg-[#4177BC]/10 rounded-xl transition-all shadow-sm">
-                                                    <Download size={16} />
-                                                </button>
-                                                <Link 
-                                                    href={`/admin/invoices/${inv._id}`}
-                                                    className="p-3 bg-slate-50 text-slate-400 hover:text-white hover:bg-[#4177BC] rounded-xl transition-all shadow-sm flex items-center gap-2 group/btn"
-                                                >
-                                                    <ChevronRight size={16} />
                                                 </Link>
+                                                <p className="text-[10px] text-slate-400 uppercase tracking-tighter font-bold">
+                                                    {inv.client?.name} • {new Date(inv.createdAt).toLocaleDateString()}
+                                                </p>
                                             </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={5} className="px-8 py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                                        No invoices found in registry
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <StatusBadge status={inv.status} />
+                                    </td>
+                                    <td className="px-8 py-6 hidden sm:table-cell">
+                                        <p className="text-slate-600 text-[11px] font-black uppercase flex items-center gap-1 group-hover:text-[#4177BC]">
+                                            {inv.projectTitle} <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-all" />
+                                        </p>
+                                    </td>
+                                    <td className="px-8 py-6 text-right">
+                                        <p className="text-slate-900 font-[1000] text-base">
+                                            {inv.currency} {inv.grandTotal?.toLocaleString()}
+                                        </p>
+                                        <p className={`text-[9px] uppercase font-black ${inv.remainingDue > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                            {inv.remainingDue > 0 ? `Due: ${inv.remainingDue}` : 'Fully Paid'}
+                                        </p>
+                                    </td>
+                                    <td className="px-8 py-6 text-right">
+                                        <div className="flex justify-end items-center gap-2">
+                                            {/* Download Button */}
+                                            <button 
+                                                onClick={() => handleDownload(inv._id, inv.invoiceId)}
+                                                disabled={actionLoading === inv._id}
+                                                className="p-3 bg-slate-50 text-slate-400 hover:text-[#4177BC] hover:bg-[#4177BC]/10 rounded-xl transition-all shadow-sm disabled:opacity-50"
+                                            >
+                                                {actionLoading === inv._id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                                            </button>
+                                            
+                                            {/* View/Edit Button */}
+                                            <Link 
+                                                href={`/admin/invoices/${inv._id}`}
+                                                className="p-3 bg-slate-50 text-slate-400 hover:text-white hover:bg-[#4177BC] rounded-xl transition-all shadow-sm"
+                                            >
+                                                <ChevronRight size={16} />
+                                            </Link>
+
+                                            {/* Delete Button */}
+                                            <button 
+                                                onClick={() => handleDelete(inv._id)}
+                                                disabled={actionLoading === inv._id}
+                                                className="p-3 bg-slate-50 text-slate-400 hover:text-white hover:bg-rose-500 rounded-xl transition-all shadow-sm"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
-                            )}
+                            ))}
                         </tbody>
                     </table>
                 </div>
@@ -188,8 +241,8 @@ export default function InvoicesPage() {
     );
 }
 
-// Sub-components
-function MiniStat({ label, value, color }: any) {
+// Sub-components (Fixed & Professional)
+function MiniStat({ label, value, color }: { label: string, value: string, color: string }) {
     return (
         <motion.div 
             whileHover={{ y: -5 }}
@@ -204,12 +257,13 @@ function MiniStat({ label, value, color }: any) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-    const styles: any = {
+    const styles: Record<string, string> = {
         Paid: "bg-emerald-50 text-emerald-600 border-emerald-100",
         Pending: "bg-amber-50 text-amber-600 border-amber-100",
         Overdue: "bg-rose-50 text-rose-600 border-rose-100",
     };
-    const icons: any = {
+    
+    const icons: Record<string, React.ReactNode> = {
         Paid: <CheckCircle2 size={12} />,
         Pending: <Clock size={12} />,
         Overdue: <AlertCircle size={12} />,
