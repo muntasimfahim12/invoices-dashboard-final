@@ -83,43 +83,48 @@ export default function ProfessionalLedgerEditor() {
         }));
     };
 
-    const handleSave = async () => {
-        try {
-            setUpdating(true);
-            
-            // Calculate final received amount
-            const totalReceived = Number(invoiceData.receivedAmount || 0) + Number(newPaymentAmount);
-            
-            // Clean payload for MongoDB/API
-            const { _id, ...restOfData } = invoiceData;
+const handleSave = async () => {
+    try {
+        setUpdating(true);
+        
+        // ১. মোট কত টাকা রিসিভ হলো তা ক্যালকুলেট করুন
+        const totalReceived = Number(invoiceData.receivedAmount || 0) + Number(newPaymentAmount);
+        
+        // ২. নতুন ডিউ কত টাকা বাকি আছে তা ক্যালকুলেট করুন
+        const finalDue = Math.max(0, stats.grandTotal - totalReceived);
 
-            const payload = {
-                ...restOfData,
-                items: invoiceData.items.map((item: any) => ({
-                    ...item,
-                    qty: Number(item.qty),
-                    price: Number(item.price)
-                })),
-                taxRate: Number(invoiceData.taxRate),
-                discount: Number(invoiceData.discount),
-                grandTotal: stats.grandTotal,
-                receivedAmount: totalReceived,
-                // Automatic status update logic
-                status: totalReceived >= stats.grandTotal 
-                    ? "Paid" 
-                    : (totalReceived > 0 ? "Partial" : "Pending"),
-                updatedAt: new Date()
-            };
+        const { _id, ...restOfData } = invoiceData;
 
-            await axios.put(`${API_BASE}/invoices/${params.id}`, payload);
-            router.push("/admin/invoices");
-        } catch (error) {
-            console.error("Save error:", error);
-            alert("Update failed. Please check your network.");
-        } finally {
-            setUpdating(false);
-        }
-    };
+        const payload = {
+            ...restOfData,
+            items: invoiceData.items.map((item: any) => ({
+                ...item,
+                qty: Number(item.qty),
+                price: Number(item.price)
+            })),
+            taxRate: Number(invoiceData.taxRate),
+            discount: Number(invoiceData.discount),
+            grandTotal: stats.grandTotal,
+            receivedAmount: totalReceived,
+            
+            // ৩. মেইন পেজের জন্য এই ফিল্ডটি ডাটাবেসে আপডেট হওয়া জরুরি
+            remainingDue: finalDue, 
+            
+            status: totalReceived >= stats.grandTotal 
+                ? "Paid" 
+                : (totalReceived > 0 ? "Partial" : "Pending"),
+            updatedAt: new Date()
+        };
+
+        await axios.put(`${API_BASE}/invoices/${params.id}`, payload);
+        router.push("/admin/invoices");
+    } catch (error) {
+        console.error("Save error:", error);
+        alert("Update failed.");
+    } finally {
+        setUpdating(false);
+    }
+};
 
     if (loading) return (
         <div className="h-screen flex flex-col items-center justify-center bg-slate-50">
