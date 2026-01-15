@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
+import { useRouter } from "next/navigation"; // রাউটিং এর জন্য ইমপোর্ট
 import ActionButton from "../../../components/adminDashboard/ActionButton";
 import InvoiceTable from "../../../components/adminDashboard/InvoiceTable";
 import ListItem from "../../../components/adminDashboard/ListItem";
@@ -13,12 +14,28 @@ import { LayoutDashboard, TrendingUp, PlusCircle, ArrowUpRight } from "lucide-re
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "";
 
 export default function AdminOverview() {
+  const router = useRouter(); // রাউটার ইনিশিয়ালাইজ
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     invoices: [] as any[],
     clients: [] as any[],
     projects: [] as any[]
   });
+
+  // --- বাটন ক্লিক হ্যান্ডলার ---
+  const handleActionClick = (label: string) => {
+    const routes: Record<string, string> = {
+      "Add Client": "/admin/create-client",
+      "Create Project": "/admin/projects/create",
+      "Create Invoice": "/admin/invoices/create",
+      "Record Payment": "/admin/payments/add"
+    };
+
+    const targetPath = routes[label];
+    if (targetPath) {
+      router.push(targetPath);
+    }
+  };
 
   const fetchAllData = useCallback(async () => {
     if (!API_BASE) return;
@@ -70,7 +87,7 @@ export default function AdminOverview() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 md:pb-10 font-sans animate-in fade-in duration-700">
       {/* --- HEADER SECTION --- */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 pt-6 px-4 md:px-0">
         <div>
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 bg-[#4177BC]/10 rounded-xl text-[#4177BC]">
@@ -99,7 +116,7 @@ export default function AdminOverview() {
       </div>
 
       {/* --- STATS SECTION --- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-12 px-4 md:px-0">
         <StatCard title="Total Revenue" value={`$${stats.revenue.toLocaleString()}`} trend="+12%" icon="revenue" compact />
         <StatCard title="Total Due" value={`$${stats.due.toLocaleString()}`} trend="Urgent" icon="due" color="#EB9C2C" compact />
         <StatCard title="Active Clients" value={stats.clientCount.toString()} trend="Active" icon="clients" compact />
@@ -107,7 +124,7 @@ export default function AdminOverview() {
       </div>
 
       {/* --- TOP GRID --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-12 px-4 md:px-0">
         <div className="premium-card group">
           <div className="flex items-center justify-between mb-8">
             <SectionTitle title="Recent Clients" />
@@ -146,7 +163,7 @@ export default function AdminOverview() {
       </div>
 
       {/* --- INVOICES TABLE --- */}
-      <div className="premium-card mb-12 overflow-hidden">
+      <div className="premium-card mb-12 overflow-hidden mx-4 md:mx-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <SectionTitle title="Recent Invoices" />
           <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl text-[10px] font-black text-slate-400 border border-slate-100 uppercase tracking-widest">
@@ -159,21 +176,27 @@ export default function AdminOverview() {
       </div>
 
       {/* --- QUICK ACTIONS SECTION --- */}
-      <div className="bg-white rounded-[35px] md:rounded-[45px] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#4177BC] opacity-20 rounded-full -mr-32 -mt-32 blur-[100px]" />
+      <section className="bg-white rounded-[35px] md:rounded-[45px] p-8 md:p-12 shadow-2xl relative overflow-hidden mx-4 md:mx-0">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#4177BC] opacity-10 rounded-full -mr-32 -mt-32 blur-[100px]" />
         <div className="relative z-10">
           <div className="flex items-center gap-4 mb-10">
             <PlusCircle className="text-[#EB9C2C]" size={32} />
-            <h2 className="text-2xl md:text-3xl font-black text-black tracking-tight">Quick Actions</h2>
+            <h2 className="text-2xl md:text-3xl font-black text-black tracking-tight uppercase italic">Quick Actions</h2>
           </div>
+          
           <div className="flex flex-wrap gap-4 md:gap-6">
-            <ActionButton label="Add Client" />
-            <ActionButton label="Create Project" />
-            <ActionButton label="Create Invoice" />
-            <ActionButton label="Record Payment" />
+            {["Add Client", "Create Project", "Create Invoice", "Record Payment"].map((label) => (
+              <div 
+                key={label} 
+                onClick={() => handleActionClick(label)} 
+                className="cursor-pointer active:scale-95 transition-transform"
+              >
+                <ActionButton label={label} />
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      </section>
 
       <style jsx global>{`
         .premium-card {
@@ -205,10 +228,10 @@ function DashboardSkeleton() {
         <div className="h-12 w-64 bg-slate-200 rounded-xl" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {[1,2,3,4].map(i => <div key={i} className="h-32 bg-white rounded-[28px] shadow-sm animate-pulse" />)}
+        {[1,2,3,4].map(i => <div key={i} className="h-32 bg-white rounded-[28px] shadow-sm" />)}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[1,2,3].map(i => <div key={i} className="h-64 bg-white rounded-[28px] shadow-sm animate-pulse" />)}
+        {[1,2,3].map(i => <div key={i} className="h-64 bg-white rounded-[28px] shadow-sm" />)}
       </div>
     </div>
   );
