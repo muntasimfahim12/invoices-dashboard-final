@@ -60,62 +60,7 @@ export default function ClientDashboard() {
     return (
         <div className="min-h-screen bg-[#F8FAFC] text-[#1E293B] font-sans selection:bg-blue-100">
             
-            {/* --- ULTRA-MODERN NAV --- */}
-            <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-[100] border-b border-slate-200/60 shadow-sm">
-                <div className="max-w-[1600px] mx-auto px-6 md:px-10 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-8">
-                        <div className="flex items-center gap-3 group cursor-pointer">
-                            <div className="w-11 h-11 bg-slate-950 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-slate-300 group-hover:scale-105 transition-transform">
-                                <LayoutDashboard size={22} strokeWidth={2.5} />
-                            </div>
-                            <h1 className="font-[1000] text-2xl tracking-tighter uppercase italic">
-                                CORE<span className="text-[#4177BC]">HUB</span>
-                            </h1>
-                        </div>
-                        <div className="h-8 w-[1px] bg-slate-200 hidden lg:block"></div>
-                        <div className="hidden lg:flex flex-col">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status</span>
-                            <span className="text-xs font-bold text-emerald-600 flex items-center gap-1.5 mt-1">
-                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                                Secure Server Connected
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        {/* Notification Dot */}
-                        <button className="p-3 hover:bg-slate-100 rounded-full transition-colors relative text-slate-500">
-                            <Bell size={20} />
-                            <span className="absolute top-3 right-3 w-2 h-2 bg-blue-500 rounded-full border-2 border-white"></span>
-                        </button>
-
-                        <div className="relative group">
-                            <button className="flex items-center gap-3 bg-white hover:border-[#4177BC] px-4 py-2 rounded-2xl transition-all border-2 border-slate-100 shadow-sm hover:shadow-md">
-                                <Layers size={18} className="text-[#4177BC]" />
-                                <div className="text-left hidden sm:block">
-                                    <p className="text-[8px] font-black text-slate-400 uppercase leading-none mb-1">Current Stack</p>
-                                    <p className="text-sm font-black truncate max-w-[150px] italic">{selectedProject?.name}</p>
-                                </div>
-                                <ChevronDown size={16} className="text-slate-400 group-hover:rotate-180 transition-transform" />
-                            </button>
-                            
-                            <div className="absolute right-0 mt-4 w-80 bg-white rounded-[2rem] shadow-2xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] p-4">
-                                <p className="px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 mb-2">Switch Workspace</p>
-                                {clientData.projects?.map((proj: any) => (
-                                    <button
-                                        key={proj._id}
-                                        onClick={() => setSelectedProject(proj)}
-                                        className={`w-full text-left p-4 rounded-2xl mb-1 flex items-center gap-4 transition-all ${selectedProject?._id === proj._id ? 'bg-blue-50/50 text-[#4177BC]' : 'hover:bg-slate-50'}`}
-                                    >
-                                        <div className={`w-2.5 h-2.5 rounded-full ${selectedProject?._id === proj._id ? 'bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.6)]' : 'bg-slate-200'}`} />
-                                        <span className="text-sm font-bold">{proj.name}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </nav>
+          
 
             <main className="max-w-[1600px] mx-auto px-6 md:px-10 py-10">
                 
