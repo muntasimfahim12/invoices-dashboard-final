@@ -3,7 +3,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie"; // Cookie import kora holo
+import Cookies from "js-cookie";
 
 export default function LoginPage() {
   const [role, setRole] = useState<"client" | "admin">("client");
@@ -11,7 +11,9 @@ export default function LoginPage() {
   const [showRegister, setShowRegister] = useState(false);
   const router = useRouter();
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  // URL formatting: Automatic trailing slash removal
+  const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const API_URL = rawUrl.replace(/\/$/, "");
 
   /* ================= LOGIN LOGIC ================= */
 
@@ -33,7 +35,8 @@ export default function LoginPage() {
     };
 
     try {
-      const response = await fetch(`${API_URL}auth/login`, {
+      // Fixed URL Path with explicit '/'
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -42,13 +45,12 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // 1. Session data save (LocalStorage for Frontend UI)
+        // 1. Session data save
         localStorage.setItem("vault_token", data.token);
         localStorage.setItem("user_role", data.role);
         localStorage.setItem("user_name", data.name);
 
-        // 2. Cookie save (Middleware er jonno oboshoy lagbe)
-        // expires: 7 mane holo 7 din login thakbe
+        // 2. Cookie save for Middleware
         Cookies.set("vault_token", data.token, { expires: 7 });
         Cookies.set("user_role", data.role, { expires: 7 });
 
@@ -65,7 +67,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error("Login Error:", err);
-      alert("Cannot connect to server. Is your backend running?");
+      alert("Cannot connect to server. Ensure your backend is running at: " + API_URL);
     } finally {
       setLoading(false);
     }
@@ -81,10 +83,10 @@ export default function LoginPage() {
     const payload = {
       name: formData.get("name"),
       email: formData.get("email"),
-      message: formData.get("message"),
     };
 
     try {
+      // Fixed URL Path with explicit '/'
       const response = await fetch(`${API_URL}/invoices/send-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -124,7 +126,7 @@ export default function LoginPage() {
               <Form
                 title="Client Login"
                 description="Access projects, invoices and payments."
-                onSubmit={(e: React.FormEvent<HTMLFormElement>) => handleSubmit(e, "client")}
+                onSubmit={(e: any) => handleSubmit(e, "client")}
                 loading={loading}
                 note="Client credentials are provided by admin."
                 showRegister
@@ -136,7 +138,7 @@ export default function LoginPage() {
               <Form
                 title="Admin Login"
                 description="Manage clients, projects and billing."
-                onSubmit={(e: React.FormEvent<HTMLFormElement>) => handleSubmit(e, "admin")}
+                onSubmit={(e: any) => handleSubmit(e, "admin")}
                 loading={loading}
                 note="Admin access only."
               />
@@ -176,7 +178,7 @@ export default function LoginPage() {
           <Form
             title={role === "client" ? "Client Login" : "Admin Login"}
             description={role === "client" ? "Access projects & invoices." : "Manage your agency."}
-            onSubmit={(e: React.FormEvent<HTMLFormElement>) => handleSubmit(e, role)}
+            onSubmit={(e: any) => handleSubmit(e, role)}
             loading={loading}
             note="If you don’t have credentials, contact admin."
             showRegister={role === "client"}
@@ -299,7 +301,6 @@ function RegisterModal({ onClose, onSubmit, loading }: any) {
   );
 }
 
-/* ================= ICONS ================= */
 function EyeIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>; }
 function EyeOffIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>; }
 function InfoIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>; }
