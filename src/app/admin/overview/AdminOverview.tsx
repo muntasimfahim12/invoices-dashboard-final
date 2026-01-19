@@ -6,6 +6,9 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+// Recharts import
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+
 import ActionButton from "../../../components/adminDashboard/ActionButton";
 import InvoiceTable from "../../../components/adminDashboard/InvoiceTable";
 import ListItem from "../../../components/adminDashboard/ListItem";
@@ -21,7 +24,8 @@ import {
   Settings, 
   Bell, 
   ChevronDown,
-  ShieldCheck 
+  ShieldCheck,
+  PieChart as PieIcon
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "";
@@ -94,6 +98,16 @@ export default function AdminOverview() {
 
   useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
+  // --- Invoice Status Chart Logic ---
+  const invoiceStatusData = useMemo(() => {
+    const inv = dashboardData.invoices;
+    return [
+      { name: 'Paid', value: inv.filter((i) => i.status === 'Paid').length, color: '#4177BC' },
+      { name: 'Pending', value: inv.filter((i) => i.status === 'Pending').length, color: '#EB9C2C' },
+      { name: 'Overdue', value: inv.filter((i) => i.status === 'Overdue').length, color: '#EF4444' },
+    ];
+  }, [dashboardData.invoices]);
+
   const stats = useMemo(() => {
     const inv = dashboardData.invoices;
     const totalRev = inv.reduce((sum, i) => sum + (Number(i.receivedAmount) || 0), 0);
@@ -149,7 +163,7 @@ export default function AdminOverview() {
                       <p className="text-sm font-bold text-slate-900">{adminName}</p>
                     </div>
                     <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"><User size={16} /> My Profile</button>
-                    <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"><Settings size={16} /> Settings</button>
+                    <button onClick={() => router.push("/admin/settings")} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"><Settings size={16} /> Settings</button>
                     <div className="h-px bg-slate-50 my-1 mx-2"></div>
                     <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 font-semibold transition-colors"><LogOut size={16} /> Logout</button>
                   </div>
@@ -163,7 +177,7 @@ export default function AdminOverview() {
       {/* ================= CONTENT AREA ================= */}
       <div className="max-w-[1600px] mx-auto px-4 md:px-12">
         
-        {/* --- HEADER SECTION (Apnar original size 100% same rakha hoyeche) --- */}
+        {/* --- HEADER SECTION --- */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 pt-6">
           <div>
             <div className="flex items-center gap-3 mb-3">
@@ -192,7 +206,7 @@ export default function AdminOverview() {
           </div>
         </div>
 
-        {/* --- STATS SECTION (Apnar original cards) --- */}
+        {/* --- STATS SECTION --- */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-12">
           <StatCard title="Total Revenue" value={`$${stats.revenue.toLocaleString()}`} trend="+12%" icon="revenue" compact />
           <StatCard title="Total Due" value={`$${stats.due.toLocaleString()}`} trend="Urgent" icon="due" color="#EB9C2C" compact />
@@ -200,8 +214,8 @@ export default function AdminOverview() {
           <StatCard title="Active Projects" value={stats.projectCount.toString()} trend="On Track" icon="projects" compact />
         </div>
 
-        {/* --- TOP GRID --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-12">
+        {/* --- TOP GRID (3 Cards + Added Chart Below) --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-8">
           <div className="premium-card group">
             <div className="flex items-center justify-between mb-8">
               <SectionTitle title="Recent Clients" />
@@ -237,6 +251,60 @@ export default function AdminOverview() {
               <ListItem title="Overdue Invoices" meta={`${dashboardData.invoices.filter(inv => inv.status === 'Overdue').length} Urgent`} />
             </div>
           </div>
+        </div>
+
+        {/* ================= MODERN PIE CHART SECTION ================= */}
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 md:gap-8 mb-12">
+            <div className="premium-card group flex flex-col md:flex-row items-center gap-8">
+                <div className="w-full md:w-1/2">
+                   <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2 bg-[#4177BC]/10 rounded-lg text-[#4177BC]">
+                        <PieIcon size={20} />
+                      </div>
+                      <SectionTitle title="Invoice Distribution Analysis" />
+                   </div>
+                   <p className="text-slate-500 text-sm font-medium mb-8">
+                      Visual breakdown of your invoice lifecycle. Monitor paid, pending, and overdue statuses in real-time to manage cash flow effectively.
+                   </p>
+                   <div className="grid grid-cols-3 gap-4">
+                      {invoiceStatusData.map((item, idx) => (
+                        <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{item.name}</p>
+                           <p className="text-xl font-black text-slate-900">{item.value}</p>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+                
+                <div className="w-full md:w-1/2 h-[280px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={invoiceStatusData}
+                        innerRadius={70}
+                        outerRadius={100}
+                        paddingAngle={8}
+                        dataKey="value"
+                      >
+                        {invoiceStatusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '12px' }}
+                        itemStyle={{ fontWeight: '800', fontSize: '12px' }}
+                      />
+                      <Legend 
+                        verticalAlign="middle" 
+                        align="right" 
+                        layout="vertical"
+                        iconType="circle"
+                        wrapperStyle={{ fontWeight: '700', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+            </div>
         </div>
 
         {/* --- INVOICES TABLE --- */}
