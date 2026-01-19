@@ -7,8 +7,11 @@ import { useRouter } from "next/navigation";
 import { 
   Plus, Trash2, UserPlus, Briefcase, CreditCard, 
   ShieldCheck, Mail, Phone, MapPin, DollarSign, 
-  Calendar, Lock, Wallet, Eye, EyeOff, Loader2 
+  Calendar, Lock, Wallet, Eye, EyeOff, Loader2,
+  RefreshCcw, Sparkles, Send
 } from "lucide-react";
+// Import toast for professional notifications (Optional: npm install react-hot-toast)
+import toast, { Toaster } from "react-hot-toast";
 
 export default function CreateClientPage() {
   const router = useRouter();
@@ -42,10 +45,26 @@ export default function CreateClientPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // 2. HANDLERS
+  // 2. ADVANCED HANDLERS
   const handleInputChange = (e: any) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // ADVANCED FEATURE: Auto-fill Login Email when Client Email is typed
+    if (name === "clientEmail" && !formData.loginEmail) {
+      setFormData(prev => ({ ...prev, loginEmail: value }));
+    }
+  };
+
+  // ADVANCED FEATURE: Professional Password Generator
+  const generatePassword = () => {
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let retVal = "";
+    for (let i = 0, n = charset.length; i < 12; ++i) {
+      retVal += charset.charAt(Math.floor(Math.random() * n));
+    }
+    setFormData(prev => ({ ...prev, password: retVal }));
+    if(typeof toast !== 'undefined') toast.success("Secure password generated!");
   };
 
   const handleMilestoneChange = (index: number, field: string, value: string) => {
@@ -62,7 +81,7 @@ export default function CreateClientPage() {
     setMilestones(milestones.filter((_, i) => i !== index));
   };
 
-  // 3. SUBMIT TO BACKEND
+  // 3. SUBMIT TO BACKEND (With Automation Trigger)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -78,6 +97,8 @@ export default function CreateClientPage() {
       portalEmail: formData.loginEmail,
       password: formData.password,
       status: "Active",
+      // ADVANCED: Tell backend to send the Magic Login Email
+      sendAutomationEmail: true, 
       totalPaid: Number(formData.amountPaid),
       projects: [{
         name: formData.projectTitle,
@@ -90,7 +111,7 @@ export default function CreateClientPage() {
 
     try {
       await axios.post(`${API_BASE}/clinets`, payload);
-      alert("🎉 Client created successfully!");
+      alert("🎉 Client created! Login credentials and Magic Link sent to their email.");
       router.push("/admin/all-clients");
     } catch (error: any) {
       console.error("Submission Error:", error);
@@ -104,6 +125,7 @@ export default function CreateClientPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 text-slate-900 font-sans animate-in fade-in duration-700">
+      <Toaster />
       <form onSubmit={handleSubmit}>
         
         {/* HEADER SECTION */}
@@ -114,13 +136,13 @@ export default function CreateClientPage() {
               <div>
                 <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight">Create New Client</h1>
                 <p className="text-blue-100/80 mt-3 text-lg font-medium max-w-xl leading-relaxed">
-                  Setup workspace, project parameters, and billing logic for your next partnership.
+                  Setup workspace, project parameters, and automated email credentials for your client.
                 </p>
               </div>
               <div className="bg-white/10 p-5 rounded-2xl border border-white/20 backdrop-blur-xl">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                  <p className="text-white text-sm font-bold uppercase tracking-widest">System Online</p>
+                  <p className="text-white text-sm font-bold uppercase tracking-widest">Email Automation Active</p>
                 </div>
               </div>
             </div>
@@ -145,13 +167,18 @@ export default function CreateClientPage() {
               </div>
             </FormSection>
 
-            {/* 2. CLIENT PORTAL ACCESS */}
-            <FormSection icon={<ShieldCheck />} title="Portal Credentials" subtitle="Login details for the client dashboard">
+            {/* 2. CLIENT PORTAL ACCESS - ADVANCED FEATURES ADDED */}
+            <FormSection icon={<ShieldCheck />} title="Portal Credentials" subtitle="Login details will be sent automatically via email">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl">
                 <InputGroup label="Login Email" name="loginEmail" value={formData.loginEmail} onChange={handleInputChange} icon={<Mail size={18}/>} placeholder="portal-access@domain.com" required />
                 
                 <div className="w-full">
-                  <label className="field-label">Temporary Password</label>
+                  <div className="flex justify-between items-center mb-0.5">
+                    <label className="field-label !mb-0">Temporary Password</label>
+                    <button type="button" onClick={generatePassword} className="text-[10px] font-black text-[#4177BC] flex items-center gap-1 hover:opacity-70 transition-opacity">
+                      <RefreshCcw size={12} /> GENERATE SECURE
+                    </button>
+                  </div>
                   <div className="relative group">
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors z-10">
                       <Lock size={18} />
@@ -174,6 +201,11 @@ export default function CreateClientPage() {
                     </button>
                   </div>
                 </div>
+              </div>
+              {/* ADVANCED HINT */}
+              <div className="mt-6 flex items-center gap-2 text-blue-500 bg-blue-50 w-fit px-4 py-2 rounded-lg">
+                <Sparkles size={16} />
+                <span className="text-[11px] font-bold uppercase tracking-wider">A Magic Login link will be included in the email</span>
               </div>
             </FormSection>
 
@@ -255,15 +287,14 @@ export default function CreateClientPage() {
                 disabled={submitting}
                 className="px-12 py-5 bg-[#EB9C2C] text-white rounded-2xl font-black shadow-lg shadow-[#EB9C2C]/30 hover:scale-105 active:scale-95 transition-all uppercase text-xs tracking-[0.1em] flex items-center gap-3"
               >
-                {submitting && <Loader2 className="animate-spin" size={18} />}
-                {submitting ? "Saving Client..." : "Create Client & Project"}
+                {submitting ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                {submitting ? "Creating Ecosystem..." : "Create Client & Notify"}
               </button>
             </div>
           </div>
         </div>
       </form>
 
-      {/* STYLES */}
       <style jsx global>{`
         .field-label { display: block; font-size: 10px; font-weight: 900; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 10px; margin-left: 4px; }
         .premium-input, .premium-select { width: 100%; padding: 1rem 1.25rem; border-radius: 20px; border: 2px solid #F1F5F9; background: #F8FAFC; font-size: 14px; font-weight: 700; color: #1E293B; transition: all 0.3s; outline: none; appearance: none; }
@@ -324,4 +355,4 @@ function InputGroup({ label, icon, ...props }: any) {
       </div>
     </div>
   );
-}  
+}
