@@ -2,24 +2,99 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Save, Shield, CreditCard, Receipt, 
-  Settings, Bell, Globe, Camera, 
-  Activity, Zap, Lock, RefreshCw, ChevronRight,
-  Eye, EyeOff, Key, Smartphone, Trash2, Download, Cloud,
-  Link as LinkIcon, Building2, CreditCard as BankIcon
+  Settings, RefreshCw, ChevronRight,
+  Eye, EyeOff, Trash2, Download, 
+  Link as LinkIcon, CreditCard as BankIcon, Lock
 } from "lucide-react";
+
+// .env থেকে বেস ইউআরএল নেওয়া হচ্ছে
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [showKey, setShowKey] = useState(false);
+  const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
 
-  const handleSave = () => {
+  const [settings, setSettings] = useState({
+    adminName: "",
+    adminEmail: "",
+    paymentType: "Full Payment",
+    dueDays: "7",
+    pushNotif: true,
+    emailNotif: true,
+    paypalLink: "",
+    stripeLink: "",
+    stripeSecret: "",
+    bankDetails: "",
+    paymentNote: "",
+    businessName: "",
+    currency: "USD",
+    address: "",
+    invPrefix: "INV-",
+    taxRate: "0",
+    footerNote: ""
+  });
+
+  // ১. ডাটা লোড করা (Fetch Settings)
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!BASE_URL) return;
+      try {
+        // এখানে সরাসরি `${BASE_URL}/settings` ব্যবহার করা হচ্ছে কারণ ব্যাকএন্ডে /api নেই
+        const res = await fetch(`${BASE_URL}/settings`);
+        if (!res.ok) throw new Error("Failed to fetch");
+        const data = await res.json();
+        if (data && Object.keys(data).length > 0) {
+          setSettings(prev => ({ ...prev, ...data }));
+        }
+      } catch (err) {
+        console.warn("Could not load settings from DB. Using defaults.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // ২. ডাটা সেভ করা (Post Settings)
+  const handleSave = async () => {
+    if (!BASE_URL) {
+      alert("API URL not found in environment variables!");
+      return;
+    }
+    
     setIsSaving(true);
-    setTimeout(() => setIsSaving(false), 2000);
+    setStatusMsg({ text: "", type: "" });
+
+    try {
+      const res = await fetch(`${BASE_URL}/settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+
+      if (res.ok) {
+        setStatusMsg({ text: "✅ System Config Synced!", type: "success" });
+        setTimeout(() => setStatusMsg({ text: "", type: "" }), 3000);
+      } else {
+        throw new Error("Failed to save");
+      }
+    } catch (err) {
+      setStatusMsg({ text: "❌ Connection Error", type: "error" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+    setSettings(prev => ({ ...prev, [name]: value }));
   };
 
   const tabs = [
@@ -29,6 +104,17 @@ export default function AdminSettingsPage() {
     { id: "security", label: "Security", icon: <Shield size={18}/> },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAFBFF]">
+        <div className="flex flex-col items-center gap-4">
+          <RefreshCw className="animate-spin text-[#4177BC]" size={40} />
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Configuration...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFBFF] p-4 md:p-8">
       <div className="max-w-[1200px] mx-auto pb-32 md:pb-10">
@@ -37,7 +123,7 @@ export default function AdminSettingsPage() {
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#4177BC] animate-pulse" />
+              <div className={`w-2.5 h-2.5 rounded-full ${isSaving ? 'bg-orange-400 animate-ping' : 'bg-[#4177BC] animate-pulse'}`} />
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#4177BC]">System Control v3.0</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tighter italic uppercase leading-none">
@@ -45,14 +131,21 @@ export default function AdminSettingsPage() {
             </h1>
           </div>
           
-          <button 
-            onClick={handleSave} 
-            disabled={isSaving} 
-            className="w-full sm:w-auto px-10 py-4 bg-[#4177BC] text-white rounded-[24px] font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-70"
-          >
-            {isSaving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
-            {isSaving ? "Syncing..." : "Save Configuration"}
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            <button 
+              onClick={handleSave} 
+              disabled={isSaving} 
+              className="w-full sm:w-auto px-10 py-4 bg-[#4177BC] text-white rounded-[24px] font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-70"
+            >
+              {isSaving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
+              {isSaving ? "Syncing..." : "Save Configuration"}
+            </button>
+            {statusMsg.text && (
+              <span className={`text-[10px] font-bold uppercase italic ${statusMsg.type === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+                {statusMsg.text}
+              </span>
+            )}
+          </div>
         </header>
 
         <div className="flex flex-col lg:flex-row gap-8">
@@ -90,26 +183,26 @@ export default function AdminSettingsPage() {
                   <div className="space-y-6">
                     <Section title="Profile Information">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <Input label="Admin Name" placeholder="e.g. John Doe" defaultValue="Admin User" />
-                        <Input label="Admin Email" type="email" placeholder="admin@domain.com" />
+                        <Input label="Admin Name" name="adminName" value={settings.adminName} onChange={handleChange} placeholder="e.g. John Doe" />
+                        <Input label="Admin Email" name="adminEmail" value={settings.adminEmail} onChange={handleChange} type="email" placeholder="admin@domain.com" />
                       </div>
                     </Section>
 
                     <Section title="System Preferences">
-                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-                          <div className="space-y-2">
-                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 italic">Default Payment Type</label>
-                             <select className="w-full p-4 md:p-5 bg-slate-50 border border-transparent rounded-[20px] text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-[#4177BC]/20 focus:ring-4 ring-[#4177BC]/5 transition-all appearance-none cursor-pointer">
-                                <option>Full Payment</option>
-                                <option>Installments</option>
-                                <option>Monthly Retainer</option>
-                             </select>
-                          </div>
-                          <Input label="Invoice Due Days" type="number" placeholder="e.g. 7" />
-                       </div>
-                       <ToggleSwitch label="Push Notifications" description="Receive real-time system alerts" checked />
-                       <hr className="my-6 border-slate-50" />
-                       <ToggleSwitch label="Email Notifications" description="System alerts via email" checked />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                           <div className="space-y-2">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 italic">Default Payment Type</label>
+                              <select name="paymentType" value={settings.paymentType} onChange={handleChange} className="w-full p-4 md:p-5 bg-slate-50 border border-transparent rounded-[20px] text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-[#4177BC]/20 focus:ring-4 ring-[#4177BC]/5 transition-all appearance-none cursor-pointer">
+                                 <option>Full Payment</option>
+                                 <option>Installments</option>
+                                 <option>Monthly Retainer</option>
+                              </select>
+                           </div>
+                           <Input label="Invoice Due Days" name="dueDays" value={settings.dueDays} onChange={handleChange} type="number" placeholder="e.g. 7" />
+                        </div>
+                        <ToggleSwitch label="Push Notifications" description="Receive real-time system alerts" isOn={settings.pushNotif} onToggle={() => setSettings({...settings, pushNotif: !settings.pushNotif})} />
+                        <hr className="my-6 border-slate-50" />
+                        <ToggleSwitch label="Email Notifications" description="System alerts via email" isOn={settings.emailNotif} onToggle={() => setSettings({...settings, emailNotif: !settings.emailNotif})} />
                     </Section>
                   </div>
                 )}
@@ -118,10 +211,10 @@ export default function AdminSettingsPage() {
                   <div className="space-y-6">
                     <Section title="Digital Payment Gateways">
                       <div className="space-y-6">
-                        <Input label="PayPal Payment Link" icon={<LinkIcon size={14}/>} placeholder="https://paypal.me/yourname" />
-                        <Input label="Stripe Payment Link" icon={<LinkIcon size={14}/>} placeholder="https://buy.stripe.com/..." />
+                        <Input label="PayPal Payment Link" name="paypalLink" value={settings.paypalLink} onChange={handleChange} icon={<LinkIcon size={14}/>} placeholder="https://paypal.me/yourname" />
+                        <Input label="Stripe Payment Link" name="stripeLink" value={settings.stripeLink} onChange={handleChange} icon={<LinkIcon size={14}/>} placeholder="https://buy.stripe.com/..." />
                         <div className="relative group">
-                          <Input label="Stripe Secret Key (Backend)" type={showKey ? "text" : "password"} placeholder="sk_test_••••••••" />
+                          <Input label="Stripe Secret Key (Backend)" name="stripeSecret" value={settings.stripeSecret} onChange={handleChange} type={showKey ? "text" : "password"} placeholder="sk_test_••••••••" />
                           <button onClick={() => setShowKey(!showKey)} className="absolute right-5 top-11 text-slate-400 hover:text-[#4177BC]">
                             {showKey ? <EyeOff size={18}/> : <Eye size={18}/>}
                           </button>
@@ -135,8 +228,8 @@ export default function AdminSettingsPage() {
                              <BankIcon className="text-[#4177BC]" size={20}/>
                              <p className="text-[10px] font-black text-[#4177BC] uppercase">Manual Bank Transfer Details</p>
                           </div>
-                          <Input label="Bank Details" isTextArea placeholder="Bank Name: &#10;Account Number: &#10;Branch / SWIFT:" />
-                          <Input label="Client Payment Note" placeholder="Instructions shown on invoice" isTextArea />
+                          <Input label="Bank Details" name="bankDetails" value={settings.bankDetails} onChange={handleChange} isTextArea placeholder="Bank Name: &#10;Account Number: &#10;Branch / SWIFT:" />
+                          <Input label="Client Payment Note" name="paymentNote" value={settings.paymentNote} onChange={handleChange} placeholder="Instructions shown on invoice" isTextArea />
                         </div>
                     </Section>
                   </div>
@@ -146,10 +239,10 @@ export default function AdminSettingsPage() {
                   <div className="space-y-6">
                     <Section title="Business Branding">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <Input label="Business / Brand Name" placeholder="Apex Digital Studio" />
-                        <Input label="Currency Code" placeholder="USD, BDT, EUR" />
+                        <Input label="Business / Brand Name" name="businessName" value={settings.businessName} onChange={handleChange} placeholder="Apex Digital Studio" />
+                        <Input label="Currency Code" name="currency" value={settings.currency} onChange={handleChange} placeholder="USD, BDT, EUR" />
                         <div className="sm:col-span-2">
-                           <Input label="Official Address" placeholder="Your business physical location" isTextArea />
+                           <Input label="Official Address" name="address" value={settings.address} onChange={handleChange} placeholder="Your business physical location" isTextArea />
                         </div>
                       </div>
                     </Section>
@@ -157,54 +250,24 @@ export default function AdminSettingsPage() {
                     <Section title="Invoice Customization">
                       <div className="space-y-6">
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <Input label="Invoice Prefix" placeholder="INV-" />
-                            <Input label="Tax Rate (%)" type="number" placeholder="15" />
+                            <Input label="Invoice Prefix" name="invPrefix" value={settings.invPrefix} onChange={handleChange} placeholder="INV-" />
+                            <Input label="Tax Rate (%)" name="taxRate" value={settings.taxRate} onChange={handleChange} type="number" placeholder="15" />
                          </div>
-                         <Input label="Footer Note" placeholder="Thank you message or payment terms" isTextArea />
+                         <Input label="Footer Note" name="footerNote" value={settings.footerNote} onChange={handleChange} placeholder="Thank you message or payment terms" isTextArea />
                       </div>
                     </Section>
                   </div>
                 )}
 
                 {activeTab === "security" && (
-                  <div className="space-y-6">
-                    <Section title="Access Protection">
-                      <div className="space-y-6">
-                        <div className="flex flex-col sm:flex-row gap-6">
-                           <div className="flex-1 p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                              <Lock size={24} className="text-[#4177BC] mb-4" />
-                              <h4 className="text-sm font-black uppercase italic mb-2">Password Management</h4>
-                              <p className="text-[10px] text-slate-400 font-bold uppercase mb-4 leading-relaxed">Regularly update your password to keep the account secure.</p>
-                              <button className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase text-[#4177BC] hover:bg-blue-50 transition-colors shadow-sm">Reset Password</button>
-                           </div>
-                           <div className="flex-1">
-                              <ToggleSwitch label="Two-Factor (2FA)" description="OTP via Authenticator" checked />
-                              <hr className="my-6 border-slate-100" />
-                              <ToggleSwitch label="Auto Logout" description="Logout after 30 mins inactivity" />
-                           </div>
+                   <div className="space-y-6">
+                      <Section title="Access Protection">
+                        <div className="p-10 bg-slate-50 rounded-[30px] border border-dashed border-slate-200 text-center">
+                            <Lock className="mx-auto text-slate-300 mb-4" size={40} />
+                            <p className="text-[10px] font-black uppercase text-slate-400 italic">Advanced Security Settings Managed by Cloud</p>
                         </div>
-                      </div>
-                    </Section>
-                    
-                    <Section title="Advanced Operations">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button className="flex items-center justify-between p-5 bg-slate-50 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 border border-transparent hover:border-slate-100 rounded-[24px] transition-all group">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-white rounded-xl shadow-sm"><Download size={18} className="text-slate-400 group-hover:text-[#4177BC]" /></div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Export All Logs</span>
-                                </div>
-                                <ChevronRight size={16} className="text-slate-300" />
-                            </button>
-                            <button className="flex items-center justify-between p-5 bg-red-50/50 hover:bg-red-50 border border-transparent rounded-[24px] transition-all group">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-white rounded-xl shadow-sm"><Trash2 size={18} className="text-red-400" /></div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-red-500">Purge Sessions</span>
-                                </div>
-                                <ChevronRight size={16} className="text-red-200" />
-                            </button>
-                        </div>
-                    </Section>
-                  </div>
+                      </Section>
+                   </div>
                 )}
 
               </motion.div>
@@ -232,26 +295,25 @@ function Section({ title, children }: any) {
   );
 }
 
-function Input({ label, isTextArea, icon, ...props }: any) {
+function Input({ label, isTextArea, icon, name, ...props }: any) {
   return (
-    <div className="space-y-2.5 group">
+    <div className="space-y-2.5 group w-full">
       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 group-focus-within:text-[#4177BC] transition-colors italic">
         {label}
       </label>
       <div className="relative flex items-center">
         {icon && <span className="absolute left-5 text-slate-400 group-focus-within:text-[#4177BC] transition-colors">{icon}</span>}
         {isTextArea ? (
-          <textarea className={`w-full p-5 ${icon ? 'pl-12' : ''} bg-slate-50 border border-transparent rounded-[24px] text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-[#4177BC]/20 focus:ring-4 ring-[#4177BC]/5 transition-all min-h-[120px]`} {...props} />
+          <textarea name={name} className={`w-full p-5 ${icon ? 'pl-12' : ''} bg-slate-50 border border-transparent rounded-[24px] text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-[#4177BC]/20 focus:ring-4 ring-[#4177BC]/5 transition-all min-h-[120px]`} {...props} />
         ) : (
-          <input className={`w-full p-5 ${icon ? 'pl-12' : ''} bg-slate-50 border border-transparent rounded-[24px] text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-[#4177BC]/20 focus:ring-4 ring-[#4177BC]/5 transition-all`} {...props} />
+          <input name={name} className={`w-full p-5 ${icon ? 'pl-12' : ''} bg-slate-50 border border-transparent rounded-[24px] text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-[#4177BC]/20 focus:ring-4 ring-[#4177BC]/5 transition-all`} {...props} />
         )}
       </div>
     </div>
   );
 }
 
-function ToggleSwitch({ label, description, checked }: any) {
-  const [isOn, setIsOn] = useState(checked || false);
+function ToggleSwitch({ label, description, isOn, onToggle }: any) {
   return (
     <div className="flex items-center justify-between gap-6 p-1">
       <div className="flex-1">
@@ -259,7 +321,7 @@ function ToggleSwitch({ label, description, checked }: any) {
         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter leading-relaxed">{description}</p>
       </div>
       <div 
-        onClick={() => setIsOn(!isOn)} 
+        onClick={onToggle} 
         className={`w-14 h-7 rounded-full p-1 transition-all duration-500 cursor-pointer relative ${isOn ? 'bg-[#4177BC]' : 'bg-slate-200'}`}
       >
         <div className={`w-5 h-5 bg-white rounded-full shadow-lg transition-all duration-500 transform ${isOn ? 'translate-x-7' : 'translate-x-0'}`} />
