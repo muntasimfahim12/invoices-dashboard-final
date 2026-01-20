@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react"; // Added useEffect
+import { useRouter, useSearchParams } from "next/navigation"; // Added useSearchParams
 import Cookies from "js-cookie";
 
 export default function LoginPage() {
@@ -10,6 +11,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const router = useRouter();
+  
+  // ✅ Extract email from URL
+  const searchParams = useSearchParams();
+  const autoEmail = searchParams.get("email") || "";
 
   // URL formatting: Automatic trailing slash removal
   const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -49,6 +54,7 @@ export default function LoginPage() {
         localStorage.setItem("vault_token", data.token);
         localStorage.setItem("user_role", data.role);
         localStorage.setItem("user_name", data.name);
+        localStorage.setItem("user_email", email || ""); // Save email for profile/portal use
 
         // 2. Cookie save for Middleware
         Cookies.set("vault_token", data.token, { expires: 7 });
@@ -86,7 +92,6 @@ export default function LoginPage() {
     };
 
     try {
-      // Fixed URL Path with explicit '/'
       const response = await fetch(`${API_URL}/invoices/send-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -131,6 +136,7 @@ export default function LoginPage() {
                 note="Client credentials are provided by admin."
                 showRegister
                 onRegister={() => setShowRegister(true)}
+                defaultValue={autoEmail} // Pass auto-filled email
               />
             </Fade>
 
@@ -183,6 +189,7 @@ export default function LoginPage() {
             note="If you don’t have credentials, contact admin."
             showRegister={role === "client"}
             onRegister={() => setShowRegister(true)}
+            defaultValue={role === "client" ? autoEmail : ""} // Mobile auto-fill
           />
 
           <button
@@ -219,7 +226,7 @@ function Fade({ visible, children }: any) {
   );
 }
 
-function Form({ title, description, onSubmit, loading, note, showRegister, onRegister }: any) {
+function Form({ title, description, onSubmit, loading, note, showRegister, onRegister, defaultValue }: any) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -230,7 +237,14 @@ function Form({ title, description, onSubmit, loading, note, showRegister, onReg
       <form onSubmit={onSubmit} className="mt-8 space-y-5">
         <div>
           <label className="text-xs font-semibold text-slate-700 uppercase">Email</label>
-          <input name="email" type="email" required placeholder="name@company.com" className="w-full mt-1 px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition shadow-sm" />
+          <input 
+            name="email" 
+            type="email" 
+            required 
+            defaultValue={defaultValue} // ✅ Auto-filled value added here
+            placeholder="name@company.com" 
+            className="w-full mt-1 px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition shadow-sm" 
+          />
         </div>
 
         <div>
