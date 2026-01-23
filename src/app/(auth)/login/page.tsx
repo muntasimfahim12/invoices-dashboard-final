@@ -66,7 +66,7 @@ export default function LoginPage() {
         if (data.role.toLowerCase() === "admin") {
           router.push("/admin"); 
         } else {
-          router.push("/portal");
+          router.push("/client");
         }
       } else {
         alert(data.error || "Login failed! Please check your credentials.");
