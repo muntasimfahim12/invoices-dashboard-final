@@ -54,7 +54,7 @@ export default function InvoiceDetails({ params }: PageProps) {
                 
                 {/* ACTIONS BAR */}
                 <div className="flex justify-between items-center mb-8">
-                    <Link href="/client" className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-900 transition-all">
+                    <Link href="/client/invoices" className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-900 transition-all">
                         <ArrowLeft size={18} /> Dashboard
                     </Link>
                     <div className="flex gap-4">
