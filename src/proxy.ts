@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+// ১. ফাংশনের নাম 'middleware' থেকে বদলে 'proxy' করতে হবে
+export function proxy(request: NextRequest) {
   const token = request.cookies.get('vault_token')?.value;
   const role = request.cookies.get('user_role')?.value;
   const { pathname } = request.nextUrl;
@@ -23,6 +24,7 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
+// ২. কনফিগারেশনে 'matcher' আগের মতোই থাকবে
 export const config = {
   matcher: ['/admin/:path*', '/client/:path*'],
 };
