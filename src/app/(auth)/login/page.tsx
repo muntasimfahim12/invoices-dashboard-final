@@ -2,17 +2,28 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect } from "react"; // Added useEffect
-import { useRouter, useSearchParams } from "next/navigation"; // Added useSearchParams
+import React, { useState, useEffect, Suspense } from "react"; // ✅ Suspense added
+import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
 
+/* ================= MAIN COMPONENT WRAPPER ================= */
+// Next.js 16-এ useSearchParams ব্যবহার করলে Suspense দিয়ে র‍্যাপ করা বাধ্যতামূলক।
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-100 flex items-center justify-center">Loading...</div>}>
+      <LoginFormContent />
+    </Suspense>
+  );
+}
+
+/* ================= LOGIN FORM CONTENT ================= */
+function LoginFormContent() {
   const [role, setRole] = useState<"client" | "admin">("client");
   const [loading, setLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const router = useRouter();
   
-  // ✅ Extract email from URL
+  // ✅ Extract email from URL (This needs Suspense)
   const searchParams = useSearchParams();
   const autoEmail = searchParams.get("email") || "";
 
@@ -20,8 +31,7 @@ export default function LoginPage() {
   const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
   const API_URL = rawUrl.replace(/\/$/, "");
 
-  /* ================= LOGIN LOGIC ================= */
-
+  /* ================= LOGIN LOGIC (UNCHANGED) ================= */
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>,
     currentRole: "client" | "admin"
@@ -40,7 +50,6 @@ export default function LoginPage() {
     };
 
     try {
-      // Fixed URL Path with explicit '/'
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -50,19 +59,16 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // 1. Session data save
         localStorage.setItem("vault_token", data.token);
         localStorage.setItem("user_role", data.role);
         localStorage.setItem("user_name", data.name);
-        localStorage.setItem("user_email", email || ""); // Save email for profile/portal use
+        localStorage.setItem("user_email", email || "");
 
-        // 2. Cookie save for Middleware
         Cookies.set("vault_token", data.token, { expires: 7 });
         Cookies.set("user_role", data.role, { expires: 7 });
 
         console.log("Login Success! Role:", data.role);
 
-        // 3. Redirect Logic
         if (data.role.toLowerCase() === "admin") {
           router.push("/admin"); 
         } else {
@@ -79,8 +85,7 @@ export default function LoginPage() {
     }
   };
 
-  /* ================= REGISTER REQUEST ================= */
-
+  /* ================= REGISTER REQUEST (UNCHANGED) ================= */
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -136,7 +141,7 @@ export default function LoginPage() {
                 note="Client credentials are provided by admin."
                 showRegister
                 onRegister={() => setShowRegister(true)}
-                defaultValue={autoEmail} // Pass auto-filled email
+                defaultValue={autoEmail} 
               />
             </Fade>
 
@@ -189,7 +194,7 @@ export default function LoginPage() {
             note="If you don’t have credentials, contact admin."
             showRegister={role === "client"}
             onRegister={() => setShowRegister(true)}
-            defaultValue={role === "client" ? autoEmail : ""} // Mobile auto-fill
+            defaultValue={role === "client" ? autoEmail : ""}
           />
 
           <button
@@ -213,7 +218,7 @@ export default function LoginPage() {
   );
 }
 
-/* ================= REUSABLE COMPONENTS ================= */
+/* ================= REUSABLE COMPONENTS (UNCHANGED) ================= */
 
 function Fade({ visible, children }: any) {
   return (
@@ -241,7 +246,7 @@ function Form({ title, description, onSubmit, loading, note, showRegister, onReg
             name="email" 
             type="email" 
             required 
-            defaultValue={defaultValue} // ✅ Auto-filled value added here
+            defaultValue={defaultValue} 
             placeholder="name@company.com" 
             className="w-full mt-1 px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition shadow-sm" 
           />
