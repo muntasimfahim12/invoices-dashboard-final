@@ -43,26 +43,29 @@ export default function InvoicesPage() {
     const [filterStatus, setFilterStatus] = useState<string>("All");
     const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
     
+    // --- Safe State Initialization ---
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<string>("client");
-    const [isClient, setIsClient] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        setIsClient(true);
+        // এই useEffect নিশ্চিত করে যে কোডটি শুধু ব্রাউজারে রান হচ্ছে
+        setMounted(true);
         const storedEmail = localStorage.getItem("user_email");
         const storedRole = localStorage.getItem("user_role") || "client";
+        
         if (storedEmail) setUserEmail(storedEmail);
         setUserRole(storedRole);
     }, []);
 
     useEffect(() => {
-        if (!isClient || !userEmail) return;
+        // mounted এবং userEmail নিশ্চিত হওয়ার পরই ডেটা ফেচ করবে
+        if (!mounted || !userEmail) return;
 
         const controller = new AbortController();
         const fetchInvoices = async () => {
             try {
                 setLoading(true);
-                // Backend expects: email, role, search, status
                 const response = await axios.get(`${API_BASE}/invoices`, {
                     params: {
                         email: userEmail,
@@ -84,9 +87,9 @@ export default function InvoicesPage() {
 
         fetchInvoices();
         return () => controller.abort();
-    }, [isClient, userEmail, userRole, searchTerm, filterStatus]);
+    }, [mounted, userEmail, userRole, searchTerm, filterStatus]);
 
-    // Download PDF (Matches Route 5: /:id/download)
+    // Download PDF
     const handleDownload = async (id: string, invoiceId: string) => {
         try {
             setActionLoading(id);
@@ -107,30 +110,28 @@ export default function InvoicesPage() {
         }
     };
 
-    // Share/Email (Matches Route 4: /send-email)
+    // Share/Email
     const handleShare = async (inv: Invoice) => {
         try {
             setActionLoading(inv._id);
-            // Backend endpoint is /send-email and expects the invoice object
             await axios.post(`${API_BASE}/invoices/send-email`, inv);
             alert(`✅ Invoice successfully sent to ${inv.clientEmail || inv.clientName}`);
         } catch (error) {
-            alert("❌ Failed to send email. Check if your SMTP is configured.");
+            alert("❌ Failed to send email.");
         } finally {
             setActionLoading(null);
         }
     };
 
-    // Bulk Delete (Matches Route 7: DELETE /:id)
+    // Bulk Delete
     const handleBulkDelete = async () => {
         if (!window.confirm(`Delete ${selectedInvoices.length} selected invoices?`)) return;
         try {
             setActionLoading("bulk");
-            // Backend doesn't have a bulk route, so we process one by one to ensure cleanup
             await Promise.all(selectedInvoices.map(id => axios.delete(`${API_BASE}/invoices/${id}`)));
             setInvoices(prev => prev.filter(inv => !selectedInvoices.includes(inv._id)));
             setSelectedInvoices([]);
-            alert("🗑️ Invoices deleted from all records.");
+            alert("🗑️ Invoices deleted.");
         } catch (error) {
             alert("Delete failed.");
         } finally {
@@ -150,7 +151,8 @@ export default function InvoicesPage() {
         setSelectedInvoices(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
-    if (!isClient) return null;
+    // Prerendering এর সময় কিছুই রেন্ডার করবে না যাতে localStorage এরর না আসে
+    if (!mounted) return null;
 
     return (
         <div className="space-y-8 pb-10 min-h-screen px-4 md:px-0">
