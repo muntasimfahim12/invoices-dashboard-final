@@ -12,7 +12,6 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 
-// TypeScript Interfaces
 interface Client {
     name: string;
     email?: string;
@@ -29,7 +28,6 @@ interface Invoice {
     status: 'Paid' | 'Pending' | 'Overdue' | 'Partial' | 'Unpaid';
     currency: string;
     grandTotal: number;
-    totalAmount?: number;
     receivedAmount: number;
     remainingDue: number;
     items?: any[];
@@ -45,12 +43,10 @@ export default function InvoicesPage() {
     const [filterStatus, setFilterStatus] = useState<string>("All");
     const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
     
-    // Auth States
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<string>("client");
     const [isClient, setIsClient] = useState(false);
 
-    // Initial Load: Auth Data Fetching
     useEffect(() => {
         setIsClient(true);
         const storedEmail = localStorage.getItem("user_email");
@@ -59,7 +55,6 @@ export default function InvoicesPage() {
         setUserRole(storedRole);
     }, []);
 
-    // Fetch Invoices Logic
     useEffect(() => {
         if (!isClient || !userEmail) return;
 
@@ -67,19 +62,20 @@ export default function InvoicesPage() {
         const fetchInvoices = async () => {
             try {
                 setLoading(true);
+                // Backend expects: email, role, search, status
                 const response = await axios.get(`${API_BASE}/invoices`, {
                     params: {
                         email: userEmail,
                         role: userRole,
                         search: searchTerm,
-                        status: filterStatus
+                        status: filterStatus === "All" ? "" : filterStatus
                     },
                     signal: controller.signal
                 });
-                setInvoices(response.data);
+                setInvoices(Array.isArray(response.data) ? response.data : []);
             } catch (error: any) {
                 if (error.name !== "CanceledError") {
-                    console.error("Error fetching invoices:", error);
+                    console.error("Fetch Error:", error);
                 }
             } finally {
                 setLoading(false);
@@ -90,7 +86,7 @@ export default function InvoicesPage() {
         return () => controller.abort();
     }, [isClient, userEmail, userRole, searchTerm, filterStatus]);
 
-    // Download Handler
+    // Download PDF (Matches Route 5: /:id/download)
     const handleDownload = async (id: string, invoiceId: string) => {
         try {
             setActionLoading(id);
@@ -111,52 +107,44 @@ export default function InvoicesPage() {
         }
     };
 
-    // Share/Email Handler
+    // Share/Email (Matches Route 4: /send-email)
     const handleShare = async (inv: Invoice) => {
         try {
             setActionLoading(inv._id);
+            // Backend endpoint is /send-email and expects the invoice object
             await axios.post(`${API_BASE}/invoices/send-email`, inv);
-            alert(`✅ Invoice successfully sent to ${inv.clientName || inv.client?.name}`);
+            alert(`✅ Invoice successfully sent to ${inv.clientEmail || inv.clientName}`);
         } catch (error) {
-            alert("❌ Failed to send email.");
+            alert("❌ Failed to send email. Check if your SMTP is configured.");
         } finally {
             setActionLoading(null);
         }
     };
 
-    // Bulk Delete
+    // Bulk Delete (Matches Route 7: DELETE /:id)
     const handleBulkDelete = async () => {
         if (!window.confirm(`Delete ${selectedInvoices.length} selected invoices?`)) return;
         try {
             setActionLoading("bulk");
+            // Backend doesn't have a bulk route, so we process one by one to ensure cleanup
             await Promise.all(selectedInvoices.map(id => axios.delete(`${API_BASE}/invoices/${id}`)));
             setInvoices(prev => prev.filter(inv => !selectedInvoices.includes(inv._id)));
             setSelectedInvoices([]);
+            alert("🗑️ Invoices deleted from all records.");
         } catch (error) {
-            alert("Bulk delete failed.");
+            alert("Delete failed.");
         } finally {
             setActionLoading(null);
         }
     };
 
-    // Stats Calculation
     const stats = useMemo(() => {
-        const total = invoices.reduce((acc, curr) => acc + (curr.totalAmount || curr.grandTotal || 0), 0);
+        const total = invoices.reduce((acc, curr) => acc + (curr.grandTotal || 0), 0);
         const paid = invoices.reduce((acc, curr) => acc + (Number(curr.receivedAmount) || 0), 0);
         const pending = total - paid;
         const overdueCount = invoices.filter(inv => inv.status === 'Overdue').length;
         return { total, paid, pending, overdueCount };
     }, [invoices]);
-
-    const filteredInvoices = invoices.filter(inv => {
-        const matchesSearch = 
-            inv.invoiceId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            inv.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            inv.client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            inv.projectTitle?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter = filterStatus === "All" || inv.status === filterStatus;
-        return matchesSearch && matchesFilter;
-    });
 
     const toggleSelect = (id: string) => {
         setSelectedInvoices(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -236,8 +224,8 @@ export default function InvoicesPage() {
                         <thead className="bg-white border-b border-slate-50 text-[9px] font-black uppercase text-slate-400 tracking-widest">
                             <tr>
                                 <th className="pl-8 py-5 w-10">
-                                    <button onClick={() => setSelectedInvoices(selectedInvoices.length === filteredInvoices.length ? [] : filteredInvoices.map(i => i._id))}>
-                                        {selectedInvoices.length === filteredInvoices.length && filteredInvoices.length > 0 ? <CheckSquare size={16} className="text-[#4177BC]" /> : <Square size={16} className="text-slate-300" />}
+                                    <button onClick={() => setSelectedInvoices(selectedInvoices.length === invoices.length ? [] : invoices.map(i => i._id))}>
+                                        {selectedInvoices.length === invoices.length && invoices.length > 0 ? <CheckSquare size={16} className="text-[#4177BC]" /> : <Square size={16} className="text-slate-300" />}
                                     </button>
                                 </th>
                                 <th className="px-4 py-5">Client & ID</th>
@@ -250,10 +238,10 @@ export default function InvoicesPage() {
                         <tbody className="divide-y divide-slate-50 font-bold text-sm">
                             {loading ? (
                                 <tr><td colSpan={6} className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-[#4177BC]" size={40} /></td></tr>
-                            ) : filteredInvoices.length === 0 ? (
+                            ) : invoices.length === 0 ? (
                                 <tr><td colSpan={6} className="p-20 text-center text-slate-400 uppercase text-[10px] font-black tracking-widest">No invoices found</td></tr>
-                            ) : filteredInvoices.map((inv) => {
-                                const total = inv.totalAmount || inv.grandTotal || 0;
+                            ) : invoices.map((inv) => {
+                                const total = inv.grandTotal || 0;
                                 const progress = Math.min((inv.receivedAmount / total) * 100, 100) || 0;
 
                                 return (
@@ -323,7 +311,6 @@ export default function InvoicesPage() {
     );
 }
 
-// Sub-components
 function MiniStat({ label, value, color }: { label: string, value: string, color: string }) {
     return (
         <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden">
