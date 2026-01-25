@@ -9,6 +9,30 @@ import {
     CalendarClock, Banknote, UserPlus, Hash, Save,
     RefreshCw, Loader2, Globe, FileText, CreditCard,
     Info, AlertCircle, ChevronDown
+} from "lucide-react"; // Note: fix the import to "lucide-react" if it was a typo
+import {
+    LucideProps,
+    Plus as PlusIcon,
+    Trash2 as TrashIcon,
+    ArrowLeft as ArrowIcon,
+    Building2 as BuildingIcon,
+    Download as DownloadIcon,
+    Send as SendIcon,
+    Briefcase as BriefcaseIcon,
+    Mail as MailIcon,
+    CalendarClock as CalendarIcon,
+    Banknote as BanknoteIcon,
+    UserPlus as UserIcon,
+    Hash as HashIcon,
+    Save as SaveIcon,
+    RefreshCw as RefreshIcon,
+    Loader2 as LoaderIcon,
+    Globe as GlobeIcon,
+    FileText as FileIcon,
+    CreditCard as CreditIcon,
+    Info as InfoIcon,
+    AlertCircle as AlertIcon,
+    ChevronDown as ChevronIcon
 } from "lucide-react";
 import Link from "next/link";
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
@@ -17,7 +41,7 @@ import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-// --- PDF STYLES (Keeping your structure) ---
+// --- PDF STYLES (Keeping your structure 100%) ---
 const pdfStyles = StyleSheet.create({
     page: { padding: 40, fontSize: 10, backgroundColor: '#FFFFFF', fontFamily: 'Helvetica' },
     header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30, borderBottom: 2, borderBottomColor: '#4177BC', paddingBottom: 10 },
@@ -48,9 +72,9 @@ export default function UltimateDigitalLedger() {
     const [loading, setLoading] = useState(false);
     const [emailSending, setEmailSending] = useState(false);
     const router = useRouter();
-    const adminEmail = localStorage.getItem("user_email"); // or from auth state
 
-    // --- STATE MANAGEMENT (1000% SAME LOGIC) ---
+    // --- STATE MANAGEMENT ---
+    const [adminEmail, setAdminEmail] = useState(""); // Initialize empty
     const [projectTitle, setProjectTitle] = useState("");
     const [clientName, setClientName] = useState("");
     const [clientEmail, setClientEmail] = useState("");
@@ -72,6 +96,10 @@ export default function UltimateDigitalLedger() {
         setMounted(true);
         setInvoiceId("INV-" + Math.floor(100000 + Math.random() * 900000));
         setInvoiceDate(new Date().toLocaleDateString('en-GB'));
+
+        // Fix: Use localStorage inside useEffect to avoid Build error
+        const userEmail = localStorage.getItem("user_email");
+        if (userEmail) setAdminEmail(userEmail);
 
         const savedData = localStorage.getItem('ledger_settings');
         if (savedData) {
@@ -139,7 +167,6 @@ export default function UltimateDigitalLedger() {
 
     if (!mounted) return null;
 
-    // (InvoicePDF component remains the same for consistency)
     const InvoicePDF = () => (
         <Document>
             <Page size="A4" style={pdfStyles.page}>
@@ -214,19 +241,19 @@ export default function UltimateDigitalLedger() {
                             Send to Client
                         </button>
 
-                        <PDFDownloadLink document={<InvoicePDF />} fileName={`${invoiceId}.pdf`} className="flex items-center gap-2 px-6 py-2.5 bg-[#4177BC] text-white rounded-xl font-bold text-[11px] uppercase tracking-wider hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-[#4177BC]/25">
-                            {({ loading }) => loading ? "Building..." : <><Download size={14} /> Download</>}
-                        </PDFDownloadLink>
+                        {/* PDF link only after mounted to avoid build error */}
+                        {mounted && (
+                            <PDFDownloadLink document={<InvoicePDF />} fileName={`${invoiceId}.pdf`} className="flex items-center gap-2 px-6 py-2.5 bg-[#4177BC] text-white rounded-xl font-bold text-[11px] uppercase tracking-wider hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-[#4177BC]/25">
+                                {({ loading }) => loading ? "Building..." : <><Download size={14} /> Download</>}
+                            </PDFDownloadLink>
+                        )}
                     </div>
                 </div>
             </nav>
 
             <main className="max-w-[1440px] mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-                {/* --- LEFT COLUMN: INPUTS --- */}
+                {/* --- LEFT COLUMN: INPUTS (Design preserved 100%) --- */}
                 <div className="lg:col-span-5 space-y-6">
-
-                    {/* Brand & Identity */}
                     <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><Briefcase size={14} /> Your Identity</h2>
@@ -241,17 +268,14 @@ export default function UltimateDigitalLedger() {
                         </div>
                     </div>
 
-                    {/* Client & Logistics */}
                     <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm space-y-4">
                         <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#4177BC] flex items-center gap-2"><UserPlus size={14} /> Client & Logistics</h2>
                         <div className="grid grid-cols-1 gap-3">
                             <input type="text" placeholder="Project or Contract Title" className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-[#4177BC]/30 outline-none transition-all text-sm font-bold text-slate-700" value={projectTitle} onChange={e => setProjectTitle(e.target.value)} />
-
                             <div className="grid grid-cols-2 gap-3">
                                 <input type="text" placeholder="Client Name" value={clientName} onChange={e => setClientName(e.target.value)} className="px-4 py-3.5 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-[#4177BC]/30 outline-none text-sm" />
                                 <input type="email" placeholder="Client Email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} className="px-4 py-3.5 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-[#4177BC]/30 outline-none text-sm" />
                             </div>
-
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="relative">
                                     <span className="absolute left-4 top-3.5 text-slate-400"><CalendarClock size={16} /></span>
@@ -270,7 +294,6 @@ export default function UltimateDigitalLedger() {
                         </div>
                     </div>
 
-                    {/* Financial Modifiers */}
                     <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm">
                         <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-1">
@@ -288,7 +311,6 @@ export default function UltimateDigitalLedger() {
                         </div>
                     </div>
 
-                    {/* Line Items */}
                     <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm space-y-4">
                         <div className="flex justify-between items-center">
                             <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Line Items</h2>
@@ -317,16 +339,14 @@ export default function UltimateDigitalLedger() {
                     </div>
                 </div>
 
-                {/* --- RIGHT COLUMN: LIVE PREVIEW --- */}
+                {/* --- RIGHT COLUMN: LIVE PREVIEW (Design preserved 100%) --- */}
                 <div className="lg:col-span-7">
                     <div className="sticky top-24 bg-white border border-slate-200 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 overflow-hidden transform transition-all">
-                        {/* Status Ribbon */}
                         <div className={`absolute top-10 -right-12 rotate-45 px-12 py-1.5 text-[10px] font-black tracking-[0.2em] text-white shadow-lg z-20
                             ${status === 'PAID' ? 'bg-emerald-500' : status === 'PARTIAL' ? 'bg-orange-500' : 'bg-[#4177BC]'}`}>
                             {status}
                         </div>
 
-                        {/* Invoice Header */}
                         <div className="p-10 pb-0">
                             <div className="flex justify-between items-start mb-12">
                                 <div className="flex items-center gap-5">
@@ -358,7 +378,6 @@ export default function UltimateDigitalLedger() {
                                 </div>
                             </div>
 
-                            {/* Line Items Table Preview */}
                             <div className="space-y-1">
                                 <div className="flex text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 mb-2">
                                     <span className="flex-1">Description</span>
@@ -383,7 +402,6 @@ export default function UltimateDigitalLedger() {
                             </div>
                         </div>
 
-                        {/* Totals Section */}
                         <div className="p-10 pt-0 bg-white">
                             <div className="mt-8 pt-8 border-t-2 border-slate-900 flex justify-between items-end">
                                 <div className="max-w-[240px]">
@@ -413,7 +431,6 @@ export default function UltimateDigitalLedger() {
                                 </div>
                             </div>
 
-                            {/* Footer Note */}
                             <div className="mt-10 flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-tighter justify-center">
                                 <Info size={12} /> generated via LedgerPro Digital Systems - {invoiceDate}
                             </div>
