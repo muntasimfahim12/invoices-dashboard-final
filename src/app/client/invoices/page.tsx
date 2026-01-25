@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
@@ -15,21 +16,30 @@ export default function ClientInvoiceList() {
     const [invoices, setInvoices] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+const clientEmail = localStorage.getItem("user_email"); // or from auth state
 
-    useEffect(() => {
-        const fetchInvoices = async () => {
-            try {
-                // Real-world logic a clientId session theke asbe
-                const response = await axios.get(`${API_BASE}/invoices`); 
-                setInvoices(response.data);
-            } catch (error) {
-                console.error("Error fetching invoices:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchInvoices();
-    }, []);
+useEffect(() => {
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE}/invoices`, {
+        params: {
+          email: clientEmail,
+          search: searchTerm,
+          status
+        }
+      });
+      setInvoices(response.data);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (clientEmail) fetchInvoices();
+}, [clientEmail, searchTerm, status]);
+
 
     // Summary Calculations
     const totalDue = invoices.reduce((acc, inv) => acc + (Number(inv.remainingDue) || 0), 0);

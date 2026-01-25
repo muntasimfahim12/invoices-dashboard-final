@@ -3,10 +3,10 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { 
-    Plus, Trash2, ArrowLeft, Building2, 
-    Download, Send, Briefcase, Mail, 
-    CalendarClock, Banknote, UserPlus, Hash, Save, 
+import {
+    Plus, Trash2, ArrowLeft, Building2,
+    Download, Send, Briefcase, Mail,
+    CalendarClock, Banknote, UserPlus, Hash, Save,
     RefreshCw, Loader2, Globe, FileText, CreditCard,
     Info, AlertCircle, ChevronDown
 } from "lucide-react";
@@ -48,6 +48,7 @@ export default function UltimateDigitalLedger() {
     const [loading, setLoading] = useState(false);
     const [emailSending, setEmailSending] = useState(false);
     const router = useRouter();
+    const adminEmail = localStorage.getItem("user_email"); // or from auth state
 
     // --- STATE MANAGEMENT (1000% SAME LOGIC) ---
     const [projectTitle, setProjectTitle] = useState("");
@@ -71,7 +72,7 @@ export default function UltimateDigitalLedger() {
         setMounted(true);
         setInvoiceId("INV-" + Math.floor(100000 + Math.random() * 900000));
         setInvoiceDate(new Date().toLocaleDateString('en-GB'));
-        
+
         const savedData = localStorage.getItem('ledger_settings');
         if (savedData) {
             const parsed = JSON.parse(savedData);
@@ -105,6 +106,7 @@ export default function UltimateDigitalLedger() {
         invoiceId, projectTitle, clientName, clientEmail, clientAddress,
         freelancerName, freelancerAddress, items, subtotal, taxRate,
         taxAmount, discount, grandTotal, receivedAmount, remainingDue,
+        adminEmail,
         status, dueDate, currency, bankDetails, createdAt: new Date()
     });
 
@@ -200,15 +202,15 @@ export default function UltimateDigitalLedger() {
                             <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Invoice Builder v2.1</span>
                         </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-3">
                         <button onClick={handleSaveInvoice} disabled={loading} className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-[11px] uppercase tracking-wider hover:shadow-xl hover:shadow-slate-900/20 transition-all disabled:opacity-50">
-                            {loading ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} 
+                            {loading ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                             {loading ? "Saving..." : "Save Draft"}
                         </button>
-                        
+
                         <button onClick={handleSendEmail} disabled={emailSending} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-[11px] uppercase tracking-wider hover:bg-slate-50 transition-all disabled:opacity-50">
-                            {emailSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} 
+                            {emailSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                             Send to Client
                         </button>
 
@@ -220,19 +222,19 @@ export default function UltimateDigitalLedger() {
             </nav>
 
             <main className="max-w-[1440px] mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
+
                 {/* --- LEFT COLUMN: INPUTS --- */}
                 <div className="lg:col-span-5 space-y-6">
-                    
+
                     {/* Brand & Identity */}
                     <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm space-y-4">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><Briefcase size={14}/> Your Identity</h2>
+                            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><Briefcase size={14} /> Your Identity</h2>
                             <span className="h-1.5 w-1.5 rounded-full bg-[#4177BC]"></span>
                         </div>
                         <div className="space-y-3">
                             <div className="relative">
-                                <span className="absolute left-4 top-4 text-slate-400"><FileText size={16}/></span>
+                                <span className="absolute left-4 top-4 text-slate-400"><FileText size={16} /></span>
                                 <input type="text" placeholder="Your Business/Legal Name" className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-[#4177BC]/30 focus:ring-4 ring-[#4177BC]/5 outline-none transition-all text-sm font-medium" value={freelancerName} onChange={e => setFreelancerName(e.target.value)} />
                             </div>
                             <textarea placeholder="Business Address, Contact, Tax ID" className="w-full p-4 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-[#4177BC]/30 focus:ring-4 ring-[#4177BC]/5 outline-none transition-all text-sm min-h-[80px]" value={freelancerAddress} onChange={e => setFreelancerAddress(e.target.value)} />
@@ -241,10 +243,10 @@ export default function UltimateDigitalLedger() {
 
                     {/* Client & Logistics */}
                     <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm space-y-4">
-                        <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#4177BC] flex items-center gap-2"><UserPlus size={14}/> Client & Logistics</h2>
+                        <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#4177BC] flex items-center gap-2"><UserPlus size={14} /> Client & Logistics</h2>
                         <div className="grid grid-cols-1 gap-3">
                             <input type="text" placeholder="Project or Contract Title" className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-[#4177BC]/30 outline-none transition-all text-sm font-bold text-slate-700" value={projectTitle} onChange={e => setProjectTitle(e.target.value)} />
-                            
+
                             <div className="grid grid-cols-2 gap-3">
                                 <input type="text" placeholder="Client Name" value={clientName} onChange={e => setClientName(e.target.value)} className="px-4 py-3.5 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-[#4177BC]/30 outline-none text-sm" />
                                 <input type="email" placeholder="Client Email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} className="px-4 py-3.5 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-[#4177BC]/30 outline-none text-sm" />
@@ -252,11 +254,11 @@ export default function UltimateDigitalLedger() {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="relative">
-                                    <span className="absolute left-4 top-3.5 text-slate-400"><CalendarClock size={16}/></span>
+                                    <span className="absolute left-4 top-3.5 text-slate-400"><CalendarClock size={16} /></span>
                                     <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-[#4177BC]/30 outline-none text-sm" title="Due Date" />
                                 </div>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-3.5 text-slate-400"><Globe size={16}/></span>
+                                    <span className="absolute left-4 top-3.5 text-slate-400"><Globe size={16} /></span>
                                     <select value={currency} onChange={e => setCurrency(e.target.value)} className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-[#4177BC]/30 outline-none text-sm appearance-none">
                                         <option value="USD">USD ($)</option>
                                         <option value="EUR">EUR (€)</option>
@@ -273,15 +275,15 @@ export default function UltimateDigitalLedger() {
                         <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black uppercase text-slate-400 ml-2">Tax %</label>
-                                <input type="number" value={taxRate} onChange={e=>setTaxRate(parseFloat(e.target.value)||0)} className="w-full p-4 rounded-2xl bg-slate-50 font-bold text-center outline-none focus:bg-white border border-transparent focus:border-slate-200" />
+                                <input type="number" value={taxRate} onChange={e => setTaxRate(parseFloat(e.target.value) || 0)} className="w-full p-4 rounded-2xl bg-slate-50 font-bold text-center outline-none focus:bg-white border border-transparent focus:border-slate-200" />
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black uppercase text-slate-400 ml-2">Discount</label>
-                                <input type="number" value={discount} onChange={e=>setDiscount(parseFloat(e.target.value)||0)} className="w-full p-4 rounded-2xl bg-slate-50 font-bold text-center outline-none focus:bg-white border border-transparent focus:border-slate-200" />
+                                <input type="number" value={discount} onChange={e => setDiscount(parseFloat(e.target.value) || 0)} className="w-full p-4 rounded-2xl bg-slate-50 font-bold text-center outline-none focus:bg-white border border-transparent focus:border-slate-200" />
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black uppercase text-emerald-600 ml-2">Already Paid</label>
-                                <input type="number" value={receivedAmount} onChange={e=>setReceivedAmount(parseFloat(e.target.value)||0)} className="w-full p-4 rounded-2xl bg-emerald-50 text-emerald-700 font-bold text-center outline-none border border-emerald-100" />
+                                <input type="number" value={receivedAmount} onChange={e => setReceivedAmount(parseFloat(e.target.value) || 0)} className="w-full p-4 rounded-2xl bg-emerald-50 text-emerald-700 font-bold text-center outline-none border border-emerald-100" />
                             </div>
                         </div>
                     </div>
@@ -290,22 +292,22 @@ export default function UltimateDigitalLedger() {
                     <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm space-y-4">
                         <div className="flex justify-between items-center">
                             <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Line Items</h2>
-                            <button onClick={addItem} className="h-8 w-8 bg-[#4177BC]/10 text-[#4177BC] rounded-full flex items-center justify-center hover:bg-[#4177BC] hover:text-white transition-all shadow-sm"><Plus size={16}/></button>
+                            <button onClick={addItem} className="h-8 w-8 bg-[#4177BC]/10 text-[#4177BC] rounded-full flex items-center justify-center hover:bg-[#4177BC] hover:text-white transition-all shadow-sm"><Plus size={16} /></button>
                         </div>
                         <div className="space-y-3">
                             {items.map(item => (
                                 <div key={item.id} className="group p-4 bg-slate-50 rounded-2xl border border-transparent hover:border-slate-200 hover:bg-white transition-all relative">
-                                    <button onClick={()=>removeItem(item.id)} className="absolute -top-2 -right-2 h-6 w-6 bg-white shadow-md text-rose-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10"><Trash2 size={12}/></button>
+                                    <button onClick={() => removeItem(item.id)} className="absolute -top-2 -right-2 h-6 w-6 bg-white shadow-md text-rose-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10"><Trash2 size={12} /></button>
                                     <div className="grid gap-3">
-                                        <input placeholder="Item or Service Name (e.g. Web Design)" value={item.name} onChange={e=>updateItem(item.id,'name',e.target.value)} className="w-full bg-transparent font-bold text-sm outline-none" />
+                                        <input placeholder="Item or Service Name (e.g. Web Design)" value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} className="w-full bg-transparent font-bold text-sm outline-none" />
                                         <div className="flex gap-4">
                                             <div className="flex items-center bg-white px-3 py-1.5 rounded-xl border border-slate-100">
                                                 <span className="text-[10px] font-bold text-slate-400 mr-2 uppercase">Qty</span>
-                                                <input type="number" value={item.qty} onChange={e=>updateItem(item.id,'qty',e.target.value)} className="w-12 bg-transparent font-bold text-sm outline-none" />
+                                                <input type="number" value={item.qty} onChange={e => updateItem(item.id, 'qty', e.target.value)} className="w-12 bg-transparent font-bold text-sm outline-none" />
                                             </div>
                                             <div className="flex flex-1 items-center bg-white px-3 py-1.5 rounded-xl border border-slate-100">
                                                 <span className="text-[10px] font-bold text-slate-400 mr-2 uppercase">Price</span>
-                                                <input type="number" value={item.price} onChange={e=>updateItem(item.id,'price',e.target.value)} className="w-full bg-transparent font-bold text-sm outline-none text-right" />
+                                                <input type="number" value={item.price} onChange={e => updateItem(item.id, 'price', e.target.value)} className="w-full bg-transparent font-bold text-sm outline-none text-right" />
                                             </div>
                                         </div>
                                     </div>
@@ -329,7 +331,7 @@ export default function UltimateDigitalLedger() {
                             <div className="flex justify-between items-start mb-12">
                                 <div className="flex items-center gap-5">
                                     <div className="h-16 w-16 bg-[#4177BC] rounded-[1.5rem] flex items-center justify-center text-white shadow-xl shadow-[#4177BC]/30">
-                                        <Building2 size={32}/>
+                                        <Building2 size={32} />
                                     </div>
                                     <div>
                                         <h2 className="text-2xl font-black tracking-tighter uppercase leading-none text-slate-900">{freelancerName || "Your Name"}</h2>
@@ -410,10 +412,10 @@ export default function UltimateDigitalLedger() {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {/* Footer Note */}
                             <div className="mt-10 flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-tighter justify-center">
-                                <Info size={12}/> generated via LedgerPro Digital Systems - {invoiceDate}
+                                <Info size={12} /> generated via LedgerPro Digital Systems - {invoiceDate}
                             </div>
                         </div>
                     </div>

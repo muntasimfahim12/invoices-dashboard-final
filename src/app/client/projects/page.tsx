@@ -2,8 +2,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import React, { useState, useEffect } from "react";
-import { 
-    LayoutGrid, List, Search, ExternalLink, 
+import {
+    LayoutGrid, List, Search, ExternalLink,
     Calendar, CheckCircle2, Clock, AlertCircle,
     Layers, User, DollarSign, Loader2, TrendingUp, BarChart3
 } from "lucide-react";
@@ -32,17 +32,22 @@ export default function ClientProjectsPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchTerm, setSearchTerm] = useState("");
+    const clientEmail = localStorage.getItem("user_email"); // or from auth state
 
     useEffect(() => {
         const fetchProjects = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`${API_BASE}/projects`);
-                // ব্যাকএন্ডে যদি টাইটেল 'name' হিসেবে থাকে তবে সেটাকে 'title' এ ম্যাপ করা
+                const response = await axios.get(
+                    `${API_BASE}/projects`,
+                    { params: { email: clientEmail } }
+                );
+
                 const mappedData = response.data.map((p: any) => ({
                     ...p,
                     title: p.title || p.name || "Untitled Project"
                 }));
+
                 setProjects(Array.isArray(mappedData) ? mappedData : []);
             } catch (error) {
                 console.error("Error fetching projects:", error);
@@ -50,10 +55,12 @@ export default function ClientProjectsPage() {
                 setLoading(false);
             }
         };
-        fetchProjects();
-    }, []);
 
-    const filteredProjects = projects.filter(p => 
+        if (clientEmail) fetchProjects();
+    }, [clientEmail]);
+
+
+    const filteredProjects = projects.filter(p =>
         p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.status.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -99,18 +106,18 @@ export default function ClientProjectsPage() {
 
             {/* Quick Stats Summary */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <QuickStat label="Total" value={projects.length} icon={<Layers size={16}/>} color="blue" />
-                <QuickStat label="Active" value={inProgressCount} icon={<Clock size={16}/>} color="amber" />
-                <QuickStat label="Done" value={completedCount} icon={<CheckCircle2 size={16}/>} color="emerald" />
-                <QuickStat label="Budget" value={`$${projects.reduce((a, b) => a + (b.budget || 0), 0).toLocaleString()}`} icon={<DollarSign size={16}/>} color="slate" />
+                <QuickStat label="Total" value={projects.length} icon={<Layers size={16} />} color="blue" />
+                <QuickStat label="Active" value={inProgressCount} icon={<Clock size={16} />} color="amber" />
+                <QuickStat label="Done" value={completedCount} icon={<CheckCircle2 size={16} />} color="emerald" />
+                <QuickStat label="Budget" value={`$${projects.reduce((a, b) => a + (b.budget || 0), 0).toLocaleString()}`} icon={<DollarSign size={16} />} color="slate" />
             </div>
 
             {/* Search Bar */}
             <div className="relative group">
                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors" size={22} />
-                <input 
-                    type="text" 
-                    placeholder="Find a project by name or current status..." 
+                <input
+                    type="text"
+                    placeholder="Find a project by name or current status..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-14 pr-6 py-5 bg-white rounded-[2rem] border border-slate-100 focus:border-[#4177BC] focus:ring-4 focus:ring-blue-50 outline-none shadow-sm font-semibold transition-all text-slate-700"
@@ -121,7 +128,7 @@ export default function ClientProjectsPage() {
             <AnimatePresence mode="wait">
                 {filteredProjects.length > 0 ? (
                     viewMode === 'grid' ? (
-                        <motion.div 
+                        <motion.div
                             key="grid"
                             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
                             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
@@ -131,7 +138,7 @@ export default function ClientProjectsPage() {
                             ))}
                         </motion.div>
                     ) : (
-                        <motion.div 
+                        <motion.div
                             key="list"
                             initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
                             className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm hidden md:block"
@@ -191,7 +198,7 @@ function QuickStat({ label, value, icon, color }: any) {
 
 function ProjectCard({ project }: { project: Project }) {
     return (
-        <motion.div 
+        <motion.div
             whileHover={{ y: -10 }}
             className="group bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-[#4177BC]/10 transition-all duration-500 relative overflow-hidden"
         >
@@ -213,11 +220,11 @@ function ProjectCard({ project }: { project: Project }) {
 
             <div className="mt-8 space-y-4">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
-                    <span className="flex items-center gap-1.5"><TrendingUp size={12}/> Progress</span>
+                    <span className="flex items-center gap-1.5"><TrendingUp size={12} /> Progress</span>
                     <span className="text-[#4177BC]">{project.progress || 0}%</span>
                 </div>
                 <div className="h-2.5 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100">
-                    <motion.div 
+                    <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${project.progress}%` }}
                         transition={{ duration: 1.5, ease: "circOut" }}
@@ -232,7 +239,7 @@ function ProjectCard({ project }: { project: Project }) {
                     <div className="flex items-center gap-2">
                         <Calendar size={14} className="text-slate-400" />
                         <span className="text-[11px] font-black text-slate-600 tracking-tight">
-                            {project.deadline ? new Date(project.deadline).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'}) : 'TBA'}
+                            {project.deadline ? new Date(project.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'TBA'}
                         </span>
                     </div>
                 </div>
