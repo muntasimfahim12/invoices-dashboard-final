@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
 
 /* ================= MAIN COMPONENT WRAPPER ================= */
-// Next.js 16-এ useSearchParams ব্যবহার করলে Suspense দিয়ে র‍্যাপ করা বাধ্যতামূলক।
+// Next.js 16-এ useSearchParams ব্যবহার করলে Suspense দিয়ে র‍্যাপ করা বাধ্যতামূলক।
 export default function LoginPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-slate-100 flex items-center justify-center">Loading...</div>}>
@@ -63,6 +63,11 @@ function LoginFormContent() {
         localStorage.setItem("user_role", data.role);
         localStorage.setItem("user_name", data.name);
         localStorage.setItem("user_email", email || "");
+        
+        // ✅ প্রোফাইলের জন্য নিচের এই লাইনটি যোগ করা হয়েছে (আপনার রিকোয়েস্ট অনুযায়ী)
+        if (data.id) {
+          localStorage.setItem("user_id", data.id);
+        }
 
         Cookies.set("vault_token", data.token, { expires: 7 });
         Cookies.set("user_role", data.role, { expires: 7 });
@@ -70,6 +75,7 @@ function LoginFormContent() {
         console.log("Login Success! Role:", data.role);
 
         if (data.role.toLowerCase() === "admin") {
+          // আপনার ড্যাশবোর্ডের পাথ অনুযায়ী চেক করুন
           router.push("/admin"); 
         } else {
           router.push("/client");
