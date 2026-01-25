@@ -48,7 +48,9 @@ export default function UltimateDigitalLedger() {
     const [loading, setLoading] = useState(false);
     const [emailSending, setEmailSending] = useState(false);
     const router = useRouter();
-    const adminEmail = localStorage.getItem("user_email"); // or from auth state
+    
+    // Check for localStorage only on client side
+    const [adminEmail, setAdminEmail] = useState("");
 
     // --- STATE MANAGEMENT (1000% SAME LOGIC) ---
     const [projectTitle, setProjectTitle] = useState("");
@@ -72,6 +74,9 @@ export default function UltimateDigitalLedger() {
         setMounted(true);
         setInvoiceId("INV-" + Math.floor(100000 + Math.random() * 900000));
         setInvoiceDate(new Date().toLocaleDateString('en-GB'));
+        
+        const email = localStorage.getItem("user_email");
+        if(email) setAdminEmail(email);
 
         const savedData = localStorage.getItem('ledger_settings');
         if (savedData) {
