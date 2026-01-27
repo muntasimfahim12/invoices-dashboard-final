@@ -14,7 +14,7 @@ import axios from "axios";
 interface Project {
     _id: string;
     title: string;
-    name?: string; // ব্যাকএন্ডে 'name' থাকলে সেটা হ্যান্ডেল করার জন্য
+    name?: string;
     description: string;
     clientName: string;
     status: 'In Progress' | 'Completed' | 'Pending' | 'On Hold';
@@ -32,7 +32,16 @@ export default function ClientProjectsPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchTerm, setSearchTerm] = useState("");
-    const clientEmail = localStorage.getItem("user_email"); // or from auth state
+
+    // ✅ FIX 1: clientEmail state
+    const [clientEmail, setClientEmail] = useState<string | null>(null);
+
+    // ✅ FIX 2: localStorage only in useEffect (browser safe)
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            setClientEmail(localStorage.getItem("user_email"));
+        }
+    }, []);
 
     useEffect(() => {
         const fetchProjects = async () => {
@@ -59,13 +68,11 @@ export default function ClientProjectsPage() {
         if (clientEmail) fetchProjects();
     }, [clientEmail]);
 
-
     const filteredProjects = projects.filter(p =>
         p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.status.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // ক্যালকুলেশনস
     const completedCount = projects.filter(p => p.status === 'Completed').length;
     const inProgressCount = projects.filter(p => p.status === 'In Progress').length;
 
@@ -74,7 +81,9 @@ export default function ClientProjectsPage() {
             <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
                 <div className="text-center">
                     <Loader2 className="animate-spin text-[#4177BC] mx-auto mb-4" size={48} />
-                    <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Loading Projects...</p>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">
+                        Loading Projects...
+                    </p>
                 </div>
             </div>
         );
