@@ -203,8 +203,8 @@ export default function AdminOverview() {
               <LayoutDashboard size={14} />
               <span className="text-[10px] font-black uppercase tracking-widest">Enterprise Dashboard</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-black text-[#0F172A] tracking-tighter leading-[0.9]">
-              Operations <br /> <span className="text-[#4177BC]">Hub.</span>
+            <h1 className="text-3xl md:text-4xl font-black text-[#0F172A] tracking-tighter leading-[0.9]">
+              Operations <span className="text-[#4177BC]">Hub.</span>
             </h1>
           </div>
 

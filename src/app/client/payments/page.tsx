@@ -8,86 +8,136 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     CreditCard, Download, Clock, CheckCircle2,
-    FileText, Wallet, Zap, LayoutDashboard, Target,
-    ShieldCheck, Info, Calendar, Mail, Phone,
-    TrendingUp, ChevronDown, Layers, ArrowRight,
-    Lock, AlertCircle, RefreshCcw, ExternalLink,
-    MessageSquare, Bell
+    FileText, Wallet, Zap, Target,
+    ShieldCheck, Info, Calendar, MessageSquare, 
+    TrendingUp, ArrowRight, Lock, AlertCircle, RefreshCcw, ExternalLink
 } from "lucide-react";
-import Link from "next/link";
 
 export default function ClientDashboard() {
     const router = useRouter();
     const [clientData, setClientData] = useState<any>(null);
     const [selectedProject, setSelectedProject] = useState<any>(null);
+    const [paypalUrl, setPaypalUrl] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
+
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-                const response = await axios.get(`${API_BASE}/clinets`);
-                // Amra ekhane shudhu shesh client-ti nicchi jemon apnar logic-e chilo
-                const myProfile = response.data[response.data.length - 1];
+                const userEmail = localStorage.getItem("user_email");
+                
+                if (!userEmail) {
+                    router.push("/");
+                    return;
+                }
+
+                // 1. Fetch Client Data & Settings concurrently
+                const [clientRes, settingsRes] = await Promise.all([
+                    axios.get(`${API_BASE}/clinets`),
+                    axios.get(`${API_BASE}/settings`)
+                ]);
+
+                // 2. Filter data for current user
+                const myProfile = clientRes.data.find((c: any) => c.email === userEmail);
+
+                if (settingsRes.data?.paypalLink) {
+                    setPaypalUrl(settingsRes.data.paypalLink);
+                }
 
                 if (myProfile) {
                     setClientData(myProfile);
-                    if (myProfile.projects?.length > 0) {
+                    // প্রজেক্ট লিস্ট থাকলে প্রথমটি সিলেক্ট করো
+                    if (myProfile.projects && myProfile.projects.length > 0) {
                         setSelectedProject(myProfile.projects[0]);
                     }
-                } else { setError(true); }
+                } else {
+                    setError(true);
+                }
             } catch (err) {
-                console.error("Critical API Error:", err);
+                console.error("Dashboard Fetch Error:", err);
                 setError(true);
             } finally {
-                setTimeout(() => setLoading(false), 1000);
+                setLoading(false);
             }
         };
         fetchDashboardData();
-    }, []);
+    }, [API_BASE, router]);
+
+    // Financial calculations based on dynamic data
+    const budget = Number(selectedProject?.budget) || 0;
+    const paid = Number(selectedProject?.paidAmount) || 0;
+    const due = Math.max(0, budget - paid);
+    const completionPercentage = budget > 0 ? Math.round((paid / budget) * 100) : 0;
+    const nextMilestone = selectedProject?.milestones?.find((m: any) => !m.isCompleted);
+
+    const handleSecurePayment = () => {
+        if (!paypalUrl) {
+            alert("Payment gateway is currently being updated. Please contact support.");
+            return;
+        }
+        let finalPayUrl = paypalUrl;
+        if (finalPayUrl.includes("paypal.me")) {
+            const cleanUrl = finalPayUrl.endsWith("/") ? finalPayUrl.slice(0, -1) : finalPayUrl;
+            finalPayUrl = `${cleanUrl}/${due}`;
+        }
+        window.open(finalPayUrl, "_blank");
+    };
 
     if (loading) return <LoadingScreen />;
     if (error) return <ErrorState />;
 
-    // Financial calculations
-    const budget = Number(selectedProject?.budget) || 0;
-    const paid = Number(selectedProject?.paidAmount) || 0;
-    const due = budget - paid;
-    const completionPercentage = budget > 0 ? Math.round((paid / budget) * 100) : 0;
-    const nextMilestone = selectedProject?.milestones?.find((m: any) => !m.isCompleted);
-
     return (
-        <div className="min-h-screen bg-[#F8FAFC] text-[#1E293B] font-sans selection:bg-blue-100">
-            
-          
-
+        <div className="min-h-screen bg-[#F8FAFC] text-[#1E293B] font-sans selection:bg-[#4177BC]/10">
             <main className="max-w-[1600px] mx-auto px-6 md:px-10 py-10">
                 
-                {/* --- HERO DASHBOARD --- */}
+                {/* --- HEADER / PROJECT SELECTOR --- */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+                    <div>
+                        <h1 className="text-2xl font-black uppercase tracking-tighter italic">
+                            Project <span className="text-[#4177BC]">Control</span>
+                        </h1>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: {selectedProject?._id?.slice(-8) || 'N/A'}</p>
+                    </div>
+                    
+                    {/* যদি একাধিক প্রজেক্ট থাকে তবে এখানে সিলেক্টর দেখানো হবে */}
+                    {clientData?.projects?.length > 1 && (
+                        <select 
+                            onChange={(e) => setSelectedProject(clientData.projects.find((p:any) => p.projectName === e.target.value))}
+                            className="bg-white border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 ring-[#4177BC]/20"
+                        >
+                            {clientData.projects.map((p: any, i: number) => (
+                                <option key={i} value={p.projectName}>{p.projectName}</option>
+                            ))}
+                        </select>
+                    )}
+                </div>
+
+                {/* --- HERO SECTION --- */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
                     <div className="lg:col-span-8">
                         <motion.div
                             initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-                            className="h-full rounded-[3rem] bg-slate-900 p-10 md:p-14 relative overflow-hidden text-white shadow-[0_40px_80px_-20px_rgba(15,23,42,0.3)]"
+                            className="h-full rounded-[3rem] bg-slate-900 p-10 md:p-14 relative overflow-hidden text-white shadow-2xl shadow-slate-200"
                         >
-                            <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/20 rounded-full blur-[100px]"></div>
+                            <div className="absolute -top-24 -right-24 w-96 h-96 bg-[#4177BC]/20 rounded-full blur-[100px]"></div>
                             <div className="relative z-10 flex flex-col h-full justify-between">
                                 <div>
                                     <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-2 rounded-full text-blue-300 text-[10px] font-black uppercase tracking-widest mb-10 border border-white/10">
                                         <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                                        {selectedProject?.status || 'In Progress'} Phase
+                                        {selectedProject?.status || 'Active Execution'}
                                     </div>
-                                    <h2 className="text-5xl md:text-8xl font-[1000] tracking-tighter leading-[0.85] mb-10">
-                                        Elevating <br /> <span className="text-[#4177BC] italic">{selectedProject?.name}</span>
+                                    <h2 className="text-5xl md:text-7xl font-[1000] tracking-tighter leading-[0.9] mb-10 uppercase italic">
+                                        {selectedProject?.projectName || 'Project Title'}
                                     </h2>
                                 </div>
                                 <div className="flex flex-wrap gap-4">
-                                    <button className="bg-[#4177BC] hover:bg-white hover:text-slate-950 text-white px-8 py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.15em] transition-all shadow-2xl shadow-blue-500/30 flex items-center gap-3">
-                                        <Zap size={18} fill="currentColor" /> Request Update
+                                    <button className="bg-[#4177BC] hover:bg-white hover:text-slate-950 text-white px-8 py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.15em] transition-all shadow-xl shadow-[#4177BC]/20 flex items-center gap-3">
+                                        <Zap size={18} fill="currentColor" /> Live Feed
                                     </button>
                                     <button className="bg-white/5 hover:bg-white/10 text-white px-8 py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.15em] transition-all border border-white/10 flex items-center gap-3 group">
-                                        <FileText size={18} /> Review Assets <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                        <FileText size={18} /> Documentation <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                                     </button>
                                 </div>
                             </div>
@@ -95,88 +145,80 @@ export default function ClientDashboard() {
                     </div>
 
                     <div className="lg:col-span-4 grid grid-cols-1 gap-6">
-                        <StatCard label="Contract Value" value={`$${budget.toLocaleString()}`} icon={<Target />} color="indigo" trend="+2.4%" />
-                        <StatCard label="Amount Settled" value={`$${paid.toLocaleString()}`} icon={<CheckCircle2 />} color="green" trend="Live" />
-                        <StatCard label="Milestone Completion" value={`${completionPercentage}%`} icon={<TrendingUp />} color="blue" trend="On Track" />
+                        <StatCard label="Total Budget" value={`$${budget.toLocaleString()}`} icon={<Target />} color="indigo" trend="Fixed" />
+                        <StatCard label="Total Paid" value={`$${paid.toLocaleString()}`} icon={<CheckCircle2 />} color="green" trend="Cleared" />
+                        <StatCard label="Completion" value={`${completionPercentage}%`} icon={<TrendingUp />} color="blue" trend="Live" />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-start">
-                    
-                    {/* --- LEFT: MILESTONES --- */}
+                    {/* --- ROADMAP --- */}
                     <div className="xl:col-span-8 space-y-8">
-                        <div className="bg-white rounded-[3rem] p-10 shadow-xl shadow-slate-200/50 border border-slate-100">
+                        <div className="bg-white rounded-[3rem] p-10 shadow-sm border border-slate-100">
                             <div className="flex justify-between items-center mb-12">
                                 <div>
                                     <h3 className="text-3xl font-[1000] uppercase tracking-tighter italic text-slate-900">Project Roadmap</h3>
-                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Verified Delivery Schedule</p>
-                                </div>
-                                <div className="hidden md:flex gap-2">
-                                    <button className="p-3 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors"><Download size={18} /></button>
-                                    <button className="p-3 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors"><ExternalLink size={18} /></button>
+                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Milestone Tracking</p>
                                 </div>
                             </div>
                             
                             <div className="space-y-4">
-                                {selectedProject?.milestones?.map((m: any, i: number) => (
-                                    <MilestoneRow key={i} milestone={m} index={i} />
-                                ))}
+                                {selectedProject?.milestones?.length > 0 ? (
+                                    selectedProject.milestones.map((m: any, i: number) => (
+                                        <MilestoneRow key={i} milestone={m} index={i} />
+                                    ))
+                                ) : (
+                                    <div className="text-center py-20 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-100">
+                                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">No Milestones Data Available</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        {/* QUICK ACTION BAR */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <QuickAction icon={<MessageSquare size={20} />} label="Live Chat" sub="Speak to PM" color="blue" />
-                            <QuickAction icon={<Clock size={20} />} label="Timeline" sub="View Calendar" color="slate" />
-                            <QuickAction icon={<ShieldCheck size={20} />} label="Security" sub="Review Terms" color="emerald" />
+                            <QuickAction icon={<MessageSquare size={20} />} label="Inquiry" sub="Talk to Expert" />
+                            <QuickAction icon={<Clock size={20} />} label="Calendar" sub="View Deadlines" />
+                            <QuickAction icon={<ShieldCheck size={20} />} label="Security" sub="Data Privacy" />
                         </div>
                     </div>
 
-                    {/* --- RIGHT: FINANCIAL TERMINAL --- */}
+                    {/* --- PAYMENT HUB --- */}
                     <div className="xl:col-span-4 sticky top-32">
                         <motion.div
                             whileHover={{ y: -5 }}
-                            className="bg-white rounded-[3.5rem] p-10 border border-slate-200 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden relative"
+                            className="bg-white rounded-[3.5rem] p-10 border border-slate-200 shadow-2xl shadow-slate-200 overflow-hidden relative"
                         >
-                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-400 via-[#4177BC] to-indigo-500"></div>
-                            
+                            <div className="absolute top-0 left-0 w-full h-2 bg-[#4177BC]"></div>
                             <div className="flex justify-between items-start mb-12">
                                 <div className="space-y-1">
-                                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Financial Hub</h4>
-                                    <p className="text-sm font-black text-slate-900 italic">Settlement Portal</p>
+                                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Payment terminal</h4>
+                                    <p className="text-sm font-black text-slate-900 italic">Financial Settlement</p>
                                 </div>
-                                <div className="bg-slate-900 p-3 rounded-2xl text-white"><Lock size={20} /></div>
+                                <div className="bg-slate-900 p-3 rounded-2xl text-white"><Lock size={18} /></div>
                             </div>
 
                             <div className="mb-12">
-                                <p className="text-[11px] font-black text-blue-500 uppercase tracking-widest mb-3">Outstanding Balance</p>
+                                <p className="text-[11px] font-black text-[#4177BC] uppercase tracking-widest mb-3">Amount to be Cleared</p>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-7xl font-[1000] tracking-tighter text-slate-950">${due.toLocaleString()}</span>
-                                    <span className="text-slate-400 font-bold text-lg italic uppercase">USD</span>
+                                    <span className="text-slate-400 font-black text-lg italic uppercase">USD</span>
                                 </div>
-                                {nextMilestone && (
-                                     <div className="mt-6 flex items-center gap-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
-                                        <Info size={16} className="text-blue-500" />
-                                        <p className="text-[10px] font-bold uppercase text-blue-700 italic leading-tight">Allocation: {nextMilestone.title}</p>
-                                     </div>
-                                )}
                             </div>
 
                             <button
-                                onClick={() => router.push(`/client/payments`)}
-                                disabled={due === 0}
-                                className={`w-full group relative ${due === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#4177BC] text-white hover:bg-slate-950'} p-7 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 shadow-xl shadow-blue-500/10`}
+                                onClick={handleSecurePayment}
+                                disabled={due <= 0}
+                                className={`w-full group relative ${due <= 0 ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed border border-emerald-100' : 'bg-[#4177BC] text-white hover:bg-slate-950'} p-7 rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-500`}
                             >
-                                <span className="flex items-center justify-center gap-3 relative z-10">
-                                    {due === 0 ? "Account Fully Settled" : "Initiate Secure Payment"}
-                                    <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
+                                <span className="flex items-center justify-center gap-3">
+                                    {due <= 0 ? "Account Cleared" : "Proceed to Payment"}
+                                    {due > 0 && <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />}
                                 </span>
                             </button>
 
-                            <div className="mt-10 flex items-center justify-center gap-6 grayscale opacity-40">
-                                <span className="text-[10px] font-black tracking-widest">VISA</span>
-                                <span className="text-[10px] font-black tracking-widest">STRIPE</span>
-                                <span className="text-[10px] font-black tracking-widest">PAYPAL</span>
+                            <div className="mt-10 flex items-center justify-center gap-6 grayscale opacity-30">
+                                <span className="text-[9px] font-black tracking-widest uppercase">SSL Secured</span>
+                                <span className="text-[9px] font-black tracking-widest uppercase">PayPal Verified</span>
                             </div>
                         </motion.div>
                     </div>
@@ -186,24 +228,20 @@ export default function ClientDashboard() {
     );
 }
 
-// --- REUSABLE COMPONENTS ---
-
+// Sub-components stay essentially the same but with the #4177BC theme
 function StatCard({ label, value, icon, color, trend }: any) {
-    const colors: any = {
-        indigo: "text-indigo-600 bg-indigo-50 border-indigo-100",
+    const colorMap: any = {
+        indigo: "text-[#4177BC] bg-blue-50 border-blue-100",
         green: "text-emerald-600 bg-emerald-50 border-emerald-100",
         blue: "text-blue-600 bg-blue-50 border-blue-100"
     };
     return (
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:border-blue-200 transition-colors">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 ${colors[color]} group-hover:scale-110 transition-transform`}>
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:border-[#4177BC]/30 transition-all">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 ${colorMap[color]} group-hover:scale-110 transition-transform`}>
                 {React.cloneElement(icon, { size: 28, strokeWidth: 2.5 })}
             </div>
             <div>
-                <div className="flex items-center gap-3">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{label}</p>
-                    <span className="text-[8px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-500">{trend}</span>
-                </div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
                 <h3 className="text-3xl font-[1000] text-slate-900 tracking-tighter italic mt-1 leading-none">{value}</h3>
             </div>
         </div>
@@ -211,45 +249,36 @@ function StatCard({ label, value, icon, color, trend }: any) {
 }
 
 function MilestoneRow({ milestone, index }: any) {
+    const isDone = milestone.isCompleted;
     return (
-        <motion.div
-            initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }}
-            className={`group p-6 rounded-[2.5rem] transition-all flex flex-col md:flex-row justify-between items-center gap-6 border-2 ${milestone.isCompleted ? 'bg-slate-50/50 border-transparent' : 'bg-white border-slate-100 hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/5'}`}
-        >
+        <div className={`p-6 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center gap-6 border-2 ${isDone ? 'bg-slate-50/50 border-transparent' : 'bg-white border-slate-100 hover:border-[#4177BC]/20 hover:shadow-xl hover:shadow-slate-100'} transition-all`}>
             <div className="flex items-center gap-6 w-full md:w-auto">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-base ${milestone.isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500'} transition-colors`}>
-                    {milestone.isCompleted ? <CheckCircle2 size={24} strokeWidth={3} /> : index + 1}
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black ${isDone ? 'bg-[#4177BC] text-white' : 'bg-slate-100 text-slate-400'}`}>
+                    {isDone ? <CheckCircle2 size={24} /> : index + 1}
                 </div>
                 <div>
-                    <h4 className={`text-sm font-black uppercase tracking-tight italic ${milestone.isCompleted ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
-                        {milestone.title}
-                    </h4>
-                    <div className="flex items-center gap-2 mt-1.5">
-                        <Calendar size={12} className="text-slate-300" />
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Due: {milestone.dueDate || 'TBD'}</p>
-                    </div>
+                    <h4 className={`text-sm font-black uppercase italic ${isDone ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{milestone.title}</h4>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">Target: {milestone.dueDate || 'ASAP'}</p>
                 </div>
             </div>
-            <div className="flex items-center gap-10 w-full md:w-auto justify-between md:justify-end">
-                <div className="text-right">
-                    <p className={`text-xl font-[1000] tracking-tighter ${milestone.isCompleted ? 'text-slate-300' : 'text-slate-950'}`}>${milestone.amount?.toLocaleString()}</p>
-                </div>
-                <div className={`px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] border ${milestone.isCompleted ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-white text-slate-500 border-slate-200'}`}>
-                    {milestone.isCompleted ? 'Finalized' : 'Payable'}
-                </div>
+            <div className="flex items-center gap-8 w-full md:w-auto justify-between md:justify-end">
+                <p className={`text-xl font-black ${isDone ? 'text-slate-300' : 'text-slate-950'}`}>${Number(milestone.amount).toLocaleString()}</p>
+                <span className={`px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest border ${isDone ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-white text-slate-400 border-slate-200'}`}>
+                    {isDone ? 'Finished' : 'Upcoming'}
+                </span>
             </div>
-        </motion.div>
+        </div>
     );
 }
 
-function QuickAction({ icon, label, sub, color }: any) {
+function QuickAction({ icon, label, sub }: any) {
     return (
-        <button className="flex items-center gap-4 bg-white p-6 rounded-[2rem] border border-slate-100 hover:border-blue-200 hover:shadow-lg transition-all text-left w-full group">
-            <div className={`p-4 rounded-2xl bg-slate-50 group-hover:bg-blue-50 text-slate-400 group-hover:text-blue-600 transition-colors`}>
+        <button className="flex items-center gap-4 bg-white p-6 rounded-[2rem] border border-slate-100 hover:border-[#4177BC]/30 hover:shadow-lg transition-all text-left w-full group">
+            <div className="p-4 rounded-2xl bg-slate-50 group-hover:bg-[#4177BC]/5 group-hover:text-[#4177BC] text-slate-400 transition-colors">
                 {icon}
             </div>
             <div>
-                <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{label}</p>
+                <p className="text-xs font-black text-slate-900 uppercase">{label}</p>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{sub}</p>
             </div>
         </button>
@@ -259,34 +288,20 @@ function QuickAction({ icon, label, sub, color }: any) {
 function LoadingScreen() {
     return (
         <div className="min-h-screen bg-white flex flex-col items-center justify-center">
-            <div className="relative flex items-center justify-center">
-                <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                    className="w-20 h-20 border-[3px] border-slate-50 border-t-[#4177BC] rounded-full"
-                />
-                <div className="absolute font-black text-[10px] italic">CH</div>
-            </div>
-            <p className="mt-8 text-[10px] font-black uppercase tracking-[0.6em] text-slate-400 animate-pulse">Establishing Secure Session</p>
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-16 h-16 border-4 border-slate-50 border-t-[#4177BC] rounded-full mb-6" />
+            <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-400 animate-pulse">Syncing Project Data</p>
         </div>
     );
 }
 
 function ErrorState() {
     return (
-        <div className="min-h-screen bg-white flex items-center justify-center p-10 text-center font-sans">
-            <div className="max-w-md">
-                <div className="w-24 h-24 bg-red-50 text-red-500 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
-                    <AlertCircle size={44} strokeWidth={1.5} />
-                </div>
-                <h2 className="text-3xl font-[1000] uppercase tracking-tighter text-slate-900 mb-4">Auth Sync Failed</h2>
-                <p className="text-slate-500 font-medium leading-relaxed mb-10">We couldnt securely handshake with the core server. This might be due to a network interruption.</p>
-                <button
-                    onClick={() => window.location.reload()}
-                    className="flex items-center gap-3 bg-slate-950 text-white px-10 py-5 rounded-2xl mx-auto font-black text-xs uppercase tracking-widest hover:bg-[#4177BC] transition-all shadow-2xl shadow-slate-300"
-                >
-                    <RefreshCcw size={18} /> Re-establish Connection
-                </button>
+        <div className="min-h-screen bg-white flex items-center justify-center p-10">
+            <div className="text-center max-w-sm">
+                <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6"><AlertCircle size={40} /></div>
+                <h2 className="text-2xl font-black uppercase italic mb-2 text-slate-900">Access Denied</h2>
+                <p className="text-slate-500 text-sm mb-8 font-medium">Could not retrieve project data for this account. Please verify your credentials.</p>
+                <button onClick={() => window.location.reload()} className="w-full bg-slate-950 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest">Retry Session</button>
             </div>
         </div>
     );
