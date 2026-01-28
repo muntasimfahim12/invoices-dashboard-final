@@ -21,56 +21,65 @@ const PRIMARY = "#4177BC"; // Blue
 const ACCENT = "#EB9C2C";  // Orange
 const WHITE = "#FFFFFF";
 
-// --- FOODPANDA STYLE LOADING SCREEN ---
+// --- FOODPANDA STYLE BOX SKELETON LOADING ---
 function LoadingScreen() {
     return (
-        <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white"
-        >
-            <div className="relative flex items-center justify-center">
-                {/* Foodpanda Style Ripple Rings */}
-                {[...Array(3)].map((_, i) => (
-                    <motion.div
-                        key={i}
-                        animate={{ scale: [1, 2.2], opacity: [0.5, 0] }}
-                        transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.4, ease: "easeOut" }}
-                        className="absolute w-20 h-20 rounded-full border-2"
-                        style={{ borderColor: PRIMARY }}
-                    />
-                ))}
-                
-                {/* Central Icon Container */}
-                <motion.div 
-                    animate={{ scale: [0.9, 1.1, 0.9] }}
-                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                    className="relative w-20 h-20 bg-white rounded-[2rem] flex items-center justify-center shadow-2xl z-10 border border-slate-50"
-                >
-                    <Zap size={35} fill={PRIMARY} className="text-[#4177BC]" />
-                </motion.div>
+        <div className="fixed inset-0 z-[200] bg-[#FDFEFF] overflow-hidden">
+            {/* Fake Navbar Skeleton */}
+            <div className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-white">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 bg-slate-100 rounded-xl animate-pulse" />
+                    <div className="h-6 w-24 bg-slate-100 rounded-md animate-pulse" />
+                </div>
+                <div className="w-32 h-10 bg-slate-100 rounded-full animate-pulse" />
             </div>
-            
-            <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-12 flex flex-col items-center"
-            >
-                <p className="text-[12px] font-black uppercase tracking-[0.4em] text-slate-800">VaultSync</p>
-                <div className="flex gap-1.5 mt-3">
-                    {[0, 1, 2].map((i) => (
-                        <motion.div
-                            key={i}
-                            animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
-                            transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: PRIMARY }}
-                        />
+
+            <div className="max-w-[1440px] mx-auto px-6 py-8 lg:px-10">
+                {/* Hero Skeleton */}
+                <div className="mb-10 flex justify-between items-end">
+                    <div className="space-y-3">
+                        <div className="h-4 w-32 bg-slate-100 rounded animate-pulse" />
+                        <div className="h-12 w-64 bg-slate-100 rounded-xl animate-pulse" />
+                    </div>
+                    <div className="h-14 w-40 bg-slate-100 rounded-2xl animate-pulse" />
+                </div>
+
+                {/* Stats Grid Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 h-44 space-y-4">
+                            <div className="w-12 h-12 bg-slate-50 rounded-2xl animate-pulse" />
+                            <div className="space-y-2">
+                                <div className="h-3 w-20 bg-slate-100 rounded animate-pulse" />
+                                <div className="h-8 w-32 bg-slate-100 rounded animate-pulse" />
+                            </div>
+                        </div>
                     ))}
                 </div>
-            </motion.div>
-        </motion.div>
+
+                {/* Content Section Skeleton */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-8 space-y-4">
+                        <div className="h-6 w-40 bg-slate-100 rounded mb-6 animate-pulse" />
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="p-5 rounded-[1.8rem] bg-white border border-slate-100 flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-11 h-11 bg-slate-50 rounded-xl animate-pulse" />
+                                    <div className="space-y-2">
+                                        <div className="h-4 w-32 bg-slate-100 rounded animate-pulse" />
+                                        <div className="h-3 w-20 bg-slate-100 rounded animate-pulse" />
+                                    </div>
+                                </div>
+                                <div className="h-10 w-20 bg-slate-50 rounded-xl animate-pulse" />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="lg:col-span-4">
+                        <div className="h-64 bg-slate-100 rounded-[2.2rem] animate-pulse" />
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -187,7 +196,6 @@ export default function ClientOverview() {
                                 <ChevronDown size={12} className={`text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
                             </button>
                             
-                            {/* Simple Profile Dropdown */}
                             <AnimatePresence>
                                 {isProfileOpen && (
                                     <motion.div 
