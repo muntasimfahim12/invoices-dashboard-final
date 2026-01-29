@@ -261,7 +261,7 @@ export default function AdminOverview() {
                 </ResponsiveContainer>
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
                   <p className="text-4xl font-black text-[#0F172A]">{dashboardData.invoices.length}</p>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Total Invoices</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Total Invoice</p>
                 </div>
               </div>
 
@@ -315,7 +315,7 @@ export default function AdminOverview() {
               onClick={() => router.push("/admin/invoices")}
               className="px-6 py-2.5 bg-slate-50 hover:bg-[#4177BC] hover:text-white rounded-xl text-xs font-black transition-all"
             >
-              VIEW REPOSITORY
+              VIEW REPOSITORY 
             </button>
           </div>
           <div className="w-full">

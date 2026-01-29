@@ -10,7 +10,6 @@ import {
   Calendar, Lock, Wallet, Eye, EyeOff, Loader2,
   RefreshCcw, Sparkles, Send
 } from "lucide-react";
-// Import toast for professional notifications (Optional: npm install react-hot-toast)
 import toast, { Toaster } from "react-hot-toast";
 
 export default function CreateClientPage() {
