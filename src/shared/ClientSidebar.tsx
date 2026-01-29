@@ -45,7 +45,6 @@ const menuGroups = [
   }
 ];
 
-// মোবাইল মেনুর জন্য প্রথম ৫টি আইটেম নেওয়া হচ্ছে
 const mobileItems = [
   { href: "/client", icon: LayoutDashboard },
   { href: "/client/projects", icon: Briefcase },
@@ -73,7 +72,7 @@ export default function ClientSidebar() {
                 <span className="text-2xl font-black tracking-tight text-slate-800 leading-none">
                   Client<span className="text-[#4177BC]">Hub</span>
                 </span>
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Relations Portal</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Relations Invoice</span>
               </div>
             </div>
           </div>
