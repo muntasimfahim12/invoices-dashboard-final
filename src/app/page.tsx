@@ -24,7 +24,7 @@ export default function EntryPortal() {
           <Receipt className="text-white" size={26} />
         </div>
         <h1 className="text-3xl font-black tracking-tighter text-slate-800">
-          Invo<span className="text-blue-600">ly</span>
+          Invo<span className="text-blue-600">ice</span>
         </h1>
       </motion.div>
 
