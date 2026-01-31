@@ -2,11 +2,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { 
-    Layers, DollarSign, Search, ArrowUpRight,
-    LayoutGrid, Trash2, Edit3, X, Loader2, Target,
-    Filter, Menu, ShieldCheck, Tag, Globe, Zap, Briefcase, ChevronDown
-} from "lucide-react"; 
+import {
+    Layers, DollarSign, Search, Trash2, Edit3, X, Loader2, Target,
+    Briefcase, Calendar, Zap, ShieldCheck, ArrowUpRight, Filter, 
+    MoreHorizontal, ChevronRight, Globe, Mail, MapPin, Key, Receipt, 
+    ArrowLeft, CheckCircle2, LayoutGrid
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import Link from "next/link";
@@ -15,10 +16,12 @@ const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const API_BASE = RAW_API_URL.endsWith('/') ? RAW_API_URL.slice(0, -1) : RAW_API_URL;
 
 export default function ProjectsPage() {
+    // --- LOGIC (KEEPING AS IS) ---
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [allProjects, setAllProjects] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("All");
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedProject, setSelectedProject] = useState<any>(null);
 
@@ -34,8 +37,10 @@ export default function ProjectsPage() {
                         client.projects.forEach((prj: any) => {
                             projectsList.push({
                                 ...prj,
+                                internalId: prj._id || `${client._id}-${prj.name}-${Math.random()}`,
                                 clientId: client._id,
                                 clientName: client.name || "Unknown Client",
+                                createdAt: prj.createdAt || new Date().toISOString()
                             });
                         });
                     }
@@ -54,21 +59,27 @@ export default function ProjectsPage() {
     const stats = useMemo(() => {
         const total = allProjects.length;
         const revenue = allProjects.reduce((acc, curr) => acc + (Number(curr.budget) || 0), 0);
-        return { total, revenue };
+        const active = allProjects.filter(p => p.status !== 'Completed').length;
+        const completed = total - active;
+        return { total, revenue, active, completed };
     }, [allProjects]);
 
-    const handleDelete = async (clientId: string, projectName: string) => {
-        if (!window.confirm(`Are you sure you want to delete "${projectName}"?`)) return;
-        const originalProjects = [...allProjects];
-        setAllProjects(prev => prev.filter(p => !(p.clientId === clientId && p.name === projectName)));
+    const filteredProjects = allProjects.filter(prj => {
+        const matchesSearch = prj.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             prj.clientName?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === "All" || prj.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
+
+    const handleDelete = async (clientId: string, projectName: string, internalId: string) => {
+        if (!window.confirm(`Are you sure?`)) return;
         try {
-            const clientResponse = await axios.get(`${API_BASE}/clinets/${clientId}`);
-            const updatedProjects = clientResponse.data.projects.filter((p: any) => p.name !== projectName);
+            setActionLoading(`deleting-${internalId}`);
+            const clientRes = await axios.get(`${API_BASE}/clinets/${clientId}`);
+            const updatedProjects = clientRes.data.projects.filter((p: any) => p.name !== projectName);
             await axios.put(`${API_BASE}/clinets/${clientId}`, { projects: updatedProjects });
-        } catch (error) {
-            setAllProjects(originalProjects);
-            alert("Delete failed.");
-        }
+            setAllProjects(prev => prev.filter(p => p.internalId !== internalId));
+        } catch (error) { alert("Delete failed."); } finally { setActionLoading(null); }
     };
 
     const handleEditSubmit = async (e: React.FormEvent) => {
@@ -76,258 +87,247 @@ export default function ProjectsPage() {
         setActionLoading('updating');
         try {
             const { clientId, oldName, name, budget, status } = selectedProject;
-            const clientResponse = await axios.get(`${API_BASE}/clinets/${clientId}`);
-            const updatedProjects = clientResponse.data.projects.map((p: any) => 
-                p.name === oldName ? { ...p, name, budget, status } : p
+            const clientRes = await axios.get(`${API_BASE}/clinets/${clientId}`);
+            const updatedProjects = clientRes.data.projects.map((p: any) =>
+                p.name === oldName ? { ...p, name, budget: Number(budget), status } : p
             );
             await axios.put(`${API_BASE}/clinets/${clientId}`, { projects: updatedProjects });
             setIsEditModalOpen(false);
             await fetchData(true);
-        } catch (error) {
-            alert("Update failed.");
-        } finally {
-            setActionLoading(null);
-        }
+        } catch (error) { alert("Update failed."); } finally { setActionLoading(null); }
     };
-
-    const handleStatusToggle = async (project: any) => {
-        const newStatus = project.status === 'Completed' ? 'Active' : 'Completed';
-        setAllProjects(prev => prev.map(p => 
-            (p.clientId === project.clientId && p.name === project.name) ? { ...p, status: newStatus } : p
-        ));
-        try {
-            const clientResponse = await axios.get(`${API_BASE}/clinets/${project.clientId}`);
-            const updatedProjects = clientResponse.data.projects.map((p: any) => 
-                p.name === project.name ? { ...p, status: newStatus } : p
-            );
-            await axios.put(`${API_BASE}/clinets/${project.clientId}`, { projects: updatedProjects });
-        } catch (error) {
-            fetchData(true);
-        }
-    };
-
-    const filteredProjects = allProjects.filter(prj => 
-        prj.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        prj.clientName?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const Skeleton = ({ className }: { className: string }) => (
-        <div className={`animate-pulse bg-slate-200/60 rounded-3xl ${className}`} />
-    );
 
     return (
-        <div className="min-h-screen  pb-40 md:pb-10 font-sans">
-            {/* --- Header --- */}
-            <header className="sticky top-0 z-30 border-b border-slate-100/50 px-6 py-4 md:px-16 md:py-8 bg-[#FAFBFF]/80 backdrop-blur-md">
-                <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="w-full md:w-auto flex justify-between items-center">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="bg-[#4177BC] text-white px-3 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg">Operational Console</span>
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                            </div>
-                            <h1 className="text-3xl md:text-5xl font-black text-slate-800 tracking-tighter italic uppercase">
-                                Global <span className="text-[#4177BC]">Projects</span>
-                            </h1>
+        <div className="min-h-screen bg-[#FFFFFF] p-4 lg:p-8 selection:bg-[#4177BC] selection:text-white font-sans">
+            <div className="max-w-[1600px] mx-auto">
+                
+                {/* --- TOP NAV RENDERED AS REQUESTED --- */}
+                <nav className="flex items-center justify-between mb-8 bg-[#FFFFFF]/50 backdrop-blur-md p-4 rounded-3xl border border-slate-100 shadow-sm">
+                    <Link href="/admin">
+                        <motion.button whileHover={{ scale: 1.05 }} className="flex items-center gap-3 px-5 py-2.5 bg-[#FFFFFF] rounded-2xl text-slate-600 font-bold text-xs shadow-sm border border-slate-100 uppercase tracking-tighter">
+                            <ArrowLeft size={16} /> Back to Admin
+                        </motion.button>
+                    </Link>
+                    <div className="flex items-center gap-4">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Project Hub Status</p>
+                            <p className="text-[11px] font-bold text-blue-500 flex items-center justify-end gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" /> Global Repository
+                            </p>
                         </div>
-                        <button className="md:hidden p-3 bg-slate-50 rounded-2xl text-slate-400"><Menu size={20} /></button>
                     </div>
+                </nav>
 
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <div className="relative flex-1 md:w-80 group">
-                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Search pipeline..."
-                                className="w-full pl-12 pr-6 py-4 md:py-5 bg-slate-50 md:bg-white border border-transparent md:border-slate-100 rounded-[20px] md:rounded-[25px] text-sm font-bold text-slate-700 outline-none focus:ring-4 ring-blue-50 transition-all shadow-sm"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <button onClick={() => fetchData()} className="hidden md:flex px-8 py-5 bg-[#1e3a5f] text-white rounded-[25px] font-black text-[11px] uppercase tracking-widest shadow-xl shadow-blue-400/30 hover:scale-105 transition-all items-center gap-3">
-                            <Target size={20} /> Sync System
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            <main className="max-w-[1400px] mx-auto px-6 md:px-16 pt-8 md:pt-12">
-                {/* --- Dynamic Stats --- */}
-                <section className="flex md:grid md:grid-cols-4 gap-4 md:gap-6 overflow-x-auto pb-6 md:pb-0 no-scrollbar">
-                    {loading ? [1, 2, 3, 4].map(i => <Skeleton key={i} className="min-w-[240px] md:min-w-0 h-32 rounded-[30px]" />) : (
-                        <>
-                            <StatCard title="Total Pipeline" value={stats.total} icon={<Layers />} color="#4177BC" />
-                            <StatCard title="Gross Revenue" value={`$${(stats.revenue/1000).toFixed(1)}k`} icon={<DollarSign />} color="#EB9C2C" />
-                            <StatCard title="Avg Budget" value={`$${(stats.revenue / (allProjects.length || 1) / 1000).toFixed(1)}k`} icon={<Briefcase />} color="#4177BC" />
-                            <StatCard title="System Health" value="Active" icon={<ShieldCheck />} color="#EB9C2C" />
-                        </>
-                    )}
-                </section>
-
-                {/* --- Ledger Header --- */}
-                <div className="mt-12 mb-6 flex items-center justify-between">
-                    <h3 className="font-black text-slate-800 text-lg md:text-xl tracking-tight uppercase italic">Project <span className="text-[#4177BC]">Manifest</span></h3>
-                    <div className="flex gap-2">
-                        <button className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-[#4177BC] transition-all"><Filter size={18} /></button>
-                        {/* Download button removed as requested */}
-                    </div>
-                </div>
-
-                {/* --- Mobile View (Cards) --- */}
-                <div className="grid grid-cols-1 gap-4 md:hidden">
-                    {filteredProjects.map((item) => (
-                        <div key={`${item.clientId}-${item.name}`} className="bg-white p-6 rounded-[30px] shadow-sm border border-slate-100">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-[#4177BC]">
-                                        <LayoutGrid size={18} />
-                                    </div>
-                                    <div>
-                                        <p className="font-black text-slate-800 text-sm">{item.name}</p>
-                                        <p className="text-[9px] text-[#EB9C2C] font-black uppercase tracking-widest">{item.clientName}</p>
-                                    </div>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    
+                    {/* --- LEFT COLUMN: SYSTEM IDENTITY CARD --- */}
+                    <aside className="lg:col-span-3 space-y-6">
+                        <div className="bg-[#FFFFFF] rounded-[40px] p-8 border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-[#4177BC]/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150" />
+                            
+                            <div className="relative z-10">
+                                <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center mb-6 shadow-2xl rotate-3 group-hover:rotate-0 transition-transform">
+                                    <Layers className="text-[#FFFFFF]" size={32} />
                                 </div>
-                                <div className="flex gap-1">
-                                    <button onClick={() => { setSelectedProject({...item, oldName: item.name}); setIsEditModalOpen(true); }} className="p-2 text-slate-400"><Edit3 size={16} /></button>
-                                    <button onClick={() => handleDelete(item.clientId, item.name)} className="p-2 text-red-400"><Trash2 size={16} /></button>
+                                
+                                <h1 className="text-3xl font-bold text-slate-900 tracking-tight judson-bold mb-1 italic">Project <span className="text-[#4177BC] not-italic">HUB</span></h1>
+                                <span className="px-3 py-1 bg-blue-50 text-[#4177BC] text-[10px] font-black uppercase rounded-full border border-blue-100">Centralized Database</span>
+                                
+                                <div className="mt-10 space-y-5">
+                                    <IdentityItem icon={<LayoutGrid size={14} />} label="Total Records" value={`${stats.total} Projects`} />
+                                    <IdentityItem icon={<Zap size={14} />} label="In Operation" value={`${stats.active} Active`} />
+                                    <IdentityItem icon={<ShieldCheck size={14} />} label="Security Level" value="Encrypted" />
                                 </div>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => handleStatusToggle(item)} className={`shrink-0 w-8 h-4 rounded-full p-0.5 flex items-center transition-all ${item.status === 'Completed' ? 'bg-[#EB9C2C]' : 'bg-slate-200'}`}>
-                                        <div className={`h-3 w-3 bg-white rounded-full transition-transform ${item.status === 'Completed' ? 'translate-x-3.5' : 'translate-x-0'}`} />
-                                    </button>
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase">{item.status || 'Active'}</span>
-                                </div>
-                                <p className="font-black text-slate-800 italic">${Number(item.budget).toLocaleString()}</p>
+
+                                <motion.button 
+                                    onClick={() => fetchData()}
+                                    className="w-full mt-10 py-4 bg-slate-50 hover:bg-slate-900 hover:text-[#FFFFFF] text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-100 flex items-center justify-center gap-2"
+                                >
+                                    <Target size={14} className={loading ? "animate-spin" : ""} />
+                                    {loading ? "Syncing..." : "Re-sync Repository"}
+                                </motion.button>
                             </div>
                         </div>
-                    ))}
-                </div>
+                        
+                        <div className="bg-gradient-to-br from-[#4177BC] to-[#345e96] rounded-[35px] p-8 text-[#FFFFFF] shadow-xl shadow-[#4177BC]/20 relative overflow-hidden">
+                           <Globe className="absolute right-[-10px] bottom-[-10px] w-32 h-32 text-white/10 rotate-12" />
+                           <p className="text-[10px] font-black uppercase tracking-widest text-[#FFFFFF]/70 mb-2">Internal Note</p>
+                           <p className="text-xs leading-relaxed font-medium italic">Viewing all projects across all clients. Use filters to narrow down the architecture.</p>
+                        </div>
+                    </aside>
 
-                {/* --- Desktop View (Table) --- */}
-                <div className="hidden md:block bg-white border border-slate-100 rounded-[50px] shadow-2xl shadow-blue-900/5 overflow-hidden">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50/50">
-                                <th className="px-10 py-6 text-left">Core Project</th>
-                                <th className="px-10 py-6 text-left">Deployment</th>
-                                <th className="px-10 py-6 text-left">Valuation</th>
-                                <th className="px-10 py-6 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {filteredProjects.map((item) => (
-                                <motion.tr layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={`${item.clientId}-${item.name}`} className="hover:bg-blue-50/20 transition-all group">
-                                    <td className="px-10 py-8">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center font-black text-[#4177BC] shadow-sm group-hover:bg-[#4177BC] group-hover:text-white transition-all">
-                                                <LayoutGrid size={18} />
-                                            </div>
-                                            <div>
-                                                <p className="font-black text-slate-800 text-sm tracking-tight">{item.name}</p>
-                                                <p className="text-[9px] text-[#EB9C2C] font-black uppercase tracking-widest">{item.clientName}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-10 py-8">
-                                        <div className="flex items-center gap-3">
-                                            <button onClick={() => handleStatusToggle(item)} className={`shrink-0 w-10 h-5 rounded-full p-1 flex items-center transition-all ${item.status === 'Completed' ? 'bg-[#EB9C2C]' : 'bg-slate-200'}`}>
-                                                <div className={`h-3 w-3 bg-white rounded-full transition-transform ${item.status === 'Completed' ? 'translate-x-5' : 'translate-x-0'}`} />
-                                            </button>
-                                            <div className="w-24">
-                                                <span className={`text-[9px] inline-block font-black px-3 py-1.5 rounded-lg uppercase border ${item.status === 'Completed' ? 'border-orange-100 text-[#EB9C2C]' : 'border-blue-100 text-[#4177BC]'}`}>
-                                                    {item.status || 'Active'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-10 py-8 font-black text-slate-800 text-lg italic">${Number(item.budget).toLocaleString()}</td>
-                                    <td className="px-10 py-8 text-right">
-                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                                            <button onClick={() => { setSelectedProject({...item, oldName: item.name}); setIsEditModalOpen(true); }} className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:text-[#4177BC] transition-all"><Edit3 size={18} /></button>
-                                            <button onClick={() => handleDelete(item.clientId, item.name)} className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:text-red-500 transition-all"><Trash2 size={18} /></button>
-                                        </div>
-                                    </td>
-                                </motion.tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </main>
+                    {/* --- RIGHT COLUMN: STATS & LIST --- */}
+                    <main className="lg:col-span-9 space-y-8">
+                        {/* MINI STATS */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                            <StatCard title="Capital Flow" value={`$${(stats.revenue/1000).toFixed(1)}k`} icon={<DollarSign />} color="#4177BC" />
+                            <StatCard title="Active Flux" value={stats.active} icon={<Zap />} color="#EB9C2C" />
+                            <StatCard title="Completed" value={stats.completed} icon={<ShieldCheck />} color="#10B981" />
+                        </div>
 
-            {/* --- Edit Modal --- */}
+                        {/* FILTER & DATA TABLE */}
+                        <div className="bg-white rounded-[45px] border border-slate-100 shadow-xl shadow-slate-200/20 overflow-hidden">
+                            <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6">
+                                <div className="flex p-1.5 bg-slate-100 rounded-[22px] w-full md:w-auto">
+                                    {["All", "Active", "Completed"].map((status) => (
+                                        <button
+                                            key={status}
+                                            onClick={() => setStatusFilter(status)}
+                                            className={`px-6 py-2 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all ${
+                                                statusFilter === status ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                                            }`}
+                                        >
+                                            {status}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="relative w-full md:w-72">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search records..." 
+                                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-100"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="bg-slate-50/50">
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Architecture</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Client</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Budget</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {filteredProjects.map((item) => (
+                                            <tr key={item.internalId} className="hover:bg-slate-50/50 transition-colors group">
+                                                <td className="px-8 py-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:border-blue-100 transition-all">
+                                                            <Briefcase size={18} />
+                                                        </div>
+                                                        <span className="font-bold text-slate-900 text-sm tracking-tight">{item.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-6 text-[11px] font-black text-blue-500/70 uppercase">{item.clientName}</td>
+                                                <td className="px-8 py-6 font-black text-slate-900 judson-bold italic text-lg">${Number(item.budget).toLocaleString()}</td>
+                                                <td className="px-8 py-6"><StatusBadge status={item.status || "Active"} /></td>
+                                                <td className="px-8 py-6 text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <button 
+                                                            onClick={() => { setSelectedProject({ ...item, oldName: item.name }); setIsEditModalOpen(true); }}
+                                                            className="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-colors"
+                                                        >
+                                                            <Edit3 size={16} />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDelete(item.clientId, item.name, item.internalId)}
+                                                            className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
+                                                        >
+                                                            {actionLoading === `deleting-${item.internalId}` ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+
+            {/* --- EDIT MODAL (KEEPING YOUR EXISTING MODAL STYLE) --- */}
             <AnimatePresence>
                 {isEditModalOpen && (
-                    <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50" />
-                        <motion.div
-                            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed bottom-0 md:top-0 md:bottom-0 left-0 right-0 m-auto w-full md:max-w-xl h-[90vh] md:h-fit bg-white rounded-t-[40px] md:rounded-[40px] shadow-2xl z-[51] overflow-hidden flex flex-col"
-                        >
-                            <div className="p-8 md:p-12 overflow-y-auto h-full no-scrollbar pb-32 md:pb-12">
-                                <div className="flex justify-between items-start mb-8">
-                                    <div>
-                                        <h2 className="text-3xl font-black text-slate-800 tracking-tighter uppercase italic">Adjust <span className="text-[#4177BC]">Project</span></h2>
-                                        <p className="text-[#EB9C2C] text-[9px] font-black uppercase tracking-[0.3em] mt-2 flex items-center gap-2"><ShieldCheck size={14} /> Encrypted Channel</p>
-                                    </div>
-                                    <button onClick={() => setIsEditModalOpen(false)} className="p-3 bg-slate-50 text-slate-400 rounded-full"><X size={20} /></button>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="w-full max-w-lg bg-white rounded-[40px] p-10 shadow-2xl border border-slate-100">
+                             <div className="flex justify-between items-center mb-8">
+                                <h2 className="text-2xl font-bold text-slate-900 judson-bold italic uppercase">Edit <span className="text-blue-600 not-italic">Project</span></h2>
+                                <button onClick={() => setIsEditModalOpen(false)} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-500"><X size={20}/></button>
+                             </div>
+                             <form onSubmit={handleEditSubmit} className="space-y-6">
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block">Project Name</label>
+                                    <input value={selectedProject?.name || ""} onChange={e => setSelectedProject({...selectedProject, name: e.target.value})} className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-none font-bold outline-none focus:ring-2 focus:ring-blue-100" />
                                 </div>
-
-                                <form onSubmit={handleEditSubmit} className="grid grid-cols-1 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Project Name</label>
-                                        <input required type="text" className="w-full px-6 py-4 bg-slate-50 rounded-[20px] text-sm font-bold text-slate-700 outline-none border-2 border-transparent focus:border-blue-100" value={selectedProject?.name || ""} onChange={(e) => setSelectedProject({...selectedProject, name: e.target.value})} />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block">Budget</label>
+                                        <input type="number" value={selectedProject?.budget || ""} onChange={e => setSelectedProject({...selectedProject, budget: e.target.value})} className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-none font-bold outline-none focus:ring-2 focus:ring-blue-100" />
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Allocated Budget ($)</label>
-                                        <div className="relative">
-                                            <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-[#EB9C2C]" size={18} />
-                                            <input required type="number" className="w-full pl-14 pr-6 py-4 bg-slate-50 rounded-[20px] text-sm font-bold text-slate-700 outline-none" value={selectedProject?.budget || ""} onChange={(e) => setSelectedProject({...selectedProject, budget: e.target.value})} />
-                                        </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block">Status</label>
+                                        <select value={selectedProject?.status || "Active"} onChange={e => setSelectedProject({...selectedProject, status: e.target.value})} className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-none font-bold outline-none focus:ring-2 focus:ring-blue-100">
+                                            <option value="Active">Active</option>
+                                            <option value="Completed">Completed</option>
+                                            <option value="On Hold">On Hold</option>
+                                        </select>
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</label>
-                                        <div className="relative">
-                                            <Tag className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                            <select className="w-full pl-14 pr-10 py-4 bg-slate-50 rounded-[20px] text-sm font-bold text-slate-700 outline-none appearance-none" value={selectedProject?.status || "Active"} onChange={(e) => setSelectedProject({...selectedProject, status: e.target.value})}>
-                                                <option value="Active">Active Pipeline</option>
-                                                <option value="Completed">Completed</option>
-                                                <option value="On Hold">On Hold</option>
-                                            </select>
-                                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-6 sticky bottom-0 bg-white pb-4">
-                                        <button type="submit" disabled={actionLoading === 'updating'} className="w-full py-5 bg-[#4177BC] text-white rounded-[25px] text-xs font-black uppercase tracking-widest shadow-2xl hover:bg-[#EB9C2C] transition-all">
-                                            {actionLoading === 'updating' ? <Loader2 size={20} className="animate-spin mx-auto" /> : "Confirm Adjustments"}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
+                                </div>
+                                <button type="submit" disabled={actionLoading === 'updating'} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
+                                    {actionLoading === 'updating' ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16}/>}
+                                    Save Core Data
+                                </button>
+                             </form>
                         </motion.div>
-                    </>
+                    </div>
                 )}
             </AnimatePresence>
         </div>
     );
 }
 
+// --- REUSABLE COMPONENTS FROM YOUR DESIGN ---
+
+function IdentityItem({ icon, label, value }: any) {
+    return (
+        <div className="flex items-center gap-4 group/item">
+            <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover/item:text-[#4177BC] group-hover/item:bg-blue-50 transition-colors">
+                {icon}
+            </div>
+            <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-1">{label}</p>
+                <p className="text-[12px] font-bold text-slate-700 leading-none">{value}</p>
+            </div>
+        </div>
+    );
+}
+
 function StatCard({ title, value, icon, color }: any) {
     return (
-        <motion.div whileHover={{ y: -5 }} className="min-w-[220px] md:min-w-0 bg-white p-5 md:p-6 rounded-[30px] border border-slate-100/50 shadow-xl shadow-blue-900/5 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-125 transition-all duration-700" style={{ color }}>
-                {React.cloneElement(icon, { size: 60 })}
+        <div className="bg-[#FFFFFF] p-6 rounded-[30px] border border-slate-100 shadow-sm relative overflow-hidden group">
+            <div className="relative z-10 flex items-center gap-5">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner transition-transform group-hover:scale-110" style={{ backgroundColor: `${color}10`, color }}>
+                    {React.cloneElement(icon, { size: 20 })}
+                </div>
+                <div>
+                    <h3 className="text-2xl font-bold text-slate-900 judson-bold italic">{value}</h3>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
+                </div>
             </div>
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-[15px] md:rounded-[18px] mb-4 flex items-center justify-center shadow-lg" style={{ backgroundColor: `${color}10`, color }}>
-                {React.cloneElement(icon, { size: 20 })}
-            </div>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{title}</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter italic uppercase">{value}</h3>
-        </motion.div>
+        </div>
+    );
+}
+
+function StatusBadge({ status }: { status: string }) {
+    const config: any = {
+        Active: { bg: "bg-blue-50/70", text: "text-blue-600", dot: "bg-blue-500", ring: "ring-blue-100" },
+        Completed: { bg: "bg-emerald-50/70", text: "text-emerald-600", dot: "bg-emerald-500", ring: "ring-emerald-100" },
+        "On Hold": { bg: "bg-orange-50/70", text: "text-orange-600", dot: "bg-orange-500", ring: "ring-orange-100" }
+    };
+    const style = config[status] || config.Active;
+    return (
+        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-xl border border-white ring-1 ${style.ring} ${style.bg} ${style.text}`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${style.dot} animate-pulse`} />
+            <span className="text-[9px] font-black uppercase">{status}</span>
+        </div>
     );
 }

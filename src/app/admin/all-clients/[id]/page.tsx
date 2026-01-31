@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
@@ -7,8 +6,8 @@ import React, { use, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Briefcase, Receipt, DollarSign,
-  ChevronRight, ShieldCheck, Mail, MapPin,
-  X, Plus, Target, StickyNote, Copy, CheckCircle2, Calendar, Trash2, Globe, ExternalLink
+  ShieldCheck, Mail, MapPin, X, Plus, Target, 
+  CheckCircle2, Trash2, ExternalLink, Key, LayoutGrid, Zap, Fingerprint
 } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
@@ -19,16 +18,19 @@ export default function ClientDetailsPage(props: { params: Params }) {
   const params = use(props.params);
   const clientId = params.id;
 
+  // --- States ---
   const [clientData, setClientData] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [copied, setCopied] = useState(false);
+  
+  // Project Form State
   const [milestones, setMilestones] = useState([{ title: "", amount: "", date: "" }]);
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:5000";
 
+  // --- Fetch Logic ---
   const fetchClientDetails = async () => {
     try {
       setLoading(true);
@@ -41,10 +43,9 @@ export default function ClientDetailsPage(props: { params: Params }) {
     }
   };
 
-  useEffect(() => {
-    fetchClientDetails();
-  }, [clientId]);
+  useEffect(() => { fetchClientDetails(); }, [clientId]);
 
+  // --- Milestone Functions ---
   const addMilestoneField = () => setMilestones([...milestones, { title: "", amount: "", date: "" }]);
   const removeMilestoneField = (index: number) => setMilestones(milestones.filter((_, i) => i !== index));
   const updateMilestone = (index: number, field: string, value: string) => {
@@ -53,15 +54,14 @@ export default function ClientDetailsPage(props: { params: Params }) {
     setMilestones(updated);
   };
 
+  // --- Add Project Logic ---
   const handleAddProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    const newProjectId = `P-${Math.floor(Math.random() * 9000) + 1000}`;
-
     const newProject = {
-      projectId: newProjectId,
+      projectId: `P-${Math.floor(Math.random() * 9000) + 1000}`,
       name: formData.get("projectName"),
       budget: Number(formData.get("budget")),
       type: formData.get("type"),
@@ -79,297 +79,254 @@ export default function ClientDetailsPage(props: { params: Params }) {
         projects: updatedProjects,
         activeProjects: updatedProjects.length
       });
-
       setIsModalOpen(false);
       setMilestones([{ title: "", amount: "", date: "" }]);
       fetchClientDetails();
     } catch (error) {
-      console.error("Update failed:", error);
+      console.error(error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const copyPassword = () => {
-    navigator.clipboard.writeText(clientData?.password || "");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const Skeleton = ({ className }: { className: string }) => (
-    <div className={`animate-pulse bg-slate-200/50 rounded-2xl ${className}`} />
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC]">
+      <div className="relative">
+        <div className="w-16 h-16 border-4 border-slate-100 border-t-[#4177BC] rounded-full animate-spin" />
+        <Fingerprint className="absolute inset-0 m-auto text-[#4177BC]" size={24} />
+      </div>
+      <p className="mt-6 text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 animate-pulse">Authenticating Access...</p>
+    </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 lg:p-12">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#FFFFFF] p-4 lg:p-8 selection:bg-[#4177BC] selection:text-white">
+      <div className="max-w-[1600px] mx-auto">
         
-        {/* Navigation & Header */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-          <div className="flex items-start gap-5">
-            <Link href="/admin/all-clients">
-              <motion.button 
-                whileHover={{ x: -4 }} 
-                className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-500 shadow-sm hover:bg-slate-50 transition-colors"
-              >
-                <ArrowLeft size={20} />
-              </motion.button>
-            </Link>
-            <div className="space-y-1">
-              {loading ? (
-                <>
-                  <Skeleton className="h-8 w-48" />
-                  <Skeleton className="h-4 w-32" />
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tight">
-                      {clientData?.name}
-                    </h1>
-                    <span className="hidden sm:inline-block px-3 py-1 bg-green-100 text-green-600 text-[10px] font-black uppercase rounded-full border border-green-200">
-                      Active
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-4 text-slate-500">
-                    <span className="flex items-center gap-1.5 text-xs font-semibold"><Mail size={14} /> {clientData?.email}</span>
-                    <span className="flex items-center gap-1.5 text-xs font-semibold"><MapPin size={14} /> {clientData?.address}</span>
-                  </div>
-                </>
-              )}
+        {/* TOP NAV */}
+        <nav className="flex items-center justify-between mb-8 bg-[#FFFFFF]/50 backdrop-blur-md p-4 rounded-3xl border border-[#FFFFFF] shadow-sm">
+          <Link href="/admin/all-clients">
+            <motion.button whileHover={{ scale: 1.05 }} className="flex items-center gap-3 px-5 py-2.5 bg-[#FFFFFF] rounded-2xl text-slate-600 font-bold text-xs shadow-sm border border-slate-100">
+              <ArrowLeft size={16} /> Dashboard
+            </motion.button>
+          </Link>
+          <div className="flex items-center gap-4">
+            <div className="text-right hidden sm:block">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">System Status</p>
+              <p className="text-[11px] font-bold text-emerald-500 flex items-center justify-end gap-1.5"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /> Live Sync</p>
             </div>
           </div>
+        </nav>
 
-          <motion.button 
-            whileTap={{ scale: 0.95 }}
-            onClick={copyPassword} 
-            className="group flex items-center justify-center gap-2 px-6 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black text-slate-700 uppercase tracking-widest shadow-sm hover:border-[#4177BC] transition-all"
-          >
-            {copied ? <CheckCircle2 size={16} className="text-green-500" /> : <Copy size={16} className="group-hover:text-[#4177BC]" />}
-            {copied ? "Copied" : "Portal Credentials"}
-          </motion.button>
-        </header>
-
-        {/* Top Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          <DetailCard title="Total Investment" value={`$${clientData?.totalPaid || 0}`} icon={<DollarSign />} color="#4177BC" />
-          <DetailCard title="Pending Balance" value={`$${clientData?.totalDue || 0}`} icon={<Receipt />} color="#f97316" />
-          <DetailCard title="Active Projects" value={clientData?.projects?.length || 0} icon={<Briefcase />} color="#4177BC" />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Main Content Area */}
-          <div className="lg:col-span-8 space-y-8">
-            <section className="bg-white border border-slate-200 rounded-[40px] p-6 md:p-10 shadow-sm">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-blue-50 text-[#4177BC] rounded-xl">
-                    <Globe size={22} />
-                  </div>
-                  <h3 className="font-black text-slate-800 text-xl">Project Portfolio</h3>
+          {/* LEFT COLUMN: IDENTITY CARD */}
+          <aside className="lg:col-span-3 space-y-6">
+            <div className="bg-[#FFFFFF] rounded-[40px] p-8 border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#4177BC]/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150" />
+              
+              <div className="relative z-10">
+                <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center mb-6 shadow-2xl rotate-3 group-hover:rotate-0 transition-transform">
+                  <span className="text-3xl font-bold text-[#FFFFFF] judson-bold">{clientData?.name?.charAt(0)}</span>
                 </div>
-                <button 
-                  onClick={() => setIsModalOpen(true)} 
-                  className="w-full sm:w-auto px-6 py-4 bg-[#4177BC] text-white rounded-[20px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#345f97] transition-all shadow-xl shadow-blue-100"
+                
+                <h1 className="text-3xl font-bold text-slate-900 tracking-tight judson-bold mb-1">{clientData?.name}</h1>
+                <span className="px-3 py-1 bg-[#4177BC]/10 text-[#4177BC] text-[10px] font-black uppercase rounded-full border border-[#4177BC]/20">{clientData?.status}</span>
+                
+                <div className="mt-10 space-y-5">
+                  <IdentityItem icon={<Mail size={14} />} label="Primary Email" value={clientData?.email} />
+                  <IdentityItem icon={<MapPin size={14} />} label="Hailing From" value={clientData?.address} />
+                  <IdentityItem icon={<ShieldCheck size={14} />} label="Client UID" value={clientId.slice(-8).toUpperCase()} />
+                </div>
+
+                <motion.button 
+                  onClick={() => { navigator.clipboard.writeText(clientData?.password); setCopied(true); setTimeout(()=>setCopied(false), 2000); }}
+                  className="w-full mt-10 py-4 bg-slate-50 hover:bg-slate-900 hover:text-[#FFFFFF] text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-100 flex items-center justify-center gap-2"
                 >
-                  <Plus size={16} /> Add New Project
-                </button>
+                  {copied ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Key size={14} />}
+                  {copied ? "Copied" : "Portal Access"}
+                </motion.button>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-[#4177BC] to-[#345e96] rounded-[35px] p-8 text-[#FFFFFF] shadow-xl shadow-[#4177BC]/20 relative overflow-hidden">
+               <Zap className="absolute right-[-10px] bottom-[-10px] w-32 h-32 text-white/10 rotate-12" />
+               <p className="text-[10px] font-black uppercase tracking-widest text-[#FFFFFF]/70 mb-2">Internal Note</p>
+               <p className="text-xs leading-relaxed font-medium italic">&quot;{clientData?.adminNotes || "No briefing available."}&quot;</p>
+            </div>
+          </aside>
+
+          {/* RIGHT COLUMN: STATS & PORTFOLIO */}
+          <main className="lg:col-span-9 space-y-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <StatCard title="Portfolio Value" value={`$${clientData?.totalPaid || 0}`} icon={<DollarSign />} color="#4177BC" />
+              <StatCard title="Outstanding" value={`$${clientData?.totalDue || 0}`} icon={<Receipt />} color="#EB9C2C" />
+              <StatCard title="Active Tracks" value={clientData?.projects?.length || 0} icon={<Briefcase />} color="#0F172A" />
+            </div>
+
+            <div className="bg-[#FFFFFF] rounded-[45px] p-8 lg:p-12 border border-slate-100 shadow-sm relative">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 judson-bold flex items-center gap-3">
+                    <LayoutGrid size={24} className="text-[#4177BC]" /> Operational Portfolio
+                  </h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Lifecycle Management</p>
+                </div>
+                <motion.button 
+                  whileHover={{ scale: 1.02 }}
+                  onClick={() => setIsModalOpen(true)}
+                  className="bg-[#4177BC] text-[#FFFFFF] px-8 py-4 rounded-[20px] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:shadow-lg transition-all"
+                >
+                  <Plus size={16} /> New Engagement
+                </motion.button>
               </div>
 
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {clientData?.projects?.map((project: any, idx: number) => (
                   <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    key={project.projectId || idx} 
-                    className="group p-6 bg-[#FBFDFF] border border-slate-100 rounded-[35px] hover:border-blue-200 hover:bg-white transition-all hover:shadow-lg hover:shadow-slate-100"
+                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={idx}
+                    className="group p-6 bg-slate-50/50 border border-slate-100 rounded-[35px] hover:bg-[#FFFFFF] hover:border-[#4177BC]/30 transition-all duration-300"
                   >
-                    <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <h4 className="font-black text-slate-800 text-lg group-hover:text-[#4177BC] transition-colors">{project.name}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{project.type}</span>
-                          <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                          <span className="text-[11px] font-black text-[#4177BC]">${project.budget} Total Budget</span>
-                        </div>
-                      </div>
-                      <div className="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 group-hover:text-[#4177BC] transition-colors">
-                        <ExternalLink size={18} />
-                      </div>
+                    <div className="flex justify-between mb-6">
+                       <div>
+                         <h4 className="font-bold text-slate-900 text-lg group-hover:text-[#4177BC] transition-colors">{project.name}</h4>
+                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{project.type} • ID: {project.projectId}</p>
+                       </div>
+                       <div className="w-10 h-10 bg-[#FFFFFF] rounded-xl flex items-center justify-center border border-slate-100 text-slate-400 group-hover:text-[#4177BC] shadow-sm">
+                         <ExternalLink size={16} />
+                       </div>
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {project.milestones?.map((m: any, i: number) => (
-                        <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 flex flex-col justify-between h-24 relative overflow-hidden">
-                           <div className={`absolute left-0 top-0 bottom-0 w-1 ${i === 0 ? 'bg-[#4177BC]' : 'bg-slate-200'}`} />
-                           <p className="text-[9px] font-black text-slate-400 uppercase">{m.date}</p>
-                           <h5 className="text-xs font-bold text-slate-700 truncate pr-2">{m.title}</h5>
-                           <p className="text-sm font-black text-slate-900 mt-auto">${m.amount}</p>
-                        </div>
-                      ))}
+                    <div className="flex items-center gap-4 mb-4 p-3 bg-[#FFFFFF] rounded-2xl border border-slate-50">
+                      <div className="flex-1">
+                        <p className="text-[9px] font-black text-slate-400 uppercase">Capital</p>
+                        <p className="text-xl font-bold text-slate-900 judson-bold">${project.budget}</p>
+                      </div>
+                      <div className="h-8 w-[1px] bg-slate-100" />
+                      <div className="flex-1">
+                        <p className="text-[9px] font-black text-slate-400 uppercase">Milestones</p>
+                        <p className="text-xl font-bold text-slate-900 judson-bold">{project.milestones?.length}</p>
+                      </div>
                     </div>
                   </motion.div>
                 ))}
-
-                {(!clientData?.projects || clientData.projects.length === 0) && (
-                  <div className="text-center py-16 border-2 border-dashed border-slate-100 rounded-[40px]">
-                    <p className="text-slate-400 text-xs font-black uppercase tracking-widest">No projects launched yet</p>
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
-
-          {/* Sidebar Area */}
-          <aside className="lg:col-span-4 space-y-8">
-            <div className="bg-white border border-slate-200 rounded-[40px] p-8 shadow-sm">
-              <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                <StickyNote size={14} className="text-orange-500" /> Private Admin Notes
-              </h3>
-              <div className="p-5 bg-orange-50/30 rounded-3xl border border-orange-100/50">
-                <p className="text-xs font-semibold text-slate-600 leading-relaxed italic">
-                  {clientData?.adminNotes || "Start adding notes about this client to keep track of preferences."}
-                </p>
               </div>
             </div>
-
-            <div className="bg-slate-900 rounded-[40px] p-8 text-white shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#4177BC] opacity-10 blur-3xl -mr-16 -mt-16" />
-              <h3 className="font-black text-blue-400 text-[10px] uppercase tracking-widest mb-8">Security Audit</h3>
-              <div className="space-y-6 relative z-10">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-white/5 rounded-2xl"><ShieldCheck className="text-blue-400" size={20} /></div>
-                  <div>
-                    <p className="text-sm font-bold">Portal Access</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">ID: {clientId.slice(-8).toUpperCase()}</p>
-                  </div>
-                </div>
-                <button className="w-full py-4 bg-[#4177BC] hover:bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">
-                  Reset Client Password
-                </button>
-              </div>
-            </div>
-          </aside>
+          </main>
         </div>
+      </div>
 
-        {/* MODERN PROJECT MODAL */}
-        <AnimatePresence>
-          {isModalOpen && (
-            <>
-              <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                exit={{ opacity: 0 }} 
-                onClick={() => setIsModalOpen(false)} 
-                className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[99]" 
-              />
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95, y: 20 }} 
-                animate={{ opacity: 1, scale: 1, y: 0 }} 
-                exit={{ opacity: 0, scale: 0.95, y: 20 }} 
-                className="fixed inset-4 m-auto max-w-2xl h-fit max-h-[90vh] bg-white rounded-[45px] shadow-2xl z-[100] overflow-hidden flex flex-col"
-              >
-                <div className="p-8 md:p-12 overflow-y-auto custom-scrollbar">
-                  <div className="flex justify-between items-start mb-10">
-                    <div>
-                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">Create Project</h2>
-                      <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Configure billing & milestones</p>
+      {/* --- ADD NEW PROJECT MODAL --- */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-2xl bg-[#FFFFFF] rounded-[40px] shadow-2xl overflow-hidden"
+            >
+              <form onSubmit={handleAddProject}>
+                <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                   <div>
+                      <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tight">Initialize Engagement</h2>
+                      <p className="text-[10px] font-bold text-[#4177BC] uppercase tracking-widest mt-0.5">Project Blueprinting</p>
+                   </div>
+                   <button type="button" onClick={() => setIsModalOpen(false)} className="p-3 hover:bg-[#FFFFFF] rounded-2xl transition-all shadow-sm">
+                      <X size={20} className="text-slate-400" />
+                   </button>
+                </div>
+
+                <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Project Name</label>
+                      <input name="projectName" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl text-xs font-bold focus:ring-2 ring-[#4177BC]/10 outline-none border border-transparent focus:border-[#4177BC]/30 transition-all" placeholder="Enter Title..." />
                     </div>
-                    <button onClick={() => setIsModalOpen(false)} className="p-3 bg-slate-50 text-slate-400 hover:text-red-500 rounded-2xl transition-all">
-                      <X size={20} />
-                    </button>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Total Budget ($)</label>
+                      <input name="budget" type="number" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl text-xs font-bold focus:ring-2 ring-[#4177BC]/10 outline-none border border-transparent focus:border-[#4177BC]/30 transition-all" placeholder="5000" />
+                    </div>
                   </div>
 
-                  <form onSubmit={handleAddProject} className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Project Name</label>
-                        <input name="projectName" required type="text" placeholder="e.g. Mobile App" className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 ring-blue-100 outline-none transition-all" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Total Budget ($)</label>
-                        <input name="budget" required type="number" placeholder="0.00" className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 ring-blue-100 outline-none" />
-                      </div>
-                    </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Engagement Type</label>
+                    <select name="type" className="w-full px-5 py-4 bg-slate-50 rounded-2xl text-xs font-bold outline-none border border-transparent focus:border-[#4177BC]/30 transition-all appearance-none">
+                      <option>Fixed Price</option>
+                      <option>Monthly Subscription</option>
+                      <option>Hourly Contract</option>
+                    </select>
+                  </div>
 
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Billing Type</label>
-                      <div className="relative">
-                        <select name="type" className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold appearance-none cursor-pointer focus:ring-2 ring-blue-100 outline-none">
-                          <option value="Installment">Installment Based</option>
-                          <option value="Monthly">Monthly Retainer</option>
-                          <option value="One-time">One-time Payment</option>
-                        </select>
-                        <Target className="absolute right-6 top-4 text-slate-300 pointer-events-none" size={18} />
-                      </div>
-                    </div>
-
-                    {/* Milestone Section */}
-                    <div className="space-y-4 pt-4">
-                      <div className="flex justify-between items-center bg-blue-50/50 p-4 rounded-2xl">
-                        <h4 className="text-[11px] font-black text-[#4177BC] uppercase tracking-widest">Payment Milestones</h4>
-                        <button type="button" onClick={addMilestoneField} className="px-4 py-2 bg-[#4177BC] text-white rounded-xl text-[10px] font-bold flex items-center gap-1.5 hover:bg-blue-600 transition-colors">
-                          <Plus size={14} /> Add Step
-                        </button>
-                      </div>
-
-                      <div className="space-y-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                        {milestones.map((m, index) => (
-                          <div key={index} className="group p-5 bg-white border border-slate-100 rounded-[28px] space-y-4 relative hover:border-blue-100 transition-all">
-                            {milestones.length > 1 && (
-                              <button type="button" onClick={() => removeMilestoneField(index)} className="absolute -top-2 -right-2 p-1.5 bg-white shadow-md text-red-400 rounded-full hover:text-red-600 border border-slate-50">
-                                <Trash2 size={14} />
-                              </button>
-                            )}
-                            <div className="flex flex-col md:flex-row gap-4">
-                              <input value={m.title} onChange={(e) => updateMilestone(index, 'title', e.target.value)} required placeholder="Milestone Name" className="flex-1 px-4 py-3 bg-slate-50 rounded-xl text-xs font-bold border-none outline-none focus:ring-1 ring-blue-200" />
-                              <div className="flex gap-2">
-                                <input value={m.amount} onChange={(e) => updateMilestone(index, 'amount', e.target.value)} required type="number" placeholder="Amount" className="w-24 px-4 py-3 bg-slate-50 rounded-xl text-xs font-bold border-none outline-none focus:ring-1 ring-blue-200" />
-                                <input value={m.date} onChange={(e) => updateMilestone(index, 'date', e.target.value)} required type="date" className="w-32 px-4 py-3 bg-slate-50 rounded-xl text-[10px] font-bold border-none outline-none focus:ring-1 ring-blue-200" />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="pt-6 flex gap-4">
-                      <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4.5 bg-slate-50 text-slate-500 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-100 transition-colors">Cancel</button>
-                      <button disabled={isSubmitting} type="submit" className="flex-[2] py-4.5 bg-[#4177BC] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-blue-100 hover:shadow-2xl hover:-translate-y-0.5 transition-all">
-                        {isSubmitting ? "Processing..." : "Launch Project"}
+                  {/* Milestones */}
+                  <div className="pt-6 border-t border-slate-50 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-[11px] font-black uppercase text-slate-900 tracking-widest flex items-center gap-2">
+                        <Target size={14} className="text-[#4177BC]" /> Payment Milestones
+                      </h4>
+                      <button type="button" onClick={addMilestoneField} className="px-4 py-2 bg-[#4177BC]/10 text-[#4177BC] rounded-xl text-[10px] font-bold hover:bg-[#4177BC] hover:text-[#FFFFFF] transition-all flex items-center gap-2">
+                        <Plus size={14} /> Add Phase
                       </button>
                     </div>
-                  </form>
+
+                    <div className="space-y-3">
+                      {milestones.map((m, idx) => (
+                        <motion.div initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} key={idx} className="flex gap-3 items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                          <input value={m.title} onChange={(e)=>updateMilestone(idx, 'title', e.target.value)} placeholder="Milestone Name" className="flex-[2] bg-[#FFFFFF] px-4 py-2.5 rounded-xl text-[11px] font-bold outline-none border border-slate-100" />
+                          <input value={m.amount} onChange={(e)=>updateMilestone(idx, 'amount', e.target.value)} type="number" placeholder="$" className="flex-1 bg-[#FFFFFF] px-4 py-2.5 rounded-xl text-[11px] font-bold outline-none border border-slate-100" />
+                          {milestones.length > 1 && (
+                            <button type="button" onClick={() => removeMilestoneField(idx)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+
+                <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
+                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 tracking-widest">Cancel</button>
+                   <button disabled={isSubmitting} type="submit" className="flex-[2] py-4 bg-[#4177BC] text-[#FFFFFF] rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[#4177BC]/20 disabled:opacity-50 flex items-center justify-center gap-3">
+                     {isSubmitting ? "Processing..." : "Confirm & Launch"}
+                   </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// --- HELPER COMPONENTS ---
+function StatCard({ title, value, icon, color }: any) {
+  return (
+    <div className="bg-[#FFFFFF] p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-5 group hover:border-[#4177BC]/20 transition-all">
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110" style={{ backgroundColor: `${color}10`, color: color }}>
+        {React.cloneElement(icon, { size: 20 })}
+      </div>
+      <div>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{title}</p>
+        <h3 className="text-2xl font-bold text-slate-900 judson-bold">{value}</h3>
       </div>
     </div>
   );
 }
 
-function DetailCard({ title, value, icon, color }: any) {
+function IdentityItem({ icon, label, value }: any) {
   return (
-    <motion.div 
-      whileHover={{ y: -5 }} 
-      className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm relative overflow-hidden group"
-    >
-      <div 
-        className="absolute top-0 right-0 w-32 h-32 opacity-[0.03] -mr-10 -mt-10 rounded-full group-hover:scale-110 transition-transform duration-500" 
-        style={{ backgroundColor: color }} 
-      />
-      <div 
-        className="w-14 h-14 rounded-2xl mb-6 flex items-center justify-center transition-transform group-hover:rotate-12"
-        style={{ backgroundColor: `${color}10`, color: color }}
-      >
-        {React.cloneElement(icon, { size: 26 })}
+    <div className="flex items-center gap-4 group">
+      <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-[#4177BC] group-hover:bg-[#4177BC]/10 transition-colors">
+        {icon}
       </div>
-      <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] mb-1">{title}</p>
-      <h3 className="text-3xl font-black text-slate-800 tracking-tight">{value}</h3>
-    </motion.div>
+      <div className="overflow-hidden">
+        <p className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">{label}</p>
+        <p className="text-xs font-bold text-slate-700 truncate">{value}</p>
+      </div>
+    </div>
   );
 }

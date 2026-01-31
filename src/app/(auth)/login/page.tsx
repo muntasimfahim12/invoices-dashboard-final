@@ -2,12 +2,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react"; // ✅ Suspense added
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
 
 /* ================= MAIN COMPONENT WRAPPER ================= */
-// Next.js 16-এ useSearchParams ব্যবহার করলে Suspense দিয়ে র‍্যাপ করা বাধ্যতামূলক।
 export default function LoginPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-slate-100 flex items-center justify-center">Loading...</div>}>
@@ -21,17 +20,16 @@ function LoginFormContent() {
   const [role, setRole] = useState<"client" | "admin">("client");
   const [loading, setLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [showForgetPassword, setShowForgetPassword] = useState(false); // ✅ Forget Pass State
   const router = useRouter();
   
-  // ✅ Extract email from URL (This needs Suspense)
   const searchParams = useSearchParams();
   const autoEmail = searchParams.get("email") || "";
 
-  // URL formatting: Automatic trailing slash removal
   const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
   const API_URL = rawUrl.replace(/\/$/, "");
 
-  /* ================= LOGIN LOGIC (UNCHANGED) ================= */
+  /* ================= LOGIN LOGIC ================= */
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>,
     currentRole: "client" | "admin"
@@ -43,11 +41,7 @@ function LoginFormContent() {
     const email = formData.get("email")?.toString().trim();
     const password = formData.get("password")?.toString();
 
-    const payload = {
-      email,
-      password,
-      role: currentRole,
-    };
+    const payload = { email, password, role: currentRole };
 
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
@@ -63,44 +57,61 @@ function LoginFormContent() {
         localStorage.setItem("user_role", data.role);
         localStorage.setItem("user_name", data.name);
         localStorage.setItem("user_email", email || "");
-        
-        // ✅ প্রোফাইলের জন্য নিচের এই লাইনটি যোগ করা হয়েছে (আপনার রিকোয়েস্ট অনুযায়ী)
-        if (data.id) {
-          localStorage.setItem("user_id", data.id);
-        }
+        if (data.id) localStorage.setItem("user_id", data.id);
 
         Cookies.set("vault_token", data.token, { expires: 7 });
         Cookies.set("user_role", data.role, { expires: 7 });
 
-        console.log("Login Success! Role:", data.role);
-
         if (data.role.toLowerCase() === "admin") {
-          // আপনার ড্যাশবোর্ডের পাথ অনুযায়ী চেক করুন
           router.push("/admin"); 
         } else {
           router.push("/client");
         }
       } else {
-        alert(data.error || "Login failed! Please check your credentials.");
+        alert(data.error || "Login failed!");
       }
     } catch (err) {
-      console.error("Login Error:", err);
-      alert("Cannot connect to server. Ensure your backend is running at: " + API_URL);
+      alert("Cannot connect to server.");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ================= REGISTER REQUEST (UNCHANGED) ================= */
+  /* ================= FORGET PASSWORD LOGIC ================= */
+  const handleForgetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email");
+
+    try {
+      // আপনার ব্যাকএন্ডে এই এন্ডপয়েন্টটি থাকতে হবে
+      const response = await fetch(`${API_URL}/auth/forget-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role }),
+      });
+
+      if (response.ok) {
+        alert("Password reset link sent to your email!");
+        setShowForgetPassword(false);
+      } else {
+        const data = await response.json();
+        alert(data.error || "Something went wrong.");
+      }
+    } catch (err) {
+      alert("Failed to send reset request.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ================= REGISTER REQUEST ================= */
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-
     const formData = new FormData(e.currentTarget);
-    const payload = {
-      name: formData.get("name"),
-      email: formData.get("email"),
-    };
+    const payload = { name: formData.get("name"), email: formData.get("email") };
 
     try {
       const response = await fetch(`${API_URL}/invoices/send-email`, {
@@ -118,11 +129,10 @@ function LoginFormContent() {
       });
 
       if (response.ok) {
-        alert("Request sent successfully! Admin will create your account.");
+        alert("Request sent successfully!");
         setShowRegister(false);
       }
     } catch (err) {
-      console.error(err);
       alert("Failed to send request.");
     } finally {
       setLoading(false);
@@ -135,8 +145,6 @@ function LoginFormContent() {
 
         {/* ================= DESKTOP ================= */}
         <div className="hidden md:grid grid-cols-2 min-h-[550px]">
-
-          {/* LEFT: FORMS */}
           <div className="relative flex items-center justify-center px-10">
             <Fade visible={role === "client"}>
               <Form
@@ -147,6 +155,7 @@ function LoginFormContent() {
                 note="Client credentials are provided by admin."
                 showRegister
                 onRegister={() => setShowRegister(true)}
+                onForget={() => setShowForgetPassword(true)} // ✅ Added
                 defaultValue={autoEmail} 
               />
             </Fade>
@@ -158,32 +167,17 @@ function LoginFormContent() {
                 onSubmit={(e: any) => handleSubmit(e, "admin")}
                 loading={loading}
                 note="Admin access only."
+                onForget={() => setShowForgetPassword(true)} // ✅ Added
               />
             </Fade>
           </div>
 
-          {/* RIGHT: SWITCH PANEL */}
-          <div
-            className="flex items-center justify-center text-white px-10 transition-all duration-500 ease-in-out"
-            style={{
-              backgroundColor: role === "client" ? "#4177BC" : "#EB9C2C",
-            }}
-          >
+          <div className="flex items-center justify-center text-white px-10 transition-all duration-500"
+            style={{ backgroundColor: role === "client" ? "#4177BC" : "#EB9C2C" }}>
             <div className="text-center max-w-sm">
-              <h3 className="text-3xl font-bold">
-                {role === "client" ? "Are you an admin?" : "Are you a client?"}
-              </h3>
-
-              <p className="mt-4 text-white/90">
-                {role === "client"
-                  ? "Login as admin to manage everything."
-                  : "Login as client to view your work & invoices."}
-              </p>
-
-              <button
-                onClick={() => setRole(role === "client" ? "admin" : "client")}
-                className="mt-8 px-6 py-3 rounded-lg bg-white text-slate-900 font-semibold hover:bg-slate-100 transition shadow-md active:scale-95"
-              >
+              <h3 className="text-3xl font-bold">{role === "client" ? "Are you an admin?" : "Are you a client?"}</h3>
+              <p className="mt-4 text-white/90">{role === "client" ? "Login as admin to manage everything." : "Login as client to view your work."}</p>
+              <button onClick={() => setRole(role === "client" ? "admin" : "client")} className="mt-8 px-6 py-3 rounded-lg bg-white text-slate-900 font-semibold hover:bg-slate-100 transition shadow-md active:scale-95">
                 Switch to {role === "client" ? "Admin" : "Client"} Login
               </button>
             </div>
@@ -200,44 +194,42 @@ function LoginFormContent() {
             note="If you don’t have credentials, contact admin."
             showRegister={role === "client"}
             onRegister={() => setShowRegister(true)}
+            onForget={() => setShowForgetPassword(true)} // ✅ Added
             defaultValue={role === "client" ? autoEmail : ""}
           />
-
-          <button
-            onClick={() => setRole(role === "client" ? "admin" : "client")}
-            className="mt-6 w-full py-3 text-sm font-semibold text-[#4177BC] border border-[#4177BC] rounded-lg"
-          >
+          <button onClick={() => setRole(role === "client" ? "admin" : "client")} className="mt-6 w-full py-3 text-sm font-semibold text-[#4177BC] border border-[#4177BC] rounded-lg">
             Switch to {role === "client" ? "Admin" : "Client"} Login
           </button>
         </div>
       </div>
 
-      {/* ================= REGISTER MODAL ================= */}
-      {showRegister && (
-        <RegisterModal
-          onClose={() => setShowRegister(false)}
-          onSubmit={handleRegister}
-          loading={loading}
+      {/* ================= MODALS ================= */}
+      {showRegister && <RegisterModal onClose={() => setShowRegister(false)} onSubmit={handleRegister} loading={loading} />}
+      
+      {/* ✅ FORGET PASSWORD MODAL */}
+      {showForgetPassword && (
+        <ForgetPasswordModal 
+          onClose={() => setShowForgetPassword(false)} 
+          onSubmit={handleForgetPassword} 
+          loading={loading} 
+          role={role}
         />
       )}
     </div>
   );
 }
 
-/* ================= REUSABLE COMPONENTS (UNCHANGED) ================= */
+/* ================= REUSABLE COMPONENTS ================= */
 
 function Fade({ visible, children }: any) {
   return (
-    <div
-      className={`absolute inset-0 transition-all duration-500 flex items-center justify-center
-      ${visible ? "opacity-100 translate-x-0 z-10" : "opacity-0 translate-x-4 z-0 pointer-events-none"}`}
-    >
+    <div className={`absolute inset-0 transition-all duration-500 flex items-center justify-center ${visible ? "opacity-100 translate-x-0 z-10" : "opacity-0 translate-x-4 z-0 pointer-events-none"}`}>
       {children}
     </div>
   );
 }
 
-function Form({ title, description, onSubmit, loading, note, showRegister, onRegister, defaultValue }: any) {
+function Form({ title, description, onSubmit, loading, note, showRegister, onRegister, onForget, defaultValue }: any) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -248,40 +240,23 @@ function Form({ title, description, onSubmit, loading, note, showRegister, onReg
       <form onSubmit={onSubmit} className="mt-8 space-y-5">
         <div>
           <label className="text-xs font-semibold text-slate-700 uppercase">Email</label>
-          <input 
-            name="email" 
-            type="email" 
-            required 
-            defaultValue={defaultValue} 
-            placeholder="name@company.com" 
-            className="w-full mt-1 px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition shadow-sm" 
-          />
+          <input name="email" type="email" required defaultValue={defaultValue} placeholder="name@company.com" className="w-full mt-1 px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition shadow-sm" />
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-slate-700 uppercase">Password</label>
+          <div className="flex justify-between items-center">
+            <label className="text-xs font-semibold text-slate-700 uppercase">Password</label>
+            <button type="button" onClick={onForget} className="text-xs font-bold text-[#4177BC] hover:underline">Forgot?</button>
+          </div>
           <div className="relative mt-1">
-            <input
-              name="password"
-              type={showPassword ? "text" : "password"}
-              required
-              placeholder="••••••••"
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition shadow-sm pr-12"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-            >
+            <input name="password" type={showPassword ? "text" : "password"} required placeholder="••••••••" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition shadow-sm pr-12" />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
               {showPassword ? <EyeOffIcon /> : <EyeIcon />}
             </button>
           </div>
         </div>
 
-        <button
-          disabled={loading}
-          className={`w-full py-3 rounded-lg text-white font-bold transition shadow-lg active:scale-95 ${loading ? 'bg-slate-400 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800'}`}
-        >
+        <button disabled={loading} className={`w-full py-3 rounded-lg text-white font-bold transition shadow-lg active:scale-95 ${loading ? 'bg-slate-400' : 'bg-slate-900 hover:bg-slate-800'}`}>
           {loading ? "Verifying..." : "Sign In to Vault"}
         </button>
       </form>
@@ -293,11 +268,30 @@ function Form({ title, description, onSubmit, loading, note, showRegister, onReg
 
       {showRegister && (
         <div className="mt-6 text-center border-t border-slate-100 pt-4">
-          <button onClick={onRegister} className="text-sm font-bold text-[#4177BC] hover:underline">
-            Donot have access? Register for Portal
-          </button>
+          <button onClick={onRegister} className="text-sm font-bold text-[#4177BC] hover:underline">Donot have access? Register</button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ✅ NEW COMPONENT: FORGET PASSWORD MODAL
+function ForgetPasswordModal({ onClose, onSubmit, loading, role }: any) {
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md p-8 shadow-2xl">
+        <h3 className="text-2xl font-bold text-slate-900">Reset Password</h3>
+        <p className="text-slate-500 text-sm mt-2">Enter your {role} email to receive a reset link.</p>
+        <form onSubmit={onSubmit} className="mt-6 space-y-4">
+          <input name="email" required type="email" placeholder="Enter your registered email" className="w-full px-4 py-3 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500" />
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-3 text-sm font-bold rounded-lg border border-slate-200">Cancel</button>
+            <button disabled={loading} className="flex-1 py-3 text-sm font-bold rounded-lg bg-[#4177BC] text-white">
+              {loading ? "Sending..." : "Send Link"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -305,15 +299,13 @@ function Form({ title, description, onSubmit, loading, note, showRegister, onReg
 function RegisterModal({ onClose, onSubmit, loading }: any) {
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-8 shadow-2xl border border-slate-200">
+      <div className="bg-white rounded-2xl w-full max-w-md p-8 shadow-2xl">
         <h3 className="text-2xl font-bold text-slate-900">Request Access</h3>
         <p className="text-slate-500 text-sm mt-2">Admin will review and create your credentials.</p>
-
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <input name="name" required placeholder="Full Name / Company" className="w-full px-4 py-3 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition shadow-sm" />
-          <input name="email" required type="email" placeholder="Business Email" className="w-full px-4 py-3 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition shadow-sm" />
-          <textarea name="message" placeholder="Project details (optional)" className="w-full px-4 py-3 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500 h-28 resize-none transition shadow-sm" />
-
+          <input name="name" required placeholder="Full Name / Company" className="w-full px-4 py-3 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500" />
+          <input name="email" required type="email" placeholder="Business Email" className="w-full px-4 py-3 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500" />
+          <textarea name="message" placeholder="Project details (optional)" className="w-full px-4 py-3 rounded-lg border border-slate-300 h-28 resize-none" />
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-3 text-sm font-bold rounded-lg border border-slate-200 hover:bg-slate-50 transition">Cancel</button>
             <button disabled={loading} className="flex-1 py-3 text-sm font-bold rounded-lg bg-[#4177BC] text-white hover:bg-[#34629d] transition shadow-md">

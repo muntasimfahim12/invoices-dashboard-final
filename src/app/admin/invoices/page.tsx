@@ -20,7 +20,7 @@ interface Client {
 interface Invoice {
     _id: string;
     invoiceId: string;
-    clientName?: string; 
+    clientName?: string;
     clientEmail?: string;
     client?: Client;
     projectTitle: string;
@@ -42,7 +42,7 @@ export default function InvoicesPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState<string>("All");
     const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
-    
+
     // --- Safe State Initialization ---
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<string>("client");
@@ -53,7 +53,7 @@ export default function InvoicesPage() {
         setMounted(true);
         const storedEmail = localStorage.getItem("user_email");
         const storedRole = localStorage.getItem("user_role") || "client";
-        
+
         if (storedEmail) setUserEmail(storedEmail);
         setUserRole(storedRole);
     }, []);
@@ -297,7 +297,10 @@ export default function InvoicesPage() {
                                                 <button disabled={actionLoading === inv._id} onClick={() => handleDownload(inv._id, inv.invoiceId)} className="p-3 bg-slate-50 text-slate-400 hover:text-[#4177BC] hover:bg-[#4177BC]/10 rounded-xl transition-all disabled:opacity-50">
                                                     {actionLoading === inv._id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                                                 </button>
-                                                <Link href={`/dashboard/invoices/${inv._id}`} className="p-3 bg-slate-50 text-slate-400 hover:text-white hover:bg-[#4177BC] rounded-xl transition-all">
+                                                <Link
+                                                    href={userRole === 'admin' ? `/admin/invoices/${inv._id}` : `/dashboard/invoices/${inv._id}`}
+                                                    className="p-3 bg-slate-50 text-slate-400 hover:text-white hover:bg-[#4177BC] rounded-xl transition-all"
+                                                >
                                                     <ChevronRight size={16} />
                                                 </Link>
                                             </div>

@@ -18,7 +18,6 @@ export default function AllClients() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
 
-  // ডাটা রিফ্রেশ করার ফাংশন
   const fetchClients = async () => {
     try {
       setLoading(true);
@@ -36,7 +35,6 @@ export default function AllClients() {
     fetchClients();
   }, []);
 
-  // ডিলিট করার ফাংশন
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this client record?")) {
       try {
@@ -52,7 +50,6 @@ export default function AllClients() {
 
   const filteredClients = useMemo(() => {
     return clients.filter(client => {
-      // ব্যাকএন্ডের কি-এর সাথে ম্যাচ করা হয়েছে (name, email)
       const matchesSearch = 
         client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.email?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -64,25 +61,25 @@ export default function AllClients() {
   }, [clients, searchTerm, filterStatus]);
 
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC]">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#FFFFFF]">
       <RefreshCcw className="animate-spin text-[#4177BC] mb-4" size={32} />
-      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Syncing with Vault...</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 inter-bold">Syncing with Vault...</p>
     </div>
   );
 
   return (
-    <div className="p-4 md:p-8 min-h-screen bg-[#F8FAFC] flex justify-center pb-24 md:pb-8">
+    <div className="p-4 md:p-8 min-h-screen bg-[#FFFFFF] flex justify-center pb-24 md:pb-8 selection:bg-[#4177BC] selection:text-white">
       <div className="max-w-6xl w-full">
 
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-[#4177BC] animate-pulse" />
-              <span className="text-[9px] font-black uppercase tracking-widest text-[#4177BC]">Management Console</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#4177BC] inter-bold">Management Console</span>
             </div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight italic uppercase">
-              Client <span className="text-[#4177BC]">Vault</span>
+            <h1 className="text-5xl font-bold text-slate-900 tracking-tighter judson-bold">
+              Client <span className="text-slate-300">Vault.</span>
             </h1>
           </div>
 
@@ -90,7 +87,7 @@ export default function AllClients() {
             <motion.button
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-3 bg-[#4177BC] text-white px-8 py-4 rounded-[22px] text-[11px] font-black shadow-xl shadow-blue-200 uppercase tracking-widest"
+              className="flex items-center gap-3 bg-[#4177BC] text-white px-8 py-4 rounded-[22px] text-[11px] font-black shadow-xl shadow-blue-100 uppercase tracking-widest inter-bold"
             >
               <UserPlus size={16} />
               Register New Client
@@ -107,7 +104,7 @@ export default function AllClients() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by name or email..."
-              className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-600 placeholder:text-slate-300 outline-none py-3"
+              className="w-full bg-transparent border-none focus:ring-0 text-sm font-semibold text-slate-600 placeholder:text-slate-300 outline-none py-3 inter-medium"
             />
           </div>
           <div className="h-8 w-[1px] bg-slate-100 hidden md:block" />
@@ -116,7 +113,7 @@ export default function AllClients() {
             <select 
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-transparent border-none text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] outline-none cursor-pointer"
+              className="bg-transparent border-none text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] outline-none cursor-pointer inter-bold p-2"
             >
               <option value="All">All Status</option>
               <option value="Active">Active</option>
@@ -137,31 +134,31 @@ export default function AllClients() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ delay: index * 0.03 }}
-                  className={`relative group bg-white border border-slate-100 p-5 rounded-[30px] flex flex-col md:flex-row items-center justify-between gap-6 transition-all hover:shadow-2xl hover:shadow-slate-200/40 ${client.status === 'Disabled' ? 'grayscale opacity-60' : ''}`}
+                  className={`relative group bg-white border border-slate-100 p-6 rounded-[35px] flex flex-col md:flex-row items-center justify-between gap-6 transition-all hover:border-[#4177BC]/30 hover:shadow-2xl hover:shadow-slate-100 ${client.status === 'Disabled' ? 'grayscale opacity-60' : ''}`}
                 >
                   {/* 1. Identity */}
                   <div className="flex items-center gap-5 w-full md:w-1/3">
-                    <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-[#4177BC] font-black text-lg group-hover:bg-[#4177BC] group-hover:text-white transition-all duration-500 shadow-sm border border-slate-100">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-[#4177BC] font-black text-lg group-hover:bg-[#4177BC] group-hover:text-white transition-all duration-500 shadow-sm border border-slate-100 inter-bold">
                       {client.name?.charAt(0) || "C"}
                     </div>
                     <div className="overflow-hidden">
-                      <h3 className="font-black text-slate-800 tracking-tight text-[15px] uppercase italic truncate">{client.name}</h3>
-                      <p className="text-[11px] text-slate-400 font-bold truncate">{client.email}</p>
+                      <h3 className="font-bold text-slate-800 tracking-tight text-[16px] truncate inter-semibold">{client.name}</h3>
+                      <p className="text-[11px] text-slate-400 font-bold truncate uppercase tracking-tighter inter-medium">{client.email}</p>
                     </div>
                   </div>
 
                   {/* 2. Status Monitoring */}
                   <div className="flex items-center justify-between md:justify-around w-full md:flex-1">
                     <div className="text-center md:text-left">
-                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 italic">Status</p>
-                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase ${client.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 inter-bold">Status</p>
+                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase inter-bold ${client.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                         {client.status === 'Active' ? <ShieldCheck size={12} /> : <AlertCircle size={12} />}
                         {client.status || 'Unknown'}
                       </div>
                     </div>
                     <div className="text-center md:text-left">
-                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 italic">Engagement</p>
-                      <span className="text-[13px] font-black text-slate-700 tracking-tight">
+                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 inter-bold">Engagement</p>
+                      <span className="text-[13px] font-black text-slate-700 tracking-tight inter-bold">
                         {client.projects?.length || 0} Active Project(s)
                       </span>
                     </div>
@@ -170,7 +167,7 @@ export default function AllClients() {
                   {/* 3. Quick Actions */}
                   <div className="flex items-center gap-3 w-full md:w-auto justify-end">
                     <Link href={`/admin/all-clients/${client._id}`}>
-                      <button className="h-11 px-5 rounded-[18px] bg-slate-50 text-slate-500 hover:text-white hover:bg-[#4177BC] transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-transparent hover:shadow-lg hover:shadow-blue-200">
+                      <button className="h-11 px-5 rounded-[18px] bg-slate-50 text-slate-500 hover:text-white hover:bg-[#4177BC] transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-transparent hover:shadow-lg inter-bold">
                         View Portal <ChevronRight size={14} />
                       </button>
                     </Link>
@@ -197,16 +194,16 @@ export default function AllClients() {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             className="absolute right-0 mt-3 w-52 bg-white border border-slate-100 rounded-[24px] shadow-2xl z-20 p-2.5 overflow-hidden"
                           >
-                            <button className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black text-slate-600 hover:bg-slate-50 rounded-xl transition-all uppercase tracking-tighter">
+                            <button className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black text-slate-600 hover:bg-slate-50 rounded-xl transition-all uppercase tracking-tighter inter-bold">
                               <Settings size={14} className="text-[#4177BC]" /> Edit Client
                             </button>
-                            <button className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black text-slate-600 hover:bg-slate-50 rounded-xl transition-all uppercase tracking-tighter">
+                            <button className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black text-slate-600 hover:bg-slate-50 rounded-xl transition-all uppercase tracking-tighter inter-bold">
                               <Ban size={14} className="text-amber-500" /> Disable Portal
                             </button>
                             <div className="h-[1px] bg-slate-50 my-1.5" />
                             <button 
                               onClick={() => handleDelete(client._id)}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black text-red-500 hover:bg-red-50 rounded-xl transition-all uppercase tracking-tighter"
+                              className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black text-red-500 hover:bg-red-50 rounded-xl transition-all uppercase tracking-tighter inter-bold"
                             >
                               <Trash2 size={14} /> Delete Record
                             </button>
@@ -222,8 +219,8 @@ export default function AllClients() {
                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
                     <Search size={30} />
                  </div>
-                 <h3 className="text-lg font-black text-slate-800 italic uppercase">No Clients Found</h3>
-                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Try adjusting your search or filters</p>
+                 <h3 className="text-lg font-bold text-slate-800 uppercase inter-bold">No Clients Found</h3>
+                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 inter-medium">Try adjusting your search or filters</p>
               </div>
             )}
           </AnimatePresence>

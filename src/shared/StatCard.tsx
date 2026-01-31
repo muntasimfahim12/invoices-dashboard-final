@@ -1,16 +1,21 @@
 "use client";
 
 import React from "react";
-import { DollarSign, Clock, Users, Briefcase, TrendingUp } from "lucide-react";
+import { 
+  DollarSign, 
+  Clock, 
+  Users, 
+  Briefcase, 
+  TrendingUp 
+} from "lucide-react";
 
-// 1. Interface-e 'compact' add kora hoyeche jate error na dey
 interface StatCardProps {
   title: string;
   value: string;
   trend?: string;
   icon?: string;
   color?: string;
-  compact?: boolean; // Ei line-ta na thakle AdminOverview-te error dekhabe
+  compact?: boolean;
 }
 
 export default function StatCard({ 
@@ -22,8 +27,18 @@ export default function StatCard({
   compact = false 
 }: StatCardProps) {
 
+  const getSimpleLabel = (label: string) => {
+    const mapping: Record<string, string> = {
+      "revenue": "Total Revenue",
+      "due": "Total Due",
+      "clients": "Total Clients",
+      "projects": "Total Projects"
+    };
+    return mapping[icon || ""] || label;
+  };
+
   const getIcon = () => {
-    const props = { size: compact ? 20 : 24, strokeWidth: 2.5 };
+    const props = { size: 20, strokeWidth: 2.5 };
     switch (icon) {
       case "revenue": return <DollarSign {...props} />;
       case "due": return <Clock {...props} />;
@@ -34,43 +49,38 @@ export default function StatCard({
   };
 
   return (
-    <div className={`bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-[#4177BC]/5 transition-all duration-300 group relative overflow-hidden
-      ${compact ? 'p-5 rounded-[24px]' : 'p-8 rounded-[32px]'}`}
+    <div className={`group relative bg-white border border-slate-100 transition-all duration-300 hover:shadow-md hover:border-[#4177BC]/30
+      ${compact ? 'p-5 rounded-xl' : 'p-6 rounded-2xl'}`}
     >
-      {/* Background Icon Decoration */}
-      <div className="absolute -right-2 -bottom-2 opacity-[0.03] text-slate-900 group-hover:scale-125 group-hover:-rotate-12 transition-transform duration-700">
-        {getIcon()}
-      </div>
-
-      <div className={`flex items-start justify-between relative z-10 ${compact ? 'mb-4' : 'mb-6'}`}>
+      <div className="flex items-center justify-between mb-4">
         <div 
-          className={`${compact ? 'w-10 h-10 rounded-xl' : 'w-14 h-14 rounded-2xl'} flex items-center justify-center shadow-inner transition-all group-hover:shadow-lg group-hover:shadow-[#4177BC]/10 duration-300`}
-          style={{ backgroundColor: `${color}15`, color: color }}
+          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:bg-[#4177BC] group-hover:text-white"
+          style={{ 
+            backgroundColor: `${color}10`, 
+            color: color 
+          }}
         >
           {getIcon()}
         </div>
         
         {trend && (
-          <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-            trend.includes('+') || trend.includes('New') || trend.includes('Track')
-              ? 'bg-green-100 text-green-600' 
-              : 'bg-orange-100 text-[#EB9C2C]'
-          }`}>
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider inter-bold">
             {trend}
           </div>
         )}
       </div>
       
-      <div className="relative z-10">
-        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1 leading-none">
-          {title}
+      <div className="space-y-1">
+        <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest leading-none inter-bold">
+          {getSimpleLabel(title)}
         </p>
-        <h3 className={`${compact ? 'text-2xl' : 'text-3xl'} font-black text-slate-900 tracking-tighter group-hover:text-[#4177BC] transition-colors duration-300`}>
+        
+        <h3 className="text-2xl font-black text-[#0F172A] tracking-tight judson-bold">
           {value}
         </h3>
       </div>
 
-      <div className="absolute bottom-0 left-0 h-1 w-0 bg-[#4177BC] group-hover:w-full transition-all duration-500 opacity-20" />
+      <div className="absolute bottom-0 left-0 h-1 w-0 bg-[#4177BC] group-hover:w-full transition-all duration-500 rounded-b-2xl" />
     </div>
   );
 }

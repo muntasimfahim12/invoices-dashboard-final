@@ -116,7 +116,7 @@ const handleSave = async () => {
             updatedAt: new Date()
         };
 
-        await axios.put(`${API_BASE}/invoices/${params.id}`, payload);
+        await axios.patch(`${API_BASE}/invoices/${params.id}`, payload);
         router.push("/admin/invoices");
     } catch (error) {
         console.error("Save error:", error);
@@ -134,7 +134,7 @@ const handleSave = async () => {
     );
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] pb-20">
+        <div className="min-h-screen  pb-20">
             {/* Top Sticky Header */}
             <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
