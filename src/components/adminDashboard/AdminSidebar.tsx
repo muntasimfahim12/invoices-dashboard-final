@@ -1,6 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import React from "react";
+import Link from "next/link"; // সংশোধিত: next/image থেকে নয়, next/link থেকে হবে
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -11,6 +13,7 @@ import {
   CreditCard,
   BarChart,
   Settings,
+  Sparkles
 } from "lucide-react";
 
 const menu = [
@@ -23,47 +26,90 @@ const menu = [
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-const mobileMenu = menu.slice(0, 7);
+const mobileMenu = menu.slice(0, 5); // মোবাইলে ৫টির বেশি আইটেম দিলে ঘিঞ্জি লাগে, তাই স্লাইস করা হয়েছে।
+
+// লোগো কম্পোনেন্ট
+const LogoBrand = () => (
+  <Link href="/admin" className="flex items-center gap-3 md:gap-4 group relative">
+    <div className="relative">
+      <motion.div
+        whileHover={{ scale: 1.1, rotate: [0, -10, 10, 0] }}
+        transition={{
+          rotate: { duration: 0.5, ease: "easeInOut" },
+          scale: { type: "spring", stiffness: 300 }
+        }}
+        className="relative z-10 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center"
+      >
+        <Image 
+          src="/logo.PNG" 
+          alt="GenieHack Logo" 
+          width={48} 
+          height={48} 
+          className="object-contain" 
+          priority 
+        />
+        <motion.div
+          animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.5] }}
+          transition={{ duration: 3, repeat: Infinity }}
+          className="absolute -top-1 -right-1 text-blue-500"
+        >
+          <Sparkles size={14} fill="currentColor" />
+        </motion.div>
+      </motion.div>
+      <div className="absolute inset-0 bg-[#4177BC] blur-2xl opacity-10 group-hover:opacity-20 transition-opacity" />
+    </div>
+
+    <div className="flex flex-col">
+      <div className="flex items-center leading-none">
+        <span className="text-lg md:text-[22px] font-light tracking-tight text-slate-800 italic">Genie</span>
+        <span className="text-lg md:text-[22px] font-black tracking-tighter text-[#4177BC] uppercase italic ml-1">Hack</span>
+      </div>
+      <span className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-0.5 md:mt-1">
+        Intelligence Layer
+      </span>
+    </div>
+  </Link>
+);
 
 export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
     <>
+      {/* ================= MOBILE TOP HEADER (Logo Only) ================= */}
+      <header className="md:hidden fixed top-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-[100] flex items-center px-6">
+        <LogoBrand />
+      </header>
+
       {/* ================= DESKTOP SIDEBAR ================= */}
-      <aside className="hidden md:flex fixed left-0 top-0 h-screen w-72 bg-[#FCFDFE] border-r border-slate-100/80 z-50">
+      <aside className="hidden md:flex fixed left-0 top-0 h-screen w-72 bg-white border-r border-slate-100/80 z-50">
         <div className="w-full flex flex-col">
-          <div className="h-24 flex items-center px-8">
-            <div className="flex items-center gap-2 group cursor-pointer">
-              <div className="w-10 h-10 bg-[#4177BC] rounded-xl flex items-center justify-center shadow-lg shadow-[#4177BC]/20 group-hover:rotate-6 transition-transform">
-                <Receipt className="text-white" size={22} />
-              </div>
-              <span className="text-2xl font-black tracking-tight text-slate-800">
-                Invo<span className="text-[#4177BC]">ly</span>
-              </span>
-            </div>
+          <div className="h-28 flex items-center px-8 relative">
+            <LogoBrand />
           </div>
 
-          <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto mt-2">
-            <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Main Menu</p>
+          <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto mt-2 custom-scrollbar">
+            <p className="px-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 opacity-70">
+              Main Menu
+            </p>
             {menu.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`group relative flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[13px] font-bold transition-all duration-300
-                    ${active ? "text-[#4177BC]" : "text-slate-500 hover:text-slate-900"}`}
+                  className={`group relative flex items-center gap-3.5 px-5 py-3.5 rounded-2xl text-[14px] font-bold transition-all duration-300
+                    ${active ? "text-[#4177BC]" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"}`}
                 >
                   {active && (
-                    <motion.div 
-                      layoutId="desktopActive"
-                      className="absolute inset-0 bg-blue-50/50 rounded-2xl border border-[#4177BC]/10 -z-10"
+                    <motion.div
+                      layoutId="desktopActiveNav"
+                      className="absolute inset-0 bg-blue-50/60 rounded-2xl border border-[#4177BC]/10 -z-10"
                       transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
                   )}
-                  <item.icon size={20} className={`${active ? "text-[#4177BC]" : "text-slate-400 group-hover:text-slate-900"}`} />
-                  {item.name}
+                  <item.icon size={20} className={active ? "text-[#4177BC]" : "text-slate-400 group-hover:text-slate-600"} />
+                  <span className="relative">{item.name}</span>
                 </Link>
               );
             })}
@@ -71,29 +117,23 @@ export default function AdminSidebar() {
         </div>
       </aside>
 
-      {/* ================= MOBILE BOTTOM NAV (Strict Bottom Style) ================= */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100]">
-        <nav className="relative bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-[0_-5px_20px_rgba(0,0,0,0.03)] px-4 pb-6 pt-3 flex justify-around items-center">
-          
+      {/* ================= MOBILE BOTTOM NAV ================= */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-[0_-10px_30px_rgba(0,0,0,0.04)]">
+        <nav className="flex justify-around items-center px-4 pb-8 pt-4">
           {mobileMenu.map((item) => {
             const active = pathname === item.href;
-            
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="relative flex flex-col items-center justify-center py-1 transition-all duration-300"
+                className="relative flex flex-col items-center justify-center p-2"
               >
-                <div className={`transition-all duration-400 ${
-                    active ? "text-[#4177BC] scale-110" : "text-slate-300"
-                  }`}>
+                <div className={`transition-all duration-500 ${active ? "text-[#4177BC] scale-110 -translate-y-1" : "text-slate-300"}`}>
                   <item.icon size={26} strokeWidth={active ? 2.5 : 2} />
                 </div>
-                
-                {/* Active Indicator Line/Dot */}
                 {active && (
-                  <motion.div 
-                    layoutId="mobileActiveLine"
+                  <motion.div
+                    layoutId="mobileActiveIndicator"
                     className="absolute -bottom-1 w-5 h-1 bg-[#4177BC] rounded-full"
                     transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
                   />
@@ -103,6 +143,22 @@ export default function AdminSidebar() {
           })}
         </nav>
       </div>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #f1f5f9;
+          border-radius: 10px;
+        }
+        @media (max-width: 768px) {
+          main {
+            margin-top: 80px !important;
+            margin-bottom: 90px !important;
+          }
+        }
+      `}</style>
     </>
   );
 }
