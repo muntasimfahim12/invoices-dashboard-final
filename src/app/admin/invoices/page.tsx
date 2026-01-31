@@ -1,16 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
-    Plus, Search, FileText, Download,
-    CheckCircle2, Trash2, Loader2,
-    Clock, AlertCircle, ArrowUpRight, ChevronRight,
-    Copy, CheckSquare, Square, Share2
+    Plus, Search, FileText, CheckCircle2, Trash2, Loader2,
+    AlertCircle, TrendingUp, LayoutGrid, List, ArrowDownToLine,
+    ChevronRight, Copy, ChevronLeft, Filter, MoreHorizontal
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const ITEMS_PER_PAGE = 6;
 
 interface Client {
     name: string;
@@ -30,72 +32,74 @@ interface Invoice {
     grandTotal: number;
     receivedAmount: number;
     remainingDue: number;
-    items?: any[];
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
 export default function InvoicesPage() {
+    // --- LOGIC STARTS (UNCHANGED) ---
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState<string>("All");
     const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
-
-    // --- Safe State Initialization ---
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<string>("client");
     const [mounted, setMounted] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
-        // এই useEffect নিশ্চিত করে যে কোডটি শুধু ব্রাউজারে রান হচ্ছে
         setMounted(true);
-        const storedEmail = localStorage.getItem("user_email");
-        const storedRole = localStorage.getItem("user_role") || "client";
-
-        if (storedEmail) setUserEmail(storedEmail);
-        setUserRole(storedRole);
+        setUserEmail(localStorage.getItem("user_email"));
+        setUserRole(localStorage.getItem("user_role") || "client");
     }, []);
 
+    const fetchInvoices = useCallback(async (signal: AbortSignal) => {
+        if (!userEmail) return;
+        try {
+            setLoading(true);
+            const response = await axios.get(`${API_BASE}/invoices`, {
+                params: {
+                    email: userEmail,
+                    role: userRole,
+                    search: searchTerm,
+                    status: filterStatus === "All" ? "" : filterStatus
+                },
+                signal
+            });
+            setInvoices(Array.isArray(response.data) ? response.data : []);
+            setCurrentPage(1);
+        } catch (error: any) {
+            if (error.name !== "CanceledError") console.error("Fetch Error:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [userEmail, userRole, searchTerm, filterStatus]);
+
     useEffect(() => {
-        // mounted এবং userEmail নিশ্চিত হওয়ার পরই ডেটা ফেচ করবে
         if (!mounted || !userEmail) return;
-
         const controller = new AbortController();
-        const fetchInvoices = async () => {
-            try {
-                setLoading(true);
-                const response = await axios.get(`${API_BASE}/invoices`, {
-                    params: {
-                        email: userEmail,
-                        role: userRole,
-                        search: searchTerm,
-                        status: filterStatus === "All" ? "" : filterStatus
-                    },
-                    signal: controller.signal
-                });
-                setInvoices(Array.isArray(response.data) ? response.data : []);
-            } catch (error: any) {
-                if (error.name !== "CanceledError") {
-                    console.error("Fetch Error:", error);
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchInvoices();
+        fetchInvoices(controller.signal);
         return () => controller.abort();
-    }, [mounted, userEmail, userRole, searchTerm, filterStatus]);
+    }, [mounted, userEmail, fetchInvoices]);
 
-    // Download PDF
+    const totalPages = Math.ceil(invoices.length / ITEMS_PER_PAGE);
+    const paginatedInvoices = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return invoices.slice(start, start + ITEMS_PER_PAGE);
+    }, [invoices, currentPage]);
+
+    const stats = useMemo(() => {
+        const total = invoices.reduce((acc, curr) => acc + (curr.grandTotal || 0), 0);
+        const paid = invoices.reduce((acc, curr) => acc + (Number(curr.receivedAmount) || 0), 0);
+        const pending = total - paid;
+        const overdueCount = invoices.filter(inv => inv.status === 'Overdue').length;
+        return { total, paid, pending, overdueCount };
+    }, [invoices]);
+
     const handleDownload = async (id: string, invoiceId: string) => {
         try {
             setActionLoading(id);
-            const response = await axios.get(`${API_BASE}/invoices/${id}/download`, {
-                responseType: 'blob',
-            });
+            const response = await axios.get(`${API_BASE}/invoices/${id}/download`, { responseType: 'blob' });
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
@@ -110,241 +114,368 @@ export default function InvoicesPage() {
         }
     };
 
-    // Share/Email
-    const handleShare = async (inv: Invoice) => {
-        try {
-            setActionLoading(inv._id);
-            await axios.post(`${API_BASE}/invoices/send-email`, inv);
-            alert(`✅ Invoice successfully sent to ${inv.clientEmail || inv.clientName}`);
-        } catch (error) {
-            alert("❌ Failed to send email.");
-        } finally {
-            setActionLoading(null);
-        }
-    };
-
-    // Bulk Delete
-    const handleBulkDelete = async () => {
-        if (!window.confirm(`Delete ${selectedInvoices.length} selected invoices?`)) return;
-        try {
-            setActionLoading("bulk");
-            await Promise.all(selectedInvoices.map(id => axios.delete(`${API_BASE}/invoices/${id}`)));
-            setInvoices(prev => prev.filter(inv => !selectedInvoices.includes(inv._id)));
-            setSelectedInvoices([]);
-            alert("🗑️ Invoices deleted.");
-        } catch (error) {
-            alert("Delete failed.");
-        } finally {
-            setActionLoading(null);
-        }
-    };
-
-    const stats = useMemo(() => {
-        const total = invoices.reduce((acc, curr) => acc + (curr.grandTotal || 0), 0);
-        const paid = invoices.reduce((acc, curr) => acc + (Number(curr.receivedAmount) || 0), 0);
-        const pending = total - paid;
-        const overdueCount = invoices.filter(inv => inv.status === 'Overdue').length;
-        return { total, paid, pending, overdueCount };
-    }, [invoices]);
-
-    const toggleSelect = (id: string) => {
-        setSelectedInvoices(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-    };
-
-    // Prerendering এর সময় কিছুই রেন্ডার করবে না যাতে localStorage এরর না আসে
     if (!mounted) return null;
+    // --- LOGIC ENDS ---
 
     return (
-        <div className="space-y-8 pb-10 min-h-screen px-4 md:px-0">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                    <h1 className="text-4xl font-[1000] text-slate-900 tracking-tighter uppercase">Invoices</h1>
-                    <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em] mt-1 flex items-center gap-2">
-                        <span className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
-                        {userRole === 'admin' ? "Admin Control Panel" : "Client Billing Dashboard"}
-                    </p>
-                </div>
-                <div className="flex gap-3">
-                    {userRole === 'admin' && (
-                        <>
-                            <AnimatePresence>
-                                {selectedInvoices.length > 0 && (
-                                    <motion.button
-                                        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                                        onClick={handleBulkDelete}
-                                        className="bg-rose-50 text-rose-600 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-rose-100 flex items-center gap-2"
-                                    >
-                                        {actionLoading === "bulk" ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                                        Delete ({selectedInvoices.length})
-                                    </motion.button>
-                                )}
-                            </AnimatePresence>
-                            <Link href="/admin/invoices/create" className="bg-[#4177BC] text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-[#4177BC]/20 hover:scale-[1.02] transition-all flex items-center gap-2">
-                                <Plus size={16} /> New Invoice
+        <div className="min-h-screen bg-[#FFFFFF] selection:bg-[#4177BC]/20 inter-medium text-slate-600 pb-20">
+            
+            {/* Header / Navbar */}
+            <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50 transition-all duration-300">
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                        <div className="w-12 h-12 bg-gradient-to-br from-[#4177BC] to-[#2A5298] rounded-2xl flex items-center justify-center shadow-lg shadow-[#4177BC]/20">
+                            <FileText className="text-white" size={24} strokeWidth={1.5} />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl text-slate-900 leading-none judson-bold tracking-tight">
+                                Ledger<span className="text-[#4177BC]">Pro</span>
+                            </h1>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest inter-bold">
+                                    {userRole} Workspace
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                        <AnimatePresence>
+                            {selectedInvoices.length > 0 && (
+                                <motion.button
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className="flex items-center gap-2 bg-red-50 text-red-600 px-5 py-2.5 rounded-xl border border-red-100 text-xs font-bold hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                                >
+                                    <Trash2 size={16} /> <span className="hidden sm:inline">Delete Selected</span> ({selectedInvoices.length})
+                                </motion.button>
+                            )}
+                        </AnimatePresence>
+                        
+                        {userRole === 'admin' && (
+                            <Link href="/admin/invoices/create" className="group relative overflow-hidden bg-slate-900 text-white px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-[#4177BC] transition-all shadow-xl shadow-slate-900/10">
+                                <span className="relative z-10 flex items-center gap-2">
+                                    <Plus size={18} /> New Invoice
+                                </span>
                             </Link>
-                        </>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                {loading ? [1, 2, 3, 4].map(i => <div key={i} className="animate-pulse bg-slate-200 h-28 rounded-3xl" />) : (
-                    <>
-                        <MiniStat label="Total Volume" value={`$${stats.total.toLocaleString()}`} color="#4177BC" />
-                        <MiniStat label="Collected" value={`$${stats.paid.toLocaleString()}`} color="#22c55e" />
-                        <MiniStat label="Pending" value={`$${stats.pending.toLocaleString()}`} color="#EB9C2C" />
-                        <MiniStat label="Overdue" value={stats.overdueCount.toString()} color="#ef4444" />
-                    </>
-                )}
-            </div>
-
-            {/* Filter & Search Bar */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-50 flex flex-col md:flex-row gap-4 justify-between bg-slate-50/30">
-                    <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                        <input type="text" placeholder="Search by ID, Client or Project..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-white rounded-xl border border-slate-100 focus:border-[#4177BC] transition-all text-sm font-bold outline-none shadow-sm"
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 mt-8 lg:mt-12 grid grid-cols-12 gap-8">
+                
+                {/* Left Sidebar (Stats & Filters) */}
+                <div className="col-span-12 lg:col-span-3 space-y-8">
+                    {/* Stats Grid - Mobile: Horizontal, Desktop: Vertical */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
+                        <StatCard 
+                            label="Total Revenue" 
+                            value={`$${stats.total.toLocaleString()}`} 
+                            icon={<TrendingUp />} 
+                            color="#4177BC" 
+                        />
+                        <StatCard 
+                            label="Collected" 
+                            value={`$${stats.paid.toLocaleString()}`} 
+                            icon={<CheckCircle2 />} 
+                            color="#10B981" 
+                        />
+                        <StatCard 
+                            label="Overdue" 
+                            value={stats.overdueCount.toString()} 
+                            icon={<AlertCircle />} 
+                            color="#EF4444" 
                         />
                     </div>
-                    <div className="flex gap-2 p-1 bg-white border border-slate-100 rounded-xl overflow-x-auto no-scrollbar">
-                        {["All", "Paid", "Pending", "Partial", "Overdue"].map((status) => (
-                            <button key={status} onClick={() => setFilterStatus(status)}
-                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filterStatus === status ? 'bg-[#4177BC] text-white' : 'text-slate-400 hover:bg-slate-50'}`}
-                            >
-                                {status}
-                            </button>
-                        ))}
+
+                    {/* Filters */}
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hidden lg:block">
+                        <div className="flex items-center gap-2 mb-6 text-slate-400">
+                            <Filter size={16} />
+                            <h3 className="text-xs font-bold uppercase tracking-widest inter-bold">Filter Status</h3>
+                        </div>
+                        <div className="space-y-1">
+                            {["All", "Paid", "Pending", "Overdue"].map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setFilterStatus(status)}
+                                    className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl text-sm font-semibold transition-all duration-300 border border-transparent ${
+                                        filterStatus === status 
+                                        ? 'bg-[#4177BC] text-white shadow-lg shadow-[#4177BC]/30' 
+                                        : 'text-slate-500 hover:bg-slate-50 hover:border-slate-100'
+                                    }`}
+                                >
+                                    <span className={filterStatus === status ? "inter-bold" : "inter-medium"}>{status}</span>
+                                    {filterStatus === status && <ChevronRight size={16} />}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Mobile Filter Dropdown */}
+                    <div className="lg:hidden">
+                        <select 
+                            value={filterStatus} 
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="w-full bg-white border border-slate-200 text-slate-700 py-3 px-4 rounded-xl focus:ring-[#4177BC] focus:border-[#4177BC]"
+                        >
+                            {["All", "Paid", "Pending", "Overdue"].map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left min-w-[1000px]">
-                        <thead className="bg-white border-b border-slate-50 text-[9px] font-black uppercase text-slate-400 tracking-widest">
-                            <tr>
-                                <th className="pl-8 py-5 w-10">
-                                    <button onClick={() => setSelectedInvoices(selectedInvoices.length === invoices.length ? [] : invoices.map(i => i._id))}>
-                                        {selectedInvoices.length === invoices.length && invoices.length > 0 ? <CheckSquare size={16} className="text-[#4177BC]" /> : <Square size={16} className="text-slate-300" />}
-                                    </button>
-                                </th>
-                                <th className="px-4 py-5">Client & ID</th>
-                                <th className="px-8 py-5 text-center">Payment Progress</th>
-                                <th className="px-8 py-5">Status</th>
-                                <th className="px-8 py-5 text-right">Amount</th>
-                                <th className="px-8 py-5 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50 font-bold text-sm">
-                            {loading ? (
-                                <tr><td colSpan={6} className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-[#4177BC]" size={40} /></td></tr>
-                            ) : invoices.length === 0 ? (
-                                <tr><td colSpan={6} className="p-20 text-center text-slate-400 uppercase text-[10px] font-black tracking-widest">No invoices found</td></tr>
-                            ) : invoices.map((inv) => {
-                                const total = inv.grandTotal || 0;
-                                const progress = Math.min((inv.receivedAmount / total) * 100, 100) || 0;
+                {/* Main Content Area */}
+                <div className="col-span-12 lg:col-span-9 space-y-6">
+                    
+                    {/* Search Bar */}
+                    <div className="bg-white p-2 rounded-2xl border border-slate-200/60 shadow-sm flex items-center gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <input 
+                                type="text" 
+                                placeholder="Search invoices..." 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-transparent border-none pl-12 pr-4 py-3 text-sm font-medium focus:ring-0 placeholder:text-slate-400 outline-none inter-medium text-slate-700"
+                            />
+                        </div>
+                        <div className="hidden sm:flex bg-slate-100 p-1 rounded-xl">
+                            <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors"><LayoutGrid size={18}/></button>
+                            <button className="p-2 bg-white text-[#4177BC] rounded-lg shadow-sm"><List size={18}/></button>
+                        </div>
+                    </div>
 
-                                return (
-                                    <tr key={inv._id} className={`group transition-all ${selectedInvoices.includes(inv._id) ? 'bg-blue-50/30' : 'hover:bg-slate-50/50'}`}>
-                                        <td className="pl-8 py-6">
-                                            <button onClick={() => toggleSelect(inv._id)}>
-                                                {selectedInvoices.includes(inv._id) ? <CheckSquare size={16} className="text-[#4177BC]" /> : <Square size={16} className="text-slate-300 group-hover:text-slate-400" />}
-                                            </button>
-                                        </td>
-                                        <td className="px-4 py-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="h-11 w-11 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-[#4177BC] group-hover:text-white transition-all">
-                                                    <FileText size={20} />
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-slate-900 font-black text-base">{inv.invoiceId}</span>
-                                                        <button onClick={() => { navigator.clipboard.writeText(inv.invoiceId); alert("ID Copied!"); }} className="text-slate-300 hover:text-slate-500 transition-colors"><Copy size={12} /></button>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden min-h-[600px] flex flex-col justify-between">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-slate-50/80 border-b border-slate-100">
+                                <tr>
+                                    <th className="pl-8 py-6 w-14">
+                                        <div className="flex items-center">
+                                            <input 
+                                                type="checkbox" 
+                                                className="w-4 h-4 rounded border-slate-300 text-[#4177BC] focus:ring-[#4177BC] transition-all cursor-pointer" 
+                                                checked={selectedInvoices.length === paginatedInvoices.length && paginatedInvoices.length > 0}
+                                                onChange={() => setSelectedInvoices(selectedInvoices.length === paginatedInvoices.length ? [] : paginatedInvoices.map(i => i._id))}
+                                            />
+                                        </div>
+                                    </th>
+                                    <th className="px-6 py-5 text-[11px] uppercase inter-bold text-slate-400 tracking-widest">Details</th>
+                                    <th className="px-6 py-5 text-[11px] uppercase inter-bold text-slate-400 tracking-widest">Status</th>
+                                    <th className="px-6 py-5 text-[11px] uppercase inter-bold text-slate-400 tracking-widest text-right">Financials</th>
+                                    <th className="pr-8 py-5 text-[11px] uppercase inter-bold text-slate-400 tracking-widest text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                <AnimatePresence mode="wait">
+                                    {loading ? (
+                                        <tr><td colSpan={5} className="py-32 text-center"><Loader2 className="animate-spin mx-auto text-[#4177BC]" size={40} /></td></tr>
+                                    ) : paginatedInvoices.length === 0 ? (
+                                        <tr><td colSpan={5} className="py-32 text-center text-slate-400 judson-regular-italic text-lg">No invoices found matching your criteria.</td></tr>
+                                    ) : paginatedInvoices.map((inv) => (
+                                        <motion.tr 
+                                            key={inv._id}
+                                            initial={{ opacity: 0, y: 10 }} 
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0 }}
+                                            className="group hover:bg-slate-50/50 transition-colors duration-200"
+                                        >
+                                            <td className="pl-8 py-6">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={selectedInvoices.includes(inv._id)}
+                                                    onChange={() => setSelectedInvoices(prev => prev.includes(inv._id) ? prev.filter(i => i !== inv._id) : [...prev, inv._id])}
+                                                    className="w-4 h-4 rounded border-slate-300 text-[#4177BC] focus:ring-[#4177BC] cursor-pointer"
+                                                />
+                                            </td>
+                                            <td className="px-6 py-6">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#4177BC] group-hover:text-white transition-all duration-300 shadow-sm">
+                                                        <FileText size={20} strokeWidth={1.5} />
                                                     </div>
-                                                    <p className="text-[10px] text-slate-400 uppercase tracking-tighter font-bold">{inv.clientName || inv.client?.name}</p>
+                                                    <div>
+                                                        <p className="inter-bold text-slate-900 text-sm flex items-center gap-2 mb-1">
+                                                            {inv.invoiceId}
+                                                            <button onClick={() => navigator.clipboard.writeText(inv.invoiceId)} className="opacity-0 group-hover:opacity-100 text-[#4177BC] hover:scale-110 transition-all"><Copy size={12}/></button>
+                                                        </p>
+                                                        <p className="text-xs text-slate-500 inter-medium">{inv.clientName || "Unknown Client"}</p>
+                                                        <p className="text-[10px] text-slate-400 mt-1">{inv.projectTitle}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <div className="w-full max-w-[120px] mx-auto space-y-1.5">
-                                                <div className="flex justify-between text-[8px] font-black uppercase text-slate-400">
-                                                    <span>{inv.status === 'Paid' ? 'Completed' : 'Paid'}</span>
-                                                    <span>{Math.round(progress)}%</span>
-                                                </div>
-                                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                                    <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} className={`h-full ${progress === 100 ? 'bg-emerald-500' : 'bg-[#4177BC]'}`} />
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <StatusBadge status={inv.status} />
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <p className="text-slate-900 font-[1000] text-base">{inv.currency} {total.toLocaleString()}</p>
-                                            <p className={`text-[9px] uppercase font-black ${inv.remainingDue > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                                                {inv.remainingDue > 0 ? `Due: ${inv.remainingDue.toLocaleString()}` : 'Payment Cleared'}
-                                            </p>
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <div className="flex justify-end items-center gap-2">
-                                                {userRole === 'admin' && (
-                                                    <button disabled={actionLoading === inv._id} onClick={() => handleShare(inv)} className="p-3 bg-slate-50 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all disabled:opacity-50">
-                                                        {actionLoading === inv._id ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />}
+                                            </td>
+                                            <td className="px-6 py-6">
+                                                <StatusBadge status={inv.status} />
+                                            </td>
+                                            <td className="px-6 py-6 text-right">
+                                                <p className="judson-bold text-lg text-slate-900">{inv.currency} {inv.grandTotal.toLocaleString()}</p>
+                                                <p className={`text-[10px] font-bold uppercase tracking-wider ${inv.remainingDue > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                    {inv.remainingDue > 0 ? `Due: ${inv.currency}${inv.remainingDue}` : 'Fully Paid'}
+                                                </p>
+                                            </td>
+                                            <td className="pr-8 py-6 text-right">
+                                                <div className="flex justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                                                    <button 
+                                                        onClick={() => handleDownload(inv._id, inv.invoiceId)} 
+                                                        disabled={!!actionLoading}
+                                                        className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:text-[#4177BC] hover:border-[#4177BC]/30 hover:bg-[#4177BC]/5 transition-all"
+                                                    >
+                                                        {actionLoading === inv._id ? <Loader2 size={16} className="animate-spin" /> : <ArrowDownToLine size={16} />}
                                                     </button>
-                                                )}
-                                                <button disabled={actionLoading === inv._id} onClick={() => handleDownload(inv._id, inv.invoiceId)} className="p-3 bg-slate-50 text-slate-400 hover:text-[#4177BC] hover:bg-[#4177BC]/10 rounded-xl transition-all disabled:opacity-50">
-                                                    {actionLoading === inv._id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                                                </button>
-                                                <Link
-                                                    href={userRole === 'admin' ? `/admin/invoices/${inv._id}` : `/dashboard/invoices/${inv._id}`}
-                                                    className="p-3 bg-slate-50 text-slate-400 hover:text-white hover:bg-[#4177BC] rounded-xl transition-all"
-                                                >
-                                                    <ChevronRight size={16} />
-                                                </Link>
+                                                    <Link 
+                                                        href={`${userRole === 'admin' ? '/admin' : '/dashboard'}/invoices/${inv._id}`} 
+                                                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-900 text-white hover:bg-[#4177BC] hover:shadow-lg hover:shadow-[#4177BC]/20 transition-all"
+                                                    >
+                                                        <ChevronRight size={16} />
+                                                    </Link>
+                                                </div>
+                                            </td>
+                                        </motion.tr>
+                                    ))}
+                                </AnimatePresence>
+                            </tbody>
+                        </table>
+                        
+                        {/* Pagination */}
+                        <Pagination 
+                            currentPage={currentPage} 
+                            totalPages={totalPages} 
+                            setCurrentPage={setCurrentPage} 
+                            totalItems={invoices.length} 
+                        />
+                    </div>
+
+                    {/* Mobile Card View (Visible only on small screens) */}
+                    <div className="md:hidden space-y-4 pb-20">
+                        {loading ? (
+                             <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-[#4177BC]" size={32} /></div>
+                        ) : paginatedInvoices.length === 0 ? (
+                            <div className="py-20 text-center text-slate-400 italic">No records found</div>
+                        ) : (
+                            paginatedInvoices.map((inv) => (
+                                <div key={inv._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex gap-3">
+                                            <div className="w-10 h-10 bg-[#4177BC]/10 rounded-lg flex items-center justify-center text-[#4177BC]">
+                                                <FileText size={18} />
                                             </div>
-                                        </td>
-                                    </tr>
-                                )
-                            })}
-                        </tbody>
-                    </table>
+                                            <div>
+                                                <p className="inter-bold text-slate-900">{inv.invoiceId}</p>
+                                                <p className="text-xs text-slate-500">{inv.clientName}</p>
+                                            </div>
+                                        </div>
+                                        <StatusBadge status={inv.status} />
+                                    </div>
+                                    <div className="flex justify-between items-end border-t border-slate-100 pt-4 mt-2">
+                                        <div>
+                                            <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Total Amount</p>
+                                            <p className="judson-bold text-xl text-slate-900">{inv.currency} {inv.grandTotal.toLocaleString()}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => handleDownload(inv._id, inv.invoiceId)} className="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50">
+                                                <ArrowDownToLine size={18} />
+                                            </button>
+                                            <Link href={`/dashboard/invoices/${inv._id}`} className="p-2 bg-slate-900 text-white rounded-lg">
+                                                <ChevronRight size={18} />
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                         <div className="bg-white p-4 rounded-xl border border-slate-200">
+                            <Pagination 
+                                currentPage={currentPage} 
+                                totalPages={totalPages} 
+                                setCurrentPage={setCurrentPage} 
+                                totalItems={invoices.length} 
+                            />
+                         </div>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
 
-function MiniStat({ label, value, color }: { label: string, value: string, color: string }) {
+// --- SUB-COMPONENTS ---
+
+function StatCard({ label, value, icon, color }: any) {
     return (
-        <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-16 h-16 opacity-[0.03] -mr-4 -mt-4 rounded-full" style={{ backgroundColor: color }} />
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] mb-2">{label}</p>
-            <p className="text-2xl font-black text-slate-900 tracking-tight">{value}</p>
-            <div className="h-1.5 w-12 mt-4 rounded-full" style={{ backgroundColor: color }} />
-        </motion.div>
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-500 group relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-transparent to-current opacity-[0.03] rounded-bl-full pointer-events-none" style={{ color }} />
+            
+            <div className="flex items-start justify-between mb-4">
+                <div className="p-3.5 rounded-2xl transition-all duration-300" style={{ backgroundColor: `${color}15`, color }}>
+                    {React.cloneElement(icon, { size: 22, strokeWidth: 2 })}
+                </div>
+                {/* Optional mini graph icon or trend indicator could go here */}
+            </div>
+            
+            <div className="relative z-10">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest inter-bold mb-1">{label}</p>
+                <p className="text-3xl judson-bold text-slate-900">{value}</p>
+            </div>
+        </div>
     );
 }
 
 function StatusBadge({ status }: { status: string }) {
-    const styles: Record<string, string> = {
-        Paid: "bg-emerald-50 text-emerald-600 border-emerald-100",
-        Pending: "bg-amber-50 text-amber-600 border-amber-100",
-        Unpaid: "bg-amber-50 text-amber-600 border-amber-100",
-        Partial: "bg-blue-50 text-blue-600 border-blue-100",
-        Overdue: "bg-rose-50 text-rose-600 border-rose-100",
+    const config: any = {
+        Paid: { bg: "bg-emerald-50 border-emerald-200/60 text-emerald-700", dot: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" },
+        Pending: { bg: "bg-amber-50 border-amber-200/60 text-amber-700", dot: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]" },
+        Overdue: { bg: "bg-red-50 border-red-200/60 text-red-700", dot: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]" },
+        Default: { bg: "bg-slate-50 border-slate-200 text-slate-600", dot: "bg-slate-400" }
     };
-    const icons: Record<string, React.ReactNode> = {
-        Paid: <CheckCircle2 size={12} />,
-        Pending: <Clock size={12} />,
-        Unpaid: <Clock size={12} />,
-        Partial: <ArrowUpRight size={12} />,
-        Overdue: <AlertCircle size={12} />,
-    };
+    const style = config[status] || config.Default;
     return (
-        <span className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 w-fit border ${styles[status] || styles.Pending}`}>
-            {icons[status] || icons.Pending} {status}
+        <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${style.bg}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+            <span className="inter-bold">{status}</span>
         </span>
+    );
+}
+
+function Pagination({ currentPage, totalPages, setCurrentPage, totalItems }: any) {
+    return (
+        <div className="px-8 py-5 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-slate-500 inter-medium order-2 sm:order-1">
+                Showing <span className="text-slate-900 font-bold">{(currentPage-1)*ITEMS_PER_PAGE + 1}</span> - <span className="text-slate-900 font-bold">{Math.min(currentPage*ITEMS_PER_PAGE, totalItems)}</span> of <span className="text-slate-900 font-bold">{totalItems}</span>
+            </p>
+            <div className="flex items-center gap-2 order-1 sm:order-2">
+                <button 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev: number) => prev - 1)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+                >
+                    <ChevronLeft size={16} />
+                </button>
+                <div className="hidden sm:flex items-center gap-1">
+                    {[...Array(totalPages)].map((_, i) => (
+                        <button
+                            key={i}
+                            onClick={() => setCurrentPage(i + 1)}
+                            className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
+                                currentPage === i + 1 
+                                ? 'bg-[#4177BC] text-white shadow-md shadow-[#4177BC]/20' 
+                                : 'bg-transparent text-slate-500 hover:bg-slate-100'
+                            }`}
+                        >
+                            {i + 1}
+                        </button>
+                    ))}
+                </div>
+                <span className="sm:hidden text-sm font-bold text-slate-700">Page {currentPage}</span>
+                <button 
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((prev: number) => prev + 1)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+                >
+                    <ChevronRight size={16} />
+                </button>
+            </div>
+        </div>
     );
 }

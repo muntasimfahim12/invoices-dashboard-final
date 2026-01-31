@@ -4,10 +4,12 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { 
-    ArrowLeft, Loader2, User, Plus, 
-    Trash2, AlertCircle, Banknote, 
-    Receipt, Percent, ShieldCheck, History
+import {
+    ArrowLeft, Loader2, User, Plus,
+    Trash2, AlertCircle, ShieldCheck,
+    ReceiptText, Coins, Sparkles, Briefcase,
+    ChevronRight, Wallet,
+    Save
 } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
@@ -19,8 +21,7 @@ export default function ProfessionalLedgerEditor() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
-    
-    // Core Invoice State
+
     const [invoiceData, setInvoiceData] = useState<any>(null);
     const [newPaymentAmount, setNewPaymentAmount] = useState<number>(0);
 
@@ -31,49 +32,29 @@ export default function ProfessionalLedgerEditor() {
                 setInvoiceData(response.data);
             } catch (error) {
                 console.error("Fetch error:", error);
-                alert("Could not load invoice data.");
             } finally {
                 setLoading(false);
             }
         };
-        fetchInvoiceDetails();
+        if (params.id) fetchInvoiceDetails();
     }, [params.id]);
 
-    // calculations using useMemo for performance
     const stats = useMemo(() => {
-        if (!invoiceData) return { subtotal: 0, tax: 0, grandTotal: 0, remaining: 0 };
-        
-        // Ensure values are numbers to avoid string concatenation issues
-        const sub = invoiceData.items?.reduce((acc: number, item: any) => 
+        if (!invoiceData) return { subtotal: 0, grandTotal: 0, remaining: 0 };
+        const total = invoiceData.items?.reduce((acc: number, item: any) =>
             acc + (Number(item.qty || 0) * Number(item.price || 0)), 0) || 0;
-        
-        const discount = Number(invoiceData.discount || 0);
-        const taxRate = Number(invoiceData.taxRate || 0);
-        
-        const afterDiscount = sub - discount;
-        const taxAmount = (afterDiscount * taxRate) / 100;
-        const total = afterDiscount + taxAmount;
-        
-        // current received + potential new payment
         const alreadyReceived = Number(invoiceData.receivedAmount || 0);
         const remaining = total - alreadyReceived;
-        
-        return { subtotal: sub, tax: taxAmount, grandTotal: total, remaining };
+        return { subtotal: total, grandTotal: total, remaining };
     }, [invoiceData]);
 
-    // Helpers
     const updateField = (path: string, value: any) => {
         setInvoiceData((prev: any) => ({ ...prev, [path]: value }));
     };
 
     const addItem = () => {
-        const newItem = { 
-            id: Date.now().toString(), // String ID is safer
-            name: "", 
-            qty: 1, 
-            price: 0 
-        };
-        setInvoiceData((prev: any) => ({ ...prev, items: [...prev.items, newItem] }));
+        const newItem = { id: Date.now().toString(), name: "", qty: 1, price: 0 };
+        setInvoiceData((prev: any) => ({ ...prev, items: [...(prev.items || []), newItem] }));
     };
 
     const removeItem = (id: any) => {
@@ -83,246 +64,334 @@ export default function ProfessionalLedgerEditor() {
         }));
     };
 
-const handleSave = async () => {
-    try {
-        setUpdating(true);
-        
-        // ১. মোট কত টাকা রিসিভ হলো তা ক্যালকুলেট করুন
-        const totalReceived = Number(invoiceData.receivedAmount || 0) + Number(newPaymentAmount);
-        
-        // ২. নতুন ডিউ কত টাকা বাকি আছে তা ক্যালকুলেট করুন
-        const finalDue = Math.max(0, stats.grandTotal - totalReceived);
-
-        const { _id, ...restOfData } = invoiceData;
-
-        const payload = {
-            ...restOfData,
-            items: invoiceData.items.map((item: any) => ({
-                ...item,
-                qty: Number(item.qty),
-                price: Number(item.price)
-            })),
-            taxRate: Number(invoiceData.taxRate),
-            discount: Number(invoiceData.discount),
-            grandTotal: stats.grandTotal,
-            receivedAmount: totalReceived,
-            
-            // ৩. মেইন পেজের জন্য এই ফিল্ডটি ডাটাবেসে আপডেট হওয়া জরুরি
-            remainingDue: finalDue, 
-            
-            status: totalReceived >= stats.grandTotal 
-                ? "Paid" 
-                : (totalReceived > 0 ? "Partial" : "Pending"),
-            updatedAt: new Date()
-        };
-
-        await axios.patch(`${API_BASE}/invoices/${params.id}`, payload);
-        router.push("/admin/invoices");
-    } catch (error) {
-        console.error("Save error:", error);
-        alert("Update failed.");
-    } finally {
-        setUpdating(false);
-    }
-};
+    const handleSave = async () => {
+        try {
+            setUpdating(true);
+            const totalReceived = Number(invoiceData.receivedAmount || 0) + Number(newPaymentAmount);
+            const finalDue = Math.max(0, stats.grandTotal - totalReceived);
+            const payload = {
+                ...invoiceData,
+                grandTotal: stats.grandTotal,
+                receivedAmount: totalReceived,
+                remainingDue: finalDue,
+                status: totalReceived >= stats.grandTotal ? "Paid" : (totalReceived > 0 ? "Partial" : "Pending"),
+                updatedAt: new Date()
+            };
+            await axios.patch(`${API_BASE}/invoices/${params.id}`, payload);
+            router.push("/admin/invoices");
+        } catch (error) {
+            alert("Update failed.");
+        } finally {
+            setUpdating(false);
+        }
+    };
 
     if (loading) return (
-        <div className="h-screen flex flex-col items-center justify-center bg-slate-50">
-            <Loader2 className="animate-spin text-[#4177BC] mb-4" size={48} />
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Synchronizing Ledger...</p>
+        <div className="h-screen flex flex-col items-center justify-center bg-[#FDFDFD]">
+            <div className="relative flex items-center justify-center">
+                <div className="w-16 h-16 border-[3px] border-slate-100 border-t-[#4177BC] rounded-full animate-spin"></div>
+                <Sparkles className="absolute text-[#EB9C2C] animate-pulse" size={20} />
+            </div>
+            <p className="mt-6 text-slate-400 font-bold tracking-[0.3em] text-[9px] uppercase inter-medium">Synchronizing Ledger</p>
         </div>
     );
 
     return (
-        <div className="min-h-screen  pb-20">
-            {/* Top Sticky Header */}
-            <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
-                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/admin/invoices" className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                            <ArrowLeft size={20} className="text-slate-600" />
+        <div className="min-h-screen bg-[#FFFFFF] text-slate-900 pb-20 selection:bg-[#4177BC]/10 inter-medium">
+
+            {/* --- HEADER --- */}
+            <header className="bg-white/90 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50">
+                <div className="max-w-[1400px] mx-auto px-8 h-24 flex items-center justify-between">
+
+                    {/* Left Side: Title & Navigation */}
+                    <div className="flex items-center gap-6">
+                        <Link href="/admin/invoices" className="group">
+                            <div className="p-3 bg-white hover:bg-slate-50 rounded-2xl transition-all border border-slate-200 shadow-sm group-active:scale-90">
+                                <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform text-slate-600" />
+                            </div>
                         </Link>
+
                         <div>
-                            <h2 className="text-sm font-black text-slate-400 uppercase tracking-tighter leading-none">Editor Mode</h2>
-                            <p className="text-lg font-black text-slate-900 leading-none mt-1">{invoiceData?.invoiceId}</p>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="px-2 py-0.5 bg-[#4177BC]/10 text-[#4177BC] text-[9px] font-black uppercase rounded-md tracking-widest inter-bold border border-[#4177BC]/10">
+                                    Editor Mode
+                                </span>
+                                <ChevronRight size={12} className="text-slate-300" />
+                                <span className="text-[11px] text-slate-400 font-bold uppercase tracking-widest inter-semibold">
+                                    Statement #{invoiceData?.invoiceId?.split('-').pop()}
+                                </span>
+                            </div>
+                            <h1 className="text-3xl font-black text-slate-900 tracking-tight judson-bold leading-none">
+                                Edit Ledger <span className="text-[#4177BC]">Statement</span>
+                            </h1>
                         </div>
                     </div>
-                    
-                    <button 
-                        onClick={handleSave}
-                        disabled={updating}
-                        className="bg-[#4177BC] text-white px-8 py-3 rounded-xl font-bold text-sm uppercase tracking-widest flex items-center gap-2 hover:bg-[#35629d] shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all"
-                    >
-                        {updating ? <Loader2 size={18} className="animate-spin" /> : <ShieldCheck size={18} />}
-                        Finalize & Save
-                    </button>
+
+                    {/* Right Side: Action Buttons */}
+                    <div className="flex items-center gap-3">
+                        <button className="px-5 py-2.5 rounded-xl text-[12px] font-bold text-slate-500 hover:bg-slate-100 transition-all inter-bold">
+                            Discard
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            className="flex items-center gap-2 bg-[#4177BC] hover:bg-[#34619a] text-white px-8 py-3 rounded-xl text-[12px] font-black uppercase tracking-widest shadow-lg shadow-[#4177BC]/20 transition-all active:scale-95 inter-bold"
+                        >
+                            <Save size={16} />
+                            Save Changes
+                        </button>
+                    </div>
+
                 </div>
-            </div>
+            </header>
 
-            <div className="max-w-7xl mx-auto px-6 mt-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
-                {/* Main Content Area */}
-                <div className="lg:col-span-8 space-y-6">
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="h-10 w-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
-                                <User size={20} />
-                            </div>
-                            <h3 className="font-black text-slate-800 uppercase tracking-widest text-sm">Account Information</h3>
+            <main className="max-w-6xl mx-auto px-6 mt-8 space-y-8">
+
+                {/* --- CLIENT INFO --- */}
+                <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-200/60 p-8 relative overflow-hidden transition-all hover:shadow-md">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#4177BC] to-transparent"></div>
+                    <div className="flex items-center gap-4 mb-8">
+                        <div className="p-3 bg-slate-50 rounded-xl text-[#4177BC] border border-slate-100">
+                            <User size={20} />
                         </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Client Name</label>
-                                <input 
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-bold text-slate-900 outline-none focus:ring-2 ring-blue-500/10 focus:bg-white transition-all"
-                                    value={invoiceData.client?.name || ""}
-                                    onChange={(e) => updateField("client", { ...invoiceData.client, name: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Project Title</label>
-                                <input 
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-bold text-slate-900 outline-none focus:ring-2 ring-blue-500/10 focus:bg-white transition-all"
-                                    value={invoiceData.projectTitle || ""}
-                                    onChange={(e) => updateField("projectTitle", e.target.value)}
-                                />
-                            </div>
+                        <div>
+                            <h3 className="font-bold text-slate-900 text-lg tracking-tight judson-bold">Entity Details</h3>
+                            <p className="text-[12px] text-slate-400 inter-medium">Primary client and project identification</p>
                         </div>
                     </div>
 
-                    {/* Section: Line Items */}
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-                                    <Receipt size={20} />
-                                </div>
-                                <h3 className="font-black text-slate-800 uppercase tracking-widest text-sm">Service Scope</h3>
-                            </div>
-                            <button onClick={addItem} className="flex items-center gap-2 text-[#4177BC] font-black text-[10px] uppercase bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-all">
-                                <Plus size={14} /> Add Item
-                            </button>
-                        </div>
-
-                        <div className="space-y-3">
-                            {invoiceData.items?.map((item: any, index: number) => (
-                                <div key={item.id || item._id} className="flex flex-wrap md:flex-nowrap gap-4 items-center p-2 rounded-2xl hover:bg-slate-50 transition-all group">
-                                    <span className="text-xs font-black text-slate-300 w-6">0{index + 1}</span>
-                                    <input 
-                                        className="flex-[4] bg-transparent border-none font-bold text-slate-700 outline-none"
-                                        placeholder="Service Description"
-                                        value={item.name}
-                                        onChange={(e) => {
-                                            const newItems = [...invoiceData.items];
-                                            newItems[index].name = e.target.value;
-                                            updateField("items", newItems);
-                                        }}
-                                    />
-                                    <div className="flex-[1] flex items-center bg-white border border-slate-100 rounded-xl px-3 py-2">
-                                        <input type="number" className="w-full text-center font-black text-sm outline-none" 
-                                            value={item.qty} 
-                                            onChange={(e) => {
-                                                const newItems = [...invoiceData.items];
-                                                newItems[index].qty = e.target.value;
-                                                updateField("items", newItems);
-                                            }}
-                                        />
-                                    </div>
-                                    <div className="flex-[2] flex items-center bg-white border border-slate-100 rounded-xl px-3 py-2">
-                                        <span className="text-[10px] font-black text-slate-400 mr-2">{invoiceData.currency}</span>
-                                        <input type="number" className="w-full font-black text-sm outline-none text-right" 
-                                            value={item.price} 
-                                            onChange={(e) => {
-                                                const newItems = [...invoiceData.items];
-                                                newItems[index].price = e.target.value;
-                                                updateField("items", newItems);
-                                            }}
-                                        />
-                                    </div>
-                                    <button onClick={() => removeItem(item.id || item._id)} className="p-2 text-rose-300 hover:text-rose-600 transition-colors md:opacity-0 group-hover:opacity-100">
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Sidebar: Financials */}
-                <div className="lg:col-span-4 space-y-6">
-                    <div className="bg-slate-900 rounded-[3rem] p-8 text-white shadow-2xl shadow-slate-400 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                            <Banknote size={120} />
-                        </div>
-                        <div className="relative z-10">
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2">Net Receivable</p>
-                            <h2 className={`text-5xl font-[1000] tracking-tighter ${stats.remaining > 0 ? 'text-white' : 'text-emerald-400'}`}>
-                                {invoiceData.currency} {(stats.remaining - newPaymentAmount).toLocaleString()}
-                            </h2>
-                            <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-400 font-bold uppercase text-[9px] tracking-widest">Total Valuation</span>
-                                    <span className="font-black">{invoiceData.currency} {stats.grandTotal.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-emerald-400 font-bold uppercase text-[9px] tracking-widest">Received So Far</span>
-                                    <span className="font-black text-emerald-400">+{invoiceData.currency} {invoiceData.receivedAmount?.toLocaleString()}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="h-8 w-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
-                                <History size={16} />
-                            </div>
-                            <h3 className="font-black text-slate-800 uppercase tracking-widest text-[11px]">Record Installment</h3>
-                        </div>
-                        <div className="relative mb-4">
-                            <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-300">{invoiceData.currency}</span>
-                            <input 
-                                type="number"
-                                className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500/20 py-4 pl-14 pr-6 rounded-2xl text-xl font-black outline-none transition-all"
-                                placeholder="0.00"
-                                value={newPaymentAmount || ""}
-                                onChange={(e) => setNewPaymentAmount(Number(e.target.value))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] ml-1 inter-bold">Client Full Name</label>
+                            <input
+                                className="w-full bg-slate-50/50 border border-slate-200 text-slate-900 text-sm font-bold rounded-xl py-3 px-5 focus:bg-white focus:border-[#4177BC] transition-all outline-none inter-semibold"
+                                value={invoiceData.client?.name || ""}
+                                onChange={(e) => updateField("client", { ...invoiceData.client, name: e.target.value })}
+                                placeholder="Name of the person or company"
                             />
                         </div>
-                        <p className="text-[9px] text-slate-400 font-medium text-center uppercase tracking-tighter">
-                            This adds to existing payments on save.
-                        </p>
-                    </div>
-
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-                         <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Percent size={14} className="text-slate-400" />
-                                    <span className="text-[10px] font-black uppercase text-slate-500">Tax Rate (%)</span>
-                                </div>
-                                <input 
-                                    type="number" className="w-16 text-right font-black text-slate-900 outline-none"
-                                    value={invoiceData.taxRate || 0}
-                                    onChange={(e) => updateField("taxRate", e.target.value)}
+                        <div className="space-y-2">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] ml-1 inter-bold">Project Reference</label>
+                            <div className="relative">
+                                <Briefcase size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                <input
+                                    className="w-full bg-slate-50/50 border border-slate-200 text-slate-900 text-sm font-bold rounded-xl py-3 pl-11 pr-5 focus:bg-white focus:border-[#4177BC] transition-all outline-none inter-semibold"
+                                    value={invoiceData.projectTitle || ""}
+                                    onChange={(e) => updateField("projectTitle", e.target.value)}
+                                    placeholder="e.g. Website Overhaul"
                                 />
                             </div>
-                            <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                                <div className="flex items-center gap-2">
-                                    <AlertCircle size={14} className="text-slate-400" />
-                                    <span className="text-[10px] font-black uppercase text-slate-500">Discount ({invoiceData.currency})</span>
-                                </div>
-                                <input 
-                                    type="number" className="w-20 text-right font-black text-slate-900 outline-none"
-                                    value={invoiceData.discount || 0}
-                                    onChange={(e) => updateField("discount", e.target.value)}
-                                />
-                            </div>
-                         </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+
+                {/* --- ITEM BREAKDOWN --- */}
+                <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-200/60 overflow-hidden">
+                    <div className="px-10 py-7 flex justify-between items-center bg-slate-50/30 border-b border-slate-100">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-[#EB9C2C]/10 rounded-xl text-[#EB9C2C] border border-[#EB9C2C]/20">
+                                <ReceiptText size={24} />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-900 text-xl tracking-tight judson-bold">Itemized Breakdown</h3>
+                                <p className="text-[12px] text-slate-400 inter-medium">Manage your services and pricing</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={addItem}
+                            className="bg-white border-2 border-slate-100 text-slate-700 px-6 py-2.5 rounded-xl text-[11px] font-black hover:bg-[#4177BC] hover:text-white hover:border-[#4177BC] transition-all flex items-center gap-2 uppercase tracking-widest shadow-sm inter-bold"
+                        >
+                            <Plus size={16} /> Add New Entry
+                        </button>
+                    </div>
+
+                    <div className="p-8">
+                        <div className="space-y-4">
+                            {/* Table Header Labels */}
+                            <div className="grid grid-cols-12 gap-4 px-2 mb-1 text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 inter-bold">
+                                <div className="col-span-6">Service Description</div>
+                                <div className="col-span-1 text-center">Qty</div>
+                                <div className="col-span-2 text-right">Unit Price</div>
+                                <div className="col-span-2 text-right">Total Amount</div>
+                                <div className="col-span-1"></div>
+                            </div>
+
+                            {/* Items List */}
+                            {invoiceData.items?.map((item: any, index: number) => (
+                                <div key={item.id || item._id} className="grid grid-cols-12 gap-4 items-center group">
+                                    {/* Name/Description */}
+                                    <div className="col-span-6">
+                                        <input
+                                            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:border-[#4177BC] focus:ring-4 focus:ring-[#4177BC]/5 outline-none transition-all inter-semibold placeholder:text-slate-300"
+                                            value={item.name}
+                                            onChange={(e) => {
+                                                const newItems = [...invoiceData.items];
+                                                newItems[index].name = e.target.value;
+                                                updateField("items", newItems);
+                                            }}
+                                            placeholder="e.g. Website Development"
+                                        />
+                                    </div>
+
+                                    {/* Quantity */}
+                                    <div className="col-span-1">
+                                        <input
+                                            type="number"
+                                            className="w-full bg-white border border-slate-200 rounded-xl px-2 py-3 text-sm font-black text-center text-slate-700 focus:border-[#4177BC] focus:ring-4 focus:ring-[#4177BC]/5 outline-none transition-all inter-bold"
+                                            value={item.qty}
+                                            onChange={(e) => {
+                                                const newItems = [...invoiceData.items];
+                                                newItems[index].qty = Number(e.target.value);
+                                                updateField("items", newItems);
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Rate/Price */}
+                                    <div className="col-span-2">
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-[#4177BC] inter-bold">
+                                                {invoiceData.currency}
+                                            </span>
+                                            <input
+                                                type="number"
+                                                className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-3 text-sm font-black text-right text-slate-700 focus:border-[#4177BC] focus:ring-4 focus:ring-[#4177BC]/5 outline-none transition-all inter-bold"
+                                                value={item.price}
+                                                onChange={(e) => {
+                                                    const newItems = [...invoiceData.items];
+                                                    newItems[index].price = Number(e.target.value);
+                                                    updateField("items", newItems);
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Total */}
+                                    <div className="col-span-2 text-right px-4 text-sm font-black text-slate-900 inter-bold bg-slate-50/50 py-3 rounded-xl border border-transparent">
+                                        {invoiceData.currency} {(item.qty * item.price).toLocaleString()}
+                                    </div>
+
+                                    {/* Delete Action */}
+                                    <div className="col-span-1 flex justify-center">
+                                        <button
+                                            onClick={() => removeItem(item.id || item._id)}
+                                            className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                        >
+                                            <Trash2 size={20} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {invoiceData.items?.length === 0 && (
+                                <div className="py-16 text-center border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/30">
+                                    <p className="text-slate-400 font-medium inter-medium">Your invoice is empty. Click &quot;Add New Entry&quot; to begin.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- BOTTOM: COMPACT CARDS --- */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    {/* Financial Summary */}
+                    <div className="bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-10 relative overflow-hidden border border-slate-100 min-h-[320px] flex flex-col justify-between">
+                        {/* Decorative Background Elements */}
+                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#4177BC]/5 rounded-full blur-[40px]"></div>
+                        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#EB9C2C]/5 rounded-full blur-[30px]"></div>
+
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="w-8 h-1.5 bg-[#4177BC] rounded-full"></div>
+                                <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-[0.25em] inter-bold">Financial Summary</h3>
+                            </div>
+
+                            <div className="space-y-6">
+                                {/* Subtotal Row */}
+                                <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100/50">
+                                    <div className="flex flex-col">
+                                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider inter-medium">Subtotal</span>
+                                        <span className="text-slate-400 text-[10px] inter-medium">Before taxes & adjustments</span>
+                                    </div>
+                                    <span className="font-bold text-lg text-slate-700 inter-bold">
+                                        <span className="text-xs mr-1 opacity-50">{invoiceData.currency}</span>
+                                        {stats.subtotal.toLocaleString()}
+                                    </span>
+                                </div>
+
+                                {/* Total Section */}
+                                <div className="px-2 pt-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className="p-1.5 bg-[#EB9C2C]/10 rounded-lg">
+                                            <Wallet size={14} className="text-[#EB9C2C]" />
+                                        </div>
+                                        <span className="text-slate-500 text-[11px] font-black uppercase tracking-widest inter-bold">Total Statement Amount</span>
+                                    </div>
+
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-2xl font-black text-[#4177BC] judson-bold ">{invoiceData.currency}:</span>
+                                        <span className="text-5xl font-black text-slate-900 tracking-tighter px-40 judson-bold ">
+                                            {stats.grandTotal.toLocaleString()}
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-6 flex items-center gap-2 text-[11px] text-emerald-600 bg-emerald-50 w-fit px-3 py-1 rounded-full border border-emerald-100 inter-bold">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                                        Ready for Finalization
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Payment Module */}
+                    <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-200/60 p-8 flex flex-col justify-between min-h-[300px]">
+                        <div>
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="p-3 bg-[#4177BC]/5 rounded-xl text-[#4177BC] border border-[#4177BC]/10">
+                                    <Coins size={20} />
+                                </div>
+                                <h3 className="font-bold text-slate-900 text-lg tracking-tight judson-bold">Payment Entry</h3>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 mb-6">
+                                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                                    <span className="text-[8px] font-black text-slate-400 uppercase block mb-0.5 inter-bold">Total Paid</span>
+                                    <span className="text-md font-black text-slate-800 inter-bold">{invoiceData.currency} {invoiceData.receivedAmount || 0}</span>
+                                </div>
+                                <div className="bg-orange-50/50 p-3.5 rounded-xl border border-orange-100/50">
+                                    <span className="text-[8px] font-black text-[#EB9C2C] uppercase block mb-0.5 inter-bold">Balance Due</span>
+                                    <span className="text-md font-black text-[#EB9C2C] inter-bold">{invoiceData.currency} {stats.remaining.toLocaleString()}</span>
+                                </div>
+                            </div>
+
+                            <div className="relative">
+                                <label className="absolute -top-2 left-4 px-1.5 bg-white text-[8px] font-black text-[#4177BC] uppercase z-10 inter-bold">New Amount</label>
+                                <input
+                                    type="number"
+                                    className="w-full bg-slate-50 border-2 border-slate-100 focus:border-[#4177BC] focus:bg-white text-slate-900 font-black p-4 rounded-xl text-xl outline-none transition-all inter-bold"
+                                    placeholder="0.00"
+                                    value={newPaymentAmount || ""}
+                                    onChange={(e) => setNewPaymentAmount(Number(e.target.value))}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- SAVE ACTION --- */}
+                <div className="flex justify-center sm:justify-end pt-4">
+                    <button
+                        onClick={handleSave}
+                        disabled={updating}
+                        className="w-full sm:w-auto bg-[#4177BC] hover:bg-[#34619a] shadow-lg shadow-[#4177BC]/20 text-white px-10 py-4 rounded-2xl font-black text-xs flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50 group inter-bold"
+                    >
+                        {updating ? <Loader2 size={18} className="animate-spin" /> : <ShieldCheck size={18} className="group-hover:rotate-12 transition-transform" />}
+                        <span className="uppercase tracking-[0.15em]">Confirm Update</span>
+                    </button>
+                </div>
+
+            </main>
         </div>
     );
 }
