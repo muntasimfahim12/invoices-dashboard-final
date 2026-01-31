@@ -4,9 +4,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
     Layers, DollarSign, Search, Trash2, Edit3, X, Loader2, Target,
-    Briefcase, Calendar, Zap, ShieldCheck, ArrowUpRight, Filter, 
-    MoreHorizontal, ChevronRight, Globe, Mail, MapPin, Key, Receipt, 
-    ArrowLeft, CheckCircle2, LayoutGrid
+    Briefcase, Zap, ShieldCheck, ArrowLeft, LayoutGrid, Globe,
+    ChevronLeft, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -16,7 +15,6 @@ const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const API_BASE = RAW_API_URL.endsWith('/') ? RAW_API_URL.slice(0, -1) : RAW_API_URL;
 
 export default function ProjectsPage() {
-    // --- LOGIC (KEEPING AS IS) ---
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [allProjects, setAllProjects] = useState<any[]>([]);
@@ -24,6 +22,10 @@ export default function ProjectsPage() {
     const [statusFilter, setStatusFilter] = useState("All");
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedProject, setSelectedProject] = useState<any>(null);
+
+    // --- PAGINATION STATE ---
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     const fetchData = useCallback(async (isSilent = false) => {
         if (!API_BASE) return;
@@ -66,10 +68,20 @@ export default function ProjectsPage() {
 
     const filteredProjects = allProjects.filter(prj => {
         const matchesSearch = prj.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             prj.clientName?.toLowerCase().includes(searchTerm.toLowerCase());
+                               prj.clientName?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === "All" || prj.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
+
+    // --- PAGINATION LOGIC ---
+    const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedProjects = filteredProjects.slice(startIndex, startIndex + itemsPerPage);
+
+    // Reset to page 1 when filtering or searching
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter]);
 
     const handleDelete = async (clientId: string, projectName: string, internalId: string) => {
         if (!window.confirm(`Are you sure?`)) return;
@@ -101,8 +113,7 @@ export default function ProjectsPage() {
         <div className="min-h-screen bg-[#FFFFFF] p-4 lg:p-8 selection:bg-[#4177BC] selection:text-white font-sans">
             <div className="max-w-[1600px] mx-auto">
                 
-                {/* --- TOP NAV RENDERED AS REQUESTED --- */}
-                <nav className="flex items-center justify-between mb-8 bg-[#FFFFFF]/50 backdrop-blur-md p-4 rounded-3xl border border-slate-100 shadow-sm">
+                <nav className="flex items-center justify-between mb-8 bg-[#FFFFFF]/50 backdrop-blur-md p-4 rounded-3xl sticky top-4 z-50">
                     <Link href="/admin">
                         <motion.button whileHover={{ scale: 1.05 }} className="flex items-center gap-3 px-5 py-2.5 bg-[#FFFFFF] rounded-2xl text-slate-600 font-bold text-xs shadow-sm border border-slate-100 uppercase tracking-tighter">
                             <ArrowLeft size={16} /> Back to Admin
@@ -118,78 +129,56 @@ export default function ProjectsPage() {
                     </div>
                 </nav>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     
-                    {/* --- LEFT COLUMN: SYSTEM IDENTITY CARD --- */}
-                    <aside className="lg:col-span-3 space-y-6">
-                        <div className="bg-[#FFFFFF] rounded-[40px] p-8 border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden group">
+                    {/* --- LEFT COLUMN --- */}
+                    <aside className="lg:col-span-3 space-y-6 lg:sticky lg:top-28 transition-all duration-500">
+                        <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="bg-[#FFFFFF] rounded-[40px] p-8 border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-[#4177BC]/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150" />
-                            
                             <div className="relative z-10">
-                                <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center mb-6 shadow-2xl rotate-3 group-hover:rotate-0 transition-transform">
+                                <div className="w-20 h-20 bg-[#4177BC] rounded-3xl flex items-center justify-center mb-6 shadow-2xl rotate-3 group-hover:rotate-0 transition-transform">
                                     <Layers className="text-[#FFFFFF]" size={32} />
                                 </div>
-                                
-                                <h1 className="text-3xl font-bold text-slate-900 tracking-tight judson-bold mb-1 italic">Project <span className="text-[#4177BC] not-italic">HUB</span></h1>
+                                <h1 className="text-3xl font-bold text-slate-900 tracking-tight judson-bold mb-1 italic">All <span className="text-[#4177BC] not-italic">Project</span></h1>
                                 <span className="px-3 py-1 bg-blue-50 text-[#4177BC] text-[10px] font-black uppercase rounded-full border border-blue-100">Centralized Database</span>
-                                
                                 <div className="mt-10 space-y-5">
                                     <IdentityItem icon={<LayoutGrid size={14} />} label="Total Records" value={`${stats.total} Projects`} />
                                     <IdentityItem icon={<Zap size={14} />} label="In Operation" value={`${stats.active} Active`} />
                                     <IdentityItem icon={<ShieldCheck size={14} />} label="Security Level" value="Encrypted" />
                                 </div>
-
-                                <motion.button 
-                                    onClick={() => fetchData()}
-                                    className="w-full mt-10 py-4 bg-slate-50 hover:bg-slate-900 hover:text-[#FFFFFF] text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-100 flex items-center justify-center gap-2"
-                                >
+                                <motion.button onClick={() => fetchData()} whileTap={{ scale: 0.95 }} className="w-full mt-10 py-4 bg-slate-50 hover:bg-slate-900 hover:text-[#FFFFFF] text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-100 flex items-center justify-center gap-2">
                                     <Target size={14} className={loading ? "animate-spin" : ""} />
                                     {loading ? "Syncing..." : "Re-sync Repository"}
                                 </motion.button>
                             </div>
-                        </div>
-                        
-                        <div className="bg-gradient-to-br from-[#4177BC] to-[#345e96] rounded-[35px] p-8 text-[#FFFFFF] shadow-xl shadow-[#4177BC]/20 relative overflow-hidden">
+                        </motion.div>
+                        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="bg-gradient-to-br from-[#4177BC] to-[#345e96] rounded-[35px] p-8 text-[#FFFFFF] shadow-xl shadow-[#4177BC]/20 relative overflow-hidden">
                            <Globe className="absolute right-[-10px] bottom-[-10px] w-32 h-32 text-white/10 rotate-12" />
                            <p className="text-[10px] font-black uppercase tracking-widest text-[#FFFFFF]/70 mb-2">Internal Note</p>
                            <p className="text-xs leading-relaxed font-medium italic">Viewing all projects across all clients. Use filters to narrow down the architecture.</p>
-                        </div>
+                        </motion.div>
                     </aside>
 
-                    {/* --- RIGHT COLUMN: STATS & LIST --- */}
+                    {/* --- RIGHT COLUMN --- */}
                     <main className="lg:col-span-9 space-y-8">
-                        {/* MINI STATS */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                             <StatCard title="Capital Flow" value={`$${(stats.revenue/1000).toFixed(1)}k`} icon={<DollarSign />} color="#4177BC" />
                             <StatCard title="Active Flux" value={stats.active} icon={<Zap />} color="#EB9C2C" />
                             <StatCard title="Completed" value={stats.completed} icon={<ShieldCheck />} color="#10B981" />
                         </div>
 
-                        {/* FILTER & DATA TABLE */}
                         <div className="bg-white rounded-[45px] border border-slate-100 shadow-xl shadow-slate-200/20 overflow-hidden">
                             <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6">
                                 <div className="flex p-1.5 bg-slate-100 rounded-[22px] w-full md:w-auto">
                                     {["All", "Active", "Completed"].map((status) => (
-                                        <button
-                                            key={status}
-                                            onClick={() => setStatusFilter(status)}
-                                            className={`px-6 py-2 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all ${
-                                                statusFilter === status ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-                                            }`}
-                                        >
+                                        <button key={status} onClick={() => setStatusFilter(status)} className={`px-6 py-2 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all ${statusFilter === status ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>
                                             {status}
                                         </button>
                                     ))}
                                 </div>
                                 <div className="relative w-full md:w-72">
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                                    <input 
-                                        type="text" 
-                                        placeholder="Search records..." 
-                                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-100"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
+                                    <input type="text" placeholder="Search records..." className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-100" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                 </div>
                             </div>
 
@@ -205,46 +194,76 @@ export default function ProjectsPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
-                                        {filteredProjects.map((item) => (
-                                            <tr key={item.internalId} className="hover:bg-slate-50/50 transition-colors group">
-                                                <td className="px-8 py-6">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:border-blue-100 transition-all">
-                                                            <Briefcase size={18} />
+                                        <AnimatePresence mode="popLayout">
+                                            {paginatedProjects.map((item) => (
+                                                <motion.tr layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} key={item.internalId} className="hover:bg-slate-50/50 transition-colors group">
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:border-blue-100 transition-all">
+                                                                <Briefcase size={18} />
+                                                            </div>
+                                                            <span className="font-bold text-slate-900 text-sm tracking-tight">{item.name}</span>
                                                         </div>
-                                                        <span className="font-bold text-slate-900 text-sm tracking-tight">{item.name}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-6 text-[11px] font-black text-blue-500/70 uppercase">{item.clientName}</td>
-                                                <td className="px-8 py-6 font-black text-slate-900 judson-bold italic text-lg">${Number(item.budget).toLocaleString()}</td>
-                                                <td className="px-8 py-6"><StatusBadge status={item.status || "Active"} /></td>
-                                                <td className="px-8 py-6 text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        <button 
-                                                            onClick={() => { setSelectedProject({ ...item, oldName: item.name }); setIsEditModalOpen(true); }}
-                                                            className="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-colors"
-                                                        >
-                                                            <Edit3 size={16} />
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => handleDelete(item.clientId, item.name, item.internalId)}
-                                                            className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
-                                                        >
-                                                            {actionLoading === `deleting-${item.internalId}` ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td className="px-8 py-6 text-[11px] font-black text-[#4177BC] uppercase">{item.clientName}</td>
+                                                    <td className="px-8 py-6 font-black text-slate-900 judson-bold italic text-lg">${Number(item.budget).toLocaleString()}</td>
+                                                    <td className="px-8 py-6"><StatusBadge status={item.status || "Active"} /></td>
+                                                    <td className="px-8 py-6 text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            <button onClick={() => { setSelectedProject({ ...item, oldName: item.name }); setIsEditModalOpen(true); }} className="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-colors"><Edit3 size={16} /></button>
+                                                            <button onClick={() => handleDelete(item.clientId, item.name, item.internalId)} className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors">
+                                                                {actionLoading === `deleting-${item.internalId}` ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </motion.tr>
+                                            ))}
+                                        </AnimatePresence>
                                     </tbody>
                                 </table>
+                            </div>
+
+                            {/* --- PROFESSIONAL PAGINATION NAVIGATION --- */}
+                            <div className="p-6 border-t border-slate-50 flex items-center justify-between">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredProjects.length)} of {filteredProjects.length} Records
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        disabled={currentPage === 1}
+                                        onClick={() => setCurrentPage(prev => prev - 1)}
+                                        className="p-2 rounded-xl border border-slate-100 text-slate-400 disabled:opacity-30 hover:bg-slate-50 transition-colors"
+                                    >
+                                        <ChevronLeft size={16} />
+                                    </button>
+                                    
+                                    <div className="flex items-center gap-1">
+                                        {[...Array(totalPages)].map((_, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => setCurrentPage(i + 1)}
+                                                className={`w-8 h-8 rounded-xl text-[10px] font-black transition-all ${currentPage === i + 1 ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:bg-slate-50"}`}
+                                            >
+                                                {i + 1}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <button 
+                                        disabled={currentPage === totalPages || totalPages === 0}
+                                        onClick={() => setCurrentPage(prev => prev + 1)}
+                                        className="p-2 rounded-xl border border-slate-100 text-slate-400 disabled:opacity-30 hover:bg-slate-50 transition-colors"
+                                    >
+                                        <ChevronRight size={16} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </main>
                 </div>
             </div>
 
-            {/* --- EDIT MODAL (KEEPING YOUR EXISTING MODAL STYLE) --- */}
+            {/* --- EDIT MODAL --- */}
             <AnimatePresence>
                 {isEditModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
@@ -285,8 +304,7 @@ export default function ProjectsPage() {
     );
 }
 
-// --- REUSABLE COMPONENTS FROM YOUR DESIGN ---
-
+// --- COMPONENTS --- (IdentityItem, StatCard, StatusBadge same as before)
 function IdentityItem({ icon, label, value }: any) {
     return (
         <div className="flex items-center gap-4 group/item">
