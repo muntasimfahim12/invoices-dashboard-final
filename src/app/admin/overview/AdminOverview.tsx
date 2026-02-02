@@ -118,7 +118,7 @@ export default function AdminOverview() {
       <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-100/50">
         <div className="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-12">
-             <span className="text-2xl font-black tracking-tighter text-[#4177BC] judson-bold">Genie oVerview</span>
+            <span className="text-2xl font-black tracking-tighter text-[#4177BC] judson-bold">Genie oVerview</span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -171,7 +171,7 @@ export default function AdminOverview() {
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#4177BC] inter-bold">Enterprise Financial Hub v2.0</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-bold text-[#0F172A] tracking-tighter leading-[0.9] mb-8 judson-bold">
-              Billing 
+              Billing
               <span className="text-slate-300">Simplified.</span>
             </h1>
             <p className="max-w-md text-slate-500 text-xl font-medium leading-relaxed inter-medium">
@@ -238,47 +238,102 @@ export default function AdminOverview() {
             </div>
           </div>
 
-          <div className="lg:col-span-4 space-y-16">
-            <div className="bg-white rounded-[50px] border border-slate-100 p-10 shadow-sm">
-              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400 mb-8 inter-bold">Cash Intel</h3>
-              <div className="h-[280px] w-full scale-110">
+          <div className="lg:col-span-4 space-y-8 max-w-[380px] mx-auto w-full">
+            {/* --- Ultra Modern Cash Intel Card --- */}
+            <div className="bg-white rounded-[3rem] border border-slate-100 p-8 shadow-[0_20px_50px_rgba(0,0,0,0.02)] relative overflow-hidden group">
+              {/* Decorative Gradient Background */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/40 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[#4177BC]/10 transition-colors duration-700" />
+
+              <div className="flex justify-between items-center mb-6 relative z-10">
+                <div>
+                  <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-[#4177BC] inter-bold mb-1">Cash Intel</h3>
+                  <p className="judson-bold text-lg italic text-slate-800">Asset Split</p>
+                </div>
+                <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-[#4177BC] group-hover:bg-blue-50 transition-all duration-500">
+                  <Activity size={18} />
+                </div>
+              </div>
+
+              {/* Doughnut Chart with Center Metric */}
+              <div className="h-[220px] w-full relative mb-6">
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+                  <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Portfolio</span>
+                  <span className="text-2xl font-black text-slate-900 inter-bold tracking-tighter">
+                    ${chartData.reduce((acc, curr) => acc + curr.value, 0).toLocaleString()}
+                  </span>
+                </div>
+
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={chartData} innerRadius={85} outerRadius={110} paddingAngle={10} dataKey="value">
-                      {chartData.map((entry, index) => <Cell key={index} fill={entry.color} strokeWidth={0} />)}
+                    <Pie
+                      data={chartData}
+                      innerRadius={70}
+                      outerRadius={85}
+                      paddingAngle={12}
+                      dataKey="value"
+                      stroke="none"
+                      cornerRadius={40}
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell
+                          key={index}
+                          fill={entry.color}
+                          className="hover:opacity-80 transition-all duration-500 cursor-pointer outline-none"
+                        />
+                      ))}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="grid grid-cols-2 gap-4 mt-10">
+
+              {/* Compact Legend Grid */}
+              <div className="grid grid-cols-2 gap-3 relative z-10">
                 {chartData.map((item, i) => (
-                  <div key={i} className="p-4 bg-slate-50 rounded-[24px]">
-                    <div className="w-2 h-2 rounded-full mb-3" style={{ backgroundColor: item.color }} />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 inter-bold">{item.name}</p>
-                    <p className="text-lg font-black inter-bold">{item.value}</p>
+                  <div key={i} className="p-3 bg-[#F8FAFC] rounded-[1.5rem] border border-transparent hover:border-blue-100 hover:bg-white hover:shadow-md transition-all duration-300 group/item">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full shadow-sm" style={{ backgroundColor: item.color }} />
+                      <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 inter-bold">{item.name}</p>
+                    </div>
+                    <p className="text-sm font-black text-slate-800 inter-bold tracking-tight">
+                      {item.value.toLocaleString()}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400 pl-4 inter-bold">Quick Operations</h3>
+            {/* --- Floating Quick Operations Suite --- */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 px-4 mb-4">
+                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+                <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-300 inter-bold whitespace-nowrap">Command Center</h3>
+                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+              </div>
+
               {[
-                { label: "New Invoice", route: "/admin/invoices/create", icon: <Plus size={20} /> },
-                { label: "Add Client", route: "/admin/create-client", icon: <Users size={20} /> },
-                { label: "Start Project", route: "/admin/projects/create", icon: <ShieldCheck size={20} /> }
+                { label: "New Invoice", route: "/admin/invoices/create", icon: <Plus size={18} />, color: "text-blue-500", bg: "bg-blue-50" },
+                { label: "Add Client", route: "/admin/create-client", icon: <Users size={18} />, color: "text-emerald-500", bg: "bg-emerald-50" },
+                { label: "Start Project", route: "/admin/projects/create", icon: <ShieldCheck size={18} />, color: "text-amber-500", bg: "bg-amber-50" }
               ].map((item, i) => (
                 <button
                   key={i}
                   onClick={() => router.push(item.route)}
-                  className="w-full group flex items-center justify-between p-7 bg-white border border-slate-100 rounded-[32px] hover:border-[#4177BC] transition-all duration-300 hover:shadow-2xl hover:shadow-slate-100"
+                  className="w-full group relative flex items-center justify-between p-4 bg-white/60 backdrop-blur-sm border border-slate-100 rounded-[2rem] hover:bg-white hover:shadow-[0_15px_35px_rgba(0,0,0,0.05)] hover:border-[#4177BC]/30 transition-all duration-500 active:scale-95"
                 >
-                  <div className="flex items-center gap-5">
-                    <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-[#4177BC]/10 group-hover:text-[#4177BC] transition-all">{item.icon}</div>
-                    <span className="text-base font-black text-[#0F172A] tracking-tight inter-bold">{item.label}</span>
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 ${item.bg} ${item.color} rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-sm`}>
+                      {item.icon}
+                    </div>
+                    <div className="text-left">
+                      <span className="block text-[13px] font-black text-slate-800 tracking-tight inter-bold">{item.label}</span>
+                      <span className="text-[8px] text-slate-400 font-bold uppercase tracking-[0.15em] opacity-0 group-hover:opacity-100 transition-all duration-500">Quick Access</span>
+                    </div>
                   </div>
-                  <ArrowRight size={20} className="text-slate-200 group-hover:text-[#4177BC] group-hover:translate-x-2 transition-all" />
+
+                  <div className="w-8 h-8 rounded-full border border-slate-50 flex items-center justify-center text-slate-200 group-hover:bg-[#4177BC] group-hover:text-white group-hover:border-[#4177BC] transition-all duration-500">
+                    <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                  </div>
                 </button>
               ))}
             </div>
