@@ -118,7 +118,7 @@ export default function AdminOverview() {
       <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-100/50">
         <div className="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-12">
-             <span className="text-2xl font-black tracking-tighter text-[#4177BC] judson-bold">Invoice.</span>
+             <span className="text-2xl font-black tracking-tighter text-[#4177BC] judson-bold">Genie oVerview</span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -212,17 +212,17 @@ export default function AdminOverview() {
                   View Archive <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
                 </button>
               </div>
-              <div className="overflow-hidden rounded-[40px] border border-slate-100 shadow-sm">
+              <div className="overflow-hidden rounded-[40px] border border-slate-100 shadow-sm judson-bold">
                 <InvoiceTable data={dashboardData.invoices.slice(0, 6)} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="group bg-[#0F172A] p-12 rounded-[50px] text-white hover:shadow-2xl hover:shadow-[#0F172A]/20 transition-all duration-500">
+              <div className="group bg-[#F8FAFC] p-12 rounded-[50px] text-white hover:shadow-2xl hover:shadow-[#0F172A]/20 transition-all duration-500">
                 <div className="w-14 h-14 bg-[#4177BC] rounded-2xl flex items-center justify-center mb-10 rotate-3 group-hover:rotate-0 transition-transform">
                   <TrendingUp size={28} />
                 </div>
-                <h3 className="text-3xl font-bold tracking-tight mb-4 leading-tight judson-bold">Momentum <br /> Analysis</h3>
+                <h3 className="text-3xl text-black font-bold tracking-tight mb-4 leading-tight judson-bold">Momentum <br /> Analysis</h3>
                 <div className="text-5xl font-black text-[#4177BC] mb-2 inter-bold">{stats.projectCount}</div>
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest inter-bold">Active High-Value Contracts</p>
               </div>
@@ -285,7 +285,7 @@ export default function AdminOverview() {
           </div>
         </div>
 
-        <div className="bg-[#F8FAFC] rounded-[50px] p-10 border border-slate-100/50 mt-6">
+        <div className="bg-[#F8FAFC] rounded-[50px] p-10 border border-slate-100/50 mt-6 judson-bold">
           <div className="flex items-center justify-between mb-10">
             <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400 inter-bold">Key Partners</h3>
             <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm">

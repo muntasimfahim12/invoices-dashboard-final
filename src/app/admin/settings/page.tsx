@@ -92,7 +92,7 @@ export default function AdminSettingsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-6 md:p-10 font-sans text-slate-900">
+    <div className="min-h-screen bg-[#FFFFF] p-6 md:p-10  text-slate-900 judson-bold">
       <div className="max-w-[1200px] mx-auto">
         
         {/* HEADER */}

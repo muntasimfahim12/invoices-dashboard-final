@@ -5,8 +5,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Search, Trash2, Download, 
-    CheckCircle2, RefreshCcw, FileText, 
+    Search, Trash2, Download,
+    CheckCircle2, RefreshCcw, FileText,
     Plus, CreditCard, X, Loader2, ArrowUpRight, TrendingUp, Users,
     ChevronLeft, ChevronRight, MoreHorizontal
 } from "lucide-react";
@@ -22,7 +22,7 @@ export default function ProfessionalPaymentsManager() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedClient, setSelectedClient] = useState<any>(null);
     const [newPaymentAmount, setNewPaymentAmount] = useState("");
-    
+
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
@@ -74,8 +74,8 @@ export default function ProfessionalPaymentsManager() {
     }, [clients]);
 
     const filteredClients = useMemo(() => {
-        return clients.filter(c => 
-            c.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        return clients.filter(c =>
+            c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             c.email?.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }, [clients, searchQuery]);
@@ -88,9 +88,9 @@ export default function ProfessionalPaymentsManager() {
     );
 
     return (
-        <div className="min-h-screen bg-[#FDFDFF] p-6 md:p-12 text-slate-900 selection:bg-[#4177BC]/10">
+        <div className="min-h-screen bg-[#FFFFFF] p-6 md:p-12 text-slate-900 selection:bg-[#4177BC]/10">
             <div className="max-w-[1400px] mx-auto">
-                
+
                 {/* --- HEADER SECTION --- */}
                 <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -98,8 +98,8 @@ export default function ProfessionalPaymentsManager() {
                             <div className="w-2 h-2 rounded-full bg-[#4177BC] animate-pulse" />
                             <span className="text-[10px] inter-bold uppercase tracking-[0.3em] text-[#4177BC]">Financial Intelligence</span>
                         </div>
-                        <h1 className="text-6xl font-black tracking-tighter text-slate-900 judson-bold">
-                            Capital <span className="text-[#4177BC] judson-regular-italic">Ledger</span>
+                        <h1 className="text-5xl font-black tracking-tighter text-slate-900 judson-bold">
+                            Capital <span className="text-[#4177BC] text-5xl font-black tracking-tighter judson-bold">Ledger</span>
                         </h1>
                     </motion.div>
 
@@ -107,7 +107,7 @@ export default function ProfessionalPaymentsManager() {
                         <button onClick={fetchData} className="group p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#4177BC]/30 transition-all shadow-sm active:scale-95">
                             <RefreshCcw size={20} className={`${loading ? "animate-spin text-[#4177BC]" : "text-slate-400 group-hover:rotate-180 transition-transform duration-700"}`} />
                         </button>
-                        <Link href="/admin/invoices/create" className="flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl inter-bold text-[11px] uppercase tracking-widest hover:bg-[#4177BC] transition-all shadow-2xl shadow-slate-200 active:scale-95">
+                        <Link href="/admin/invoices/create" className="flex items-center gap-3 px-8 py-4 bg-[#4177BC] text-white rounded-2xl inter-bold text-[11px] uppercase tracking-widest hover:bg-[#4177BC] transition-all shadow-2xl shadow-slate-200 active:scale-95">
                             <Plus size={18} /> Add Statement
                         </Link>
                     </div>
@@ -115,7 +115,7 @@ export default function ProfessionalPaymentsManager() {
 
                 {/* --- ANALYTICS GRID --- */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                    <StatCard label="Total Settlement" value={`$${stats.collected.toLocaleString()}`} icon={<TrendingUp />} trend="+12.5%" isPrimary />
+                    <StatCard label="Total Settlement" value={`$${stats.collected.toLocaleString()}`} icon={<TrendingUp />} trend="+12.5%" />
                     <StatCard label="Receivables" value={`$${stats.pending.toLocaleString()}`} icon={<Loader2 />} trend="Net Due" color="text-amber-500" />
                     <StatCard label="Live Portfolios" value={stats.count.toString()} icon={<Users />} trend="Active" />
                 </div>
@@ -125,12 +125,12 @@ export default function ProfessionalPaymentsManager() {
                     <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-50/30">
                         <div className="relative w-full md:max-w-md">
                             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                            <input 
-                                type="text" 
+                            <input
+                                type="text"
                                 placeholder="Search client directory..."
                                 className="w-full pl-14 pr-6 py-4 bg-white border border-slate-100 rounded-2xl text-sm inter-medium outline-none focus:border-[#4177BC] focus:ring-4 ring-[#4177BC]/5 transition-all"
                                 value={searchQuery}
-                                onChange={(e) => {setSearchQuery(e.target.value); setCurrentPage(1);}}
+                                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                             />
                         </div>
                         <div className="flex items-center gap-4">
@@ -168,9 +168,9 @@ export default function ProfessionalPaymentsManager() {
                                     const due = budget - paid;
 
                                     return (
-                                        <motion.tr 
+                                        <motion.tr
                                             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                            key={client._id} 
+                                            key={client._id}
                                             className="group hover:bg-slate-50/80 transition-colors"
                                         >
                                             <td className="px-10 py-7 text-center">
@@ -178,7 +178,7 @@ export default function ProfessionalPaymentsManager() {
                                             </td>
                                             <td className="px-6 py-7">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-11 h-11 rounded-2xl bg-slate-900 flex items-center justify-center text-white judson-bold italic text-lg shadow-lg">
+                                                    <div className="w-11 h-11 rounded-2xl bg-[#4177BC] flex items-center justify-center text-white judson-bold italic text-lg shadow-lg">
                                                         {client.name?.charAt(0)}
                                                     </div>
                                                     <div>
@@ -200,7 +200,7 @@ export default function ProfessionalPaymentsManager() {
                                             <td className="px-10 py-7 text-right">
                                                 <div className="flex justify-end items-center gap-3">
                                                     {due > 0 ? (
-                                                        <button 
+                                                        <button
                                                             onClick={() => setSelectedClient(client)}
                                                             className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl inter-bold text-[9px] uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 shadow-sm"
                                                         >
@@ -229,14 +229,14 @@ export default function ProfessionalPaymentsManager() {
                             Showing <span className="text-slate-900">{paginatedClients.length}</span> of <span className="text-slate-900">{filteredClients.length}</span> entities
                         </p>
                         <div className="flex items-center gap-2">
-                            <button 
+                            <button
                                 disabled={currentPage === 1}
                                 onClick={() => setCurrentPage(prev => prev - 1)}
                                 className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-30 transition-all"
                             >
                                 <ChevronLeft size={20} />
                             </button>
-                            
+
                             {[...Array(totalPages)].map((_, i) => (
                                 <button
                                     key={i}
@@ -247,7 +247,7 @@ export default function ProfessionalPaymentsManager() {
                                 </button>
                             ))}
 
-                            <button 
+                            <button
                                 disabled={currentPage === totalPages}
                                 onClick={() => setCurrentPage(prev => prev + 1)}
                                 className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-30 transition-all"
@@ -262,12 +262,12 @@ export default function ProfessionalPaymentsManager() {
                 <AnimatePresence>
                     {selectedClient && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                 onClick={() => !isUpdating && setSelectedClient(null)}
                                 className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
                             />
-                            <motion.div 
+                            <motion.div
                                 initial={{ scale: 0.9, opacity: 0, y: 30 }}
                                 animate={{ scale: 1, opacity: 1, y: 0 }}
                                 exit={{ scale: 0.9, opacity: 0, y: 30 }}
@@ -276,7 +276,7 @@ export default function ProfessionalPaymentsManager() {
                                 <button onClick={() => setSelectedClient(null)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900">
                                     <X size={24} />
                                 </button>
-                                
+
                                 <div className="text-center mb-10">
                                     <div className="w-20 h-20 bg-[#4177BC]/10 text-[#4177BC] rounded-[2rem] flex items-center justify-center mx-auto mb-6">
                                         <CreditCard size={32} />
@@ -290,7 +290,7 @@ export default function ProfessionalPaymentsManager() {
                                         <label className="text-[10px] inter-bold text-slate-400 uppercase tracking-widest block mb-3 px-1">Settlement Amount ($)</label>
                                         <div className="relative">
                                             <span className="absolute left-8 top-1/2 -translate-y-1/2 text-3xl inter-bold text-[#4177BC]">$</span>
-                                            <input 
+                                            <input
                                                 autoFocus
                                                 type="number"
                                                 className="w-full pl-16 pr-8 py-7 bg-slate-50 border border-slate-100 rounded-[1.5rem] outline-none inter-bold text-slate-900 focus:bg-white focus:ring-4 ring-[#4177BC]/5 focus:border-[#4177BC] transition-all text-4xl"
@@ -300,7 +300,7 @@ export default function ProfessionalPaymentsManager() {
                                         </div>
                                     </div>
 
-                                    <button 
+                                    <button
                                         disabled={isUpdating || !newPaymentAmount}
                                         onClick={handleUpdatePayment}
                                         className="w-full py-6 bg-slate-900 hover:bg-[#4177BC] text-white rounded-[1.5rem] inter-bold uppercase tracking-widest text-[11px] shadow-2xl shadow-slate-900/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
@@ -321,7 +321,7 @@ export default function ProfessionalPaymentsManager() {
 
 function StatCard({ label, value, icon, trend, color = "text-[#4177BC]", isPrimary = false }: any) {
     return (
-        <motion.div 
+        <motion.div
             whileHover={{ y: -5 }}
             className={`p-10 rounded-[2.5rem] border relative overflow-hidden group transition-all duration-500 ${isPrimary ? 'bg-slate-900 border-slate-900 text-white shadow-2xl shadow-slate-200' : 'bg-white border-slate-200/60 shadow-sm hover:shadow-xl'}`}
         >
@@ -334,7 +334,7 @@ function StatCard({ label, value, icon, trend, color = "text-[#4177BC]", isPrima
                     {React.cloneElement(icon, { size: 24 })}
                 </div>
             </div>
-            
+
             <div className="mt-8 flex items-center gap-3">
                 <span className={`text-[10px] inter-bold px-2 py-1 rounded-md ${isPrimary ? 'bg-white/10 text-emerald-400' : 'bg-emerald-50 text-emerald-500'}`}>{trend}</span>
                 <span className={`text-[10px] inter-medium tracking-wide ${isPrimary ? 'text-slate-500' : 'text-slate-300'}`}>Live Update</span>
