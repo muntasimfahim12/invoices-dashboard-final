@@ -123,7 +123,7 @@ export default function CreateClientPage() {
   if (loading) return <CreateClientSkeleton />;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 text-slate-900 font-sans animate-in fade-in duration-700">
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 text-slate-900 font-sans animate-in fade-in duration-700 judson-bold">
       <Toaster />
       <form onSubmit={handleSubmit}>
         
