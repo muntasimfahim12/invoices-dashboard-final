@@ -240,7 +240,7 @@ export default function AdminOverview() {
 
           <div className="lg:col-span-4 space-y-8 max-w-[380px] mx-auto w-full">
             {/* --- Ultra Modern Cash Intel Card --- */}
-            <div className="bg-white rounded-[3rem] border border-slate-100 p-8 shadow-[0_20px_50px_rgba(0,0,0,0.02)] relative overflow-hidden group">
+            <div className="bg-white rounded-[3rem] border border-slate-100  p-8 shadow-[0_20px_50px_rgba(0,0,0,0.02)] relative overflow-hidden group">
               {/* Decorative Gradient Background */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/40 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[#4177BC]/10 transition-colors duration-700" />
 

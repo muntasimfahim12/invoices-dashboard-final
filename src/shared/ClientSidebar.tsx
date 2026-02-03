@@ -19,7 +19,7 @@ const menuGroups = [
   {
     label: "Workspace",
     items: [
-      { name: "Dashboard", href: "/client", icon: LayoutDashboard },
+      { name: "Dashboard", href: "/client/overview", icon: LayoutDashboard },
       { name: "Projects", href: "/client/projects", icon: Briefcase },
     ]
   },

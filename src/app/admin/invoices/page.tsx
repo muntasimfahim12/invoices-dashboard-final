@@ -129,7 +129,7 @@ export default function InvoicesPage() {
                         </div>
                         <div>
                             <h1 className="text-3xl text-slate-900 leading-none judson-bold tracking-tight">
-                                Ledger<span className="text-[#4177BC]">Pro</span>
+                                Invoice<span className="text-[#4177BC]">List</span>
                             </h1>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -155,7 +155,7 @@ export default function InvoicesPage() {
                         </AnimatePresence>
                         
                         {userRole === 'admin' && (
-                            <Link href="/admin/invoices/create" className="group relative overflow-hidden bg-slate-900 text-white px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-[#4177BC] transition-all shadow-xl shadow-slate-900/10">
+                            <Link href="/admin/invoices/create" className="group relative overflow-hidden bg-[#4177BC] text-white px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-[#4177BC] transition-all shadow-xl shadow-slate-900/10">
                                 <span className="relative z-10 flex items-center gap-2">
                                     <Plus size={18} /> New Invoice
                                 </span>

@@ -158,7 +158,7 @@ export default function ClientOverview() {
     const paymentProgress = totalBudget > 0 ? Math.round((totalPaid / totalBudget) * 100) : 0;
 
     return (
-        <div className="min-h-screen bg-[#FDFEFF] text-slate-800 selection:bg-[#4177BC]/10">
+        <div className="min-h-screen bg-[#FDFEFF] text-slate-800 selection:bg-[#4177BC]/10 judson-bold">
             <AnimatePresence>
                 {loading && <LoadingScreen key="loader" />}
             </AnimatePresence>
@@ -177,7 +177,7 @@ export default function ClientOverview() {
                         <div className="w-10 h-10 bg-[#4177BC] rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-100 transition-transform group-active:scale-95">
                             <Zap size={20} fill="white" />
                         </div>
-                        <span className="text-xl font-bold tracking-tight text-slate-900 uppercase">Vault<span className="text-[#4177BC]">Sync</span></span>
+                        <span className="text-xl font-bold tracking-tight text-slate-900 uppercase">Welc<span className="text-[#4177BC]">Sync</span></span>
                     </div>
 
                     <div className="flex items-center gap-4">
