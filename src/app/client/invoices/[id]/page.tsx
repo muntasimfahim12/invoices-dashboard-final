@@ -71,7 +71,7 @@ export default function InvoiceDetails({ params }: PageProps) {
                 <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 overflow-hidden border border-slate-100">
                     
                     {/* Brand Header */}
-                    <div className="p-10 border-b border-slate-50 flex justify-between items-start bg-gradient-to-r from-white to-slate-50/50">
+                    <div className="p-10 border-b border-slate-50 flex justify-between items-start bg-linear-to-r from-white to-slate-50/50">
                         <div>
                             <div className="w-14 h-14 bg-slate-900 rounded-2xl mb-6 flex items-center justify-center text-white font-black text-xl italic shadow-xl">YB</div>
                             <h2 className="text-2xl font-[1000] italic uppercase tracking-tighter text-slate-900">YourBrand Inc.</h2>
@@ -108,7 +108,7 @@ export default function InvoiceDetails({ params }: PageProps) {
 
                     {/* Table */}
                     <div className="px-10 pb-10">
-                        <div className="border border-slate-100 rounded-[2rem] overflow-hidden">
+                        <div className="border border-slate-100 rounded-4xl overflow-hidden">
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 border-b border-slate-100">
                                     <tr>

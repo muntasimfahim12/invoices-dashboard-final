@@ -173,7 +173,7 @@ export default function CreateClientPage() {
                 
                 <div className="w-full">
                   <div className="flex justify-between items-center mb-0.5">
-                    <label className="field-label !mb-0">Temporary Password</label>
+                    <label className="field-label mb-0!">Temporary Password</label>
                     <button type="button" onClick={generatePassword} className="text-[10px] font-black text-[#4177BC] flex items-center gap-1 hover:opacity-70 transition-opacity">
                       <RefreshCcw size={12} /> GENERATE SECURE
                     </button>
@@ -240,8 +240,8 @@ export default function CreateClientPage() {
               {paymentType === "installment" && (
                 <div className="space-y-6">
                   {milestones.map((m, index) => (
-                    <div key={index} className="flex flex-col md:flex-row gap-5 p-6 bg-slate-50/50 rounded-[24px] border border-slate-200/60 group relative hover:bg-white hover:shadow-lg transition-all">
-                      <div className="flex-[2] w-full">
+                    <div key={index} className="flex flex-col md:flex-row gap-5 p-6 bg-slate-50/50 rounded-3xl border border-slate-200/60 group relative hover:bg-white hover:shadow-lg transition-all">
+                      <div className="flex-2 w-full">
                         <InputGroup label="Milestone Title" value={m.title} onChange={(e:any) => handleMilestoneChange(index, 'title', e.target.value)} placeholder="Title" required />
                       </div>
                       <div className="flex-1 w-full">
@@ -284,7 +284,7 @@ export default function CreateClientPage() {
               <button 
                 type="submit" 
                 disabled={submitting}
-                className="px-12 py-5 bg-[#EB9C2C] text-white rounded-2xl font-black shadow-lg shadow-[#EB9C2C]/30 hover:scale-105 active:scale-95 transition-all uppercase text-xs tracking-[0.1em] flex items-center gap-3"
+                className="px-12 py-5 bg-[#EB9C2C] text-white rounded-2xl font-black shadow-lg shadow-[#EB9C2C]/30 hover:scale-105 active:scale-95 transition-all uppercase text-xs tracking-widest flex items-center gap-3"
               >
                 {submitting ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
                 {submitting ? "Creating Ecosystem..." : "Create Client & Notify"}
@@ -312,8 +312,8 @@ function CreateClientSkeleton() {
     <div className="min-h-screen bg-[#F8FAFC] p-8 animate-pulse">
       <div className="max-w-6xl mx-auto space-y-10">
         <div className="h-48 bg-slate-200 rounded-[40px]" />
-        <div className="h-64 bg-white rounded-[32px] border border-slate-100" />
-        <div className="h-64 bg-white rounded-[32px] border border-slate-100" />
+        <div className="h-64 bg-white rounded-4xl border border-slate-100" />
+        <div className="h-64 bg-white rounded-4xl border border-slate-100" />
       </div>
     </div>
   );

@@ -100,8 +100,8 @@ export default function ClientInvoiceList() {
                 </div>
 
                 {/* 2. Search & Filter Bar */}
-                <div className="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm flex flex-wrap items-center gap-4">
-                    <div className="relative flex-1 min-w-[300px]">
+                <div className="bg-white p-4 rounded-4xl border border-slate-100 shadow-sm flex flex-wrap items-center gap-4">
+                    <div className="relative flex-1 min-w-75">
                         <Search
                             className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"
                             size={18}

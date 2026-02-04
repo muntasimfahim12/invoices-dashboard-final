@@ -93,7 +93,7 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="min-h-screen bg-[#FFFFF] p-6 md:p-10  text-slate-900 judson-bold">
-      <div className="max-w-[1200px] mx-auto">
+      <div className="max-w-300 mx-auto">
         
         {/* HEADER */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
@@ -266,7 +266,7 @@ function Section({ title, children }: any) {
     <div className="bg-white p-8 md:p-10 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
       <div className="absolute top-0 left-0 w-1.5 h-full bg-[#EB9C2C]" />
       <h3 className="text-[10px] font-black text-[#4177BC] uppercase tracking-[0.4em] mb-10 flex items-center gap-4 italic">
-        <span className="w-8 h-[2px] bg-[#4177BC]/20" /> {title}
+        <span className="w-8 h-0.5 bg-[#4177BC]/20" /> {title}
       </h3>
       {children}
     </div>
@@ -280,7 +280,7 @@ function Input({ label, isTextArea, icon, ...props }: any) {
       <div className="relative flex items-center">
         {icon && <span className="absolute left-5 text-slate-300 group-focus-within:text-[#4177BC] transition-colors">{icon}</span>}
         {isTextArea ? (
-          <textarea className={`w-full p-5 ${icon ? 'pl-14' : 'pl-5'} bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold text-slate-700 focus:bg-white focus:border-[#4177BC]/10 focus:ring-4 ring-blue-50/50 outline-none transition-all min-h-[120px] shadow-inner`} {...props} />
+          <textarea className={`w-full p-5 ${icon ? 'pl-14' : 'pl-5'} bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold text-slate-700 focus:bg-white focus:border-[#4177BC]/10 focus:ring-4 ring-blue-50/50 outline-none transition-all min-h-30 shadow-inner`} {...props} />
         ) : (
           <input className={`w-full h-14 ${icon ? 'pl-14' : 'pl-5'} bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold text-slate-700 focus:bg-white focus:border-[#4177BC]/10 focus:ring-4 ring-blue-50/50 outline-none transition-all shadow-inner`} {...props} />
         )}

@@ -101,7 +101,7 @@ export default function ProfessionalLedgerEditor() {
 
             {/* --- HEADER --- */}
             <header className="bg-white/90 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50">
-                <div className="max-w-[1400px] mx-auto px-8 h-24 flex items-center justify-between">
+                <div className="max-w-350 mx-auto px-8 h-24 flex items-center justify-between">
 
                     {/* Left Side: Title & Navigation */}
                     <div className="flex items-center gap-6">
@@ -147,8 +147,8 @@ export default function ProfessionalLedgerEditor() {
             <main className="max-w-6xl mx-auto px-6 mt-8 space-y-8">
 
                 {/* --- CLIENT INFO --- */}
-                <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-200/60 p-8 relative overflow-hidden transition-all hover:shadow-md">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#4177BC] to-transparent"></div>
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-8 relative overflow-hidden transition-all hover:shadow-md">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-[#4177BC] to-transparent"></div>
                     <div className="flex items-center gap-4 mb-8">
                         <div className="p-3 bg-slate-50 rounded-xl text-[#4177BC] border border-slate-100">
                             <User size={20} />
@@ -185,7 +185,7 @@ export default function ProfessionalLedgerEditor() {
                 </div>
 
                 {/* --- ITEM BREAKDOWN --- */}
-                <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-200/60 overflow-hidden">
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden">
                     <div className="px-10 py-7 flex justify-between items-center bg-slate-50/30 border-b border-slate-100">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-[#EB9C2C]/10 rounded-xl text-[#EB9C2C] border border-[#EB9C2C]/20">
@@ -207,7 +207,7 @@ export default function ProfessionalLedgerEditor() {
                     <div className="p-8">
                         <div className="space-y-4">
                             {/* Table Header Labels */}
-                            <div className="grid grid-cols-12 gap-4 px-2 mb-1 text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 inter-bold">
+                            <div className="grid grid-cols-12 gap-4 px-2 mb-1 text-[10px] font-black uppercase tracking-widest text-slate-400 inter-bold">
                                 <div className="col-span-6">Service Description</div>
                                 <div className="col-span-1 text-center">Qty</div>
                                 <div className="col-span-2 text-right">Unit Price</div>
@@ -283,7 +283,7 @@ export default function ProfessionalLedgerEditor() {
                             ))}
 
                             {invoiceData.items?.length === 0 && (
-                                <div className="py-16 text-center border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/30">
+                                <div className="py-16 text-center border-2 border-dashed border-slate-100 rounded-4xl bg-slate-50/30">
                                     <p className="text-slate-400 font-medium inter-medium">Your invoice is empty. Click &quot;Add New Entry&quot; to begin.</p>
                                 </div>
                             )}
@@ -295,9 +295,9 @@ export default function ProfessionalLedgerEditor() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Financial Summary */}
-                    <div className="bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-10 relative overflow-hidden border border-slate-100 min-h-[320px] flex flex-col justify-between">
+                    <div className="bg-white rounded-4xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-10 relative overflow-hidden border border-slate-100 min-h-80 flex flex-col justify-between">
                         {/* Decorative Background Elements */}
-                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#4177BC]/5 rounded-full blur-[40px]"></div>
+                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#4177BC]/5 rounded-full blur-2xl"></div>
                         <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#EB9C2C]/5 rounded-full blur-[30px]"></div>
 
                         <div className="relative z-10">
@@ -345,7 +345,7 @@ export default function ProfessionalLedgerEditor() {
                     </div>
 
                     {/* Payment Module */}
-                    <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-200/60 p-8 flex flex-col justify-between min-h-[300px]">
+                    <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-8 flex flex-col justify-between min-h-75">
                         <div>
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="p-3 bg-[#4177BC]/5 rounded-xl text-[#4177BC] border border-[#4177BC]/10">

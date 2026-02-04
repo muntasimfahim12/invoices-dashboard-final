@@ -101,7 +101,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] p-4 lg:p-8 selection:bg-[#4177BC] selection:text-white">
-      <div className="max-w-[1600px] mx-auto">
+      <div className="max-w-400 mx-auto">
         
         {/* TOP NAV */}
         <nav className="flex items-center justify-between mb-8 bg-[#FFFFFF]/50 backdrop-blur-md p-4 rounded-3xl border border-[#FFFFFF] shadow-sm">
@@ -149,8 +149,8 @@ export default function ClientDetailsPage(props: { params: Params }) {
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-[#4177BC] to-[#345e96] rounded-[35px] p-8 text-[#FFFFFF] shadow-xl shadow-[#4177BC]/20 relative overflow-hidden">
-               <Zap className="absolute right-[-10px] bottom-[-10px] w-32 h-32 text-white/10 rotate-12" />
+            <div className="bg-linear-to-br from-[#4177BC] to-[#345e96] rounded-[35px] p-8 text-[#FFFFFF] shadow-xl shadow-[#4177BC]/20 relative overflow-hidden">
+               <Zap className="absolute -right-2.5 -bottom-2.5 w-32 h-32 text-white/10 rotate-12" />
                <p className="text-[10px] font-black uppercase tracking-widest text-[#FFFFFF]/70 mb-2">Internal Note</p>
                <p className="text-xs leading-relaxed font-medium italic">&quot;{clientData?.adminNotes || "No briefing available."}&quot;</p>
             </div>
@@ -201,7 +201,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
                         <p className="text-[9px] font-black text-slate-400 uppercase">Capital</p>
                         <p className="text-xl font-bold text-slate-900 judson-bold">${project.budget}</p>
                       </div>
-                      <div className="h-8 w-[1px] bg-slate-100" />
+                      <div className="h-8 w-px bg-slate-100" />
                       <div className="flex-1">
                         <p className="text-[9px] font-black text-slate-400 uppercase">Milestones</p>
                         <p className="text-xl font-bold text-slate-900 judson-bold">{project.milestones?.length}</p>
@@ -218,7 +218,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
       {/* --- ADD NEW PROJECT MODAL --- */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsModalOpen(false)}
@@ -274,7 +274,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
                     <div className="space-y-3">
                       {milestones.map((m, idx) => (
                         <motion.div initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} key={idx} className="flex gap-3 items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                          <input value={m.title} onChange={(e)=>updateMilestone(idx, 'title', e.target.value)} placeholder="Milestone Name" className="flex-[2] bg-[#FFFFFF] px-4 py-2.5 rounded-xl text-[11px] font-bold outline-none border border-slate-100" />
+                          <input value={m.title} onChange={(e)=>updateMilestone(idx, 'title', e.target.value)} placeholder="Milestone Name" className="flex-2 bg-[#FFFFFF] px-4 py-2.5 rounded-xl text-[11px] font-bold outline-none border border-slate-100" />
                           <input value={m.amount} onChange={(e)=>updateMilestone(idx, 'amount', e.target.value)} type="number" placeholder="$" className="flex-1 bg-[#FFFFFF] px-4 py-2.5 rounded-xl text-[11px] font-bold outline-none border border-slate-100" />
                           {milestones.length > 1 && (
                             <button type="button" onClick={() => removeMilestoneField(idx)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
@@ -289,7 +289,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
 
                 <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 tracking-widest">Cancel</button>
-                   <button disabled={isSubmitting} type="submit" className="flex-[2] py-4 bg-[#4177BC] text-[#FFFFFF] rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[#4177BC]/20 disabled:opacity-50 flex items-center justify-center gap-3">
+                   <button disabled={isSubmitting} type="submit" className="flex-2 py-4 bg-[#4177BC] text-[#FFFFFF] rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[#4177BC]/20 disabled:opacity-50 flex items-center justify-center gap-3">
                      {isSubmitting ? "Processing..." : "Confirm & Launch"}
                    </button>
                 </div>
@@ -305,7 +305,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
 // --- HELPER COMPONENTS ---
 function StatCard({ title, value, icon, color }: any) {
   return (
-    <div className="bg-[#FFFFFF] p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-5 group hover:border-[#4177BC]/20 transition-all">
+    <div className="bg-[#FFFFFF] p-6 rounded-4xl border border-slate-100 shadow-sm flex items-center gap-5 group hover:border-[#4177BC]/20 transition-all">
       <div className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110" style={{ backgroundColor: `${color}10`, color: color }}>
         {React.cloneElement(icon, { size: 20 })}
       </div>

@@ -129,7 +129,7 @@ export default function ClientProjectsPage() {
                     placeholder="Find a project by name or current status..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-14 pr-6 py-5 bg-white rounded-[2rem] border border-slate-100 focus:border-[#4177BC] focus:ring-4 focus:ring-blue-50 outline-none shadow-sm font-semibold transition-all text-slate-700"
+                    className="w-full pl-14 pr-6 py-5 bg-white rounded-4xl border border-slate-100 focus:border-[#4177BC] focus:ring-4 focus:ring-blue-50 outline-none shadow-sm font-semibold transition-all text-slate-700"
                 />
             </div>
 
@@ -212,7 +212,7 @@ function ProjectCard({ project }: { project: Project }) {
             className="group bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-[#4177BC]/10 transition-all duration-500 relative overflow-hidden"
         >
             <div className="flex justify-between items-start mb-8">
-                <div className={`p-4 rounded-[1.5rem] transition-colors duration-500 group-hover:bg-[#4177BC] group-hover:text-white ${getStatusColor(project.status).bg} ${getStatusColor(project.status).text}`}>
+                <div className={`p-4 rounded-3xl transition-colors duration-500 group-hover:bg-[#4177BC] group-hover:text-white ${getStatusColor(project.status).bg} ${getStatusColor(project.status).text}`}>
                     <Layers size={28} />
                 </div>
                 <StatusBadge status={project.status} />
