@@ -107,7 +107,7 @@ export default function AllClients() {
               className="w-full bg-transparent border-none focus:ring-0 text-sm font-semibold text-slate-600 placeholder:text-slate-300 outline-none py-3 inter-medium"
             />
           </div>
-          <div className="h-8 w-[1px] bg-slate-100 hidden md:block" />
+          <div className="h-8 w-px bg-slate-100 hidden md:block" />
           <div className="flex items-center gap-3 px-6">
             <Filter size={14} className="text-slate-400" />
             <select 
@@ -192,7 +192,7 @@ export default function AllClients() {
                           <motion.div
                             initial={{ opacity: 0, scale: 0.9, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            className="absolute right-0 mt-3 w-52 bg-white border border-slate-100 rounded-[24px] shadow-2xl z-20 p-2.5 overflow-hidden"
+                            className="absolute right-0 mt-3 w-52 bg-white border border-slate-100 rounded-3xl shadow-2xl z-20 p-2.5 overflow-hidden"
                           >
                             <button className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black text-slate-600 hover:bg-slate-50 rounded-xl transition-all uppercase tracking-tighter inter-bold">
                               <Settings size={14} className="text-[#4177BC]" /> Edit Client
@@ -200,7 +200,7 @@ export default function AllClients() {
                             <button className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black text-slate-600 hover:bg-slate-50 rounded-xl transition-all uppercase tracking-tighter inter-bold">
                               <Ban size={14} className="text-amber-500" /> Disable Portal
                             </button>
-                            <div className="h-[1px] bg-slate-50 my-1.5" />
+                            <div className="h-px bg-slate-50 my-1.5" />
                             <button 
                               onClick={() => handleDelete(client._id)}
                               className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black text-red-500 hover:bg-red-50 rounded-xl transition-all uppercase tracking-tighter inter-bold"

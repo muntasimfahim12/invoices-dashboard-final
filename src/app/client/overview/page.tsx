@@ -24,7 +24,7 @@ const WHITE = "#FFFFFF";
 // --- FOODPANDA STYLE BOX SKELETON LOADING ---
 function LoadingScreen() {
     return (
-        <div className="fixed inset-0 z-[200] bg-[#FDFEFF] overflow-hidden">
+        <div className="fixed inset-0 z-200 bg-[#FDFEFF] overflow-hidden">
             {/* Fake Navbar Skeleton */}
             <div className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-white">
                 <div className="flex items-center gap-2.5">
@@ -34,7 +34,7 @@ function LoadingScreen() {
                 <div className="w-32 h-10 bg-slate-100 rounded-full animate-pulse" />
             </div>
 
-            <div className="max-w-[1440px] mx-auto px-6 py-8 lg:px-10">
+            <div className="max-w-360 mx-auto px-6 py-8 lg:px-10">
                 {/* Hero Skeleton */}
                 <div className="mb-10 flex justify-between items-end">
                     <div className="space-y-3">
@@ -47,7 +47,7 @@ function LoadingScreen() {
                 {/* Stats Grid Skeleton */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
                     {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 h-44 space-y-4">
+                        <div key={i} className="bg-white p-6 rounded-4xl border border-slate-100 h-44 space-y-4">
                             <div className="w-12 h-12 bg-slate-50 rounded-2xl animate-pulse" />
                             <div className="space-y-2">
                                 <div className="h-3 w-20 bg-slate-100 rounded animate-pulse" />
@@ -88,7 +88,7 @@ function StatCard({ title, value, icon, subtitle, color, progress }: any) {
     return (
         <motion.div
             whileHover={{ y: -6 }}
-            className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-[0_15px_40px_rgba(0,0,0,0.02)] transition-all duration-300"
+            className="bg-white p-6 rounded-4xl border border-slate-100 shadow-[0_15px_40px_rgba(0,0,0,0.02)] transition-all duration-300"
         >
             <div className="flex justify-between items-start mb-6">
                 <div 
@@ -169,10 +169,10 @@ export default function ClientOverview() {
                 <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] rounded-full bg-[#EB9C2C]/5 blur-[100px]" />
             </div>
 
-            <div className="flex flex-col w-full max-w-[1440px] mx-auto relative z-10">
+            <div className="flex flex-col w-full max-w-360 mx-auto relative z-10">
                 
                 {/* Navbar */}
-                <header className={`w-full px-6 py-4 flex items-center justify-between sticky top-0 z-[100] transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-100' : 'bg-transparent'}`}>
+                <header className={`w-full px-6 py-4 flex items-center justify-between sticky top-0 z-100 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-100' : 'bg-transparent'}`}>
                     <div className="flex items-center gap-2.5 cursor-pointer group" onClick={fetchOverviewData}>
                         <div className="w-10 h-10 bg-[#4177BC] rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-100 transition-transform group-active:scale-95">
                             <Zap size={20} fill="white" />
@@ -200,7 +200,7 @@ export default function ClientOverview() {
                                 {isProfileOpen && (
                                     <motion.div 
                                         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                                        className="absolute right-0 mt-3 w-48 bg-white rounded-2xl border border-slate-100 shadow-xl p-2 z-[110]"
+                                        className="absolute right-0 mt-3 w-48 bg-white rounded-2xl border border-slate-100 shadow-xl p-2 z-110"
                                     >
                                         <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl text-xs font-bold transition-colors">
                                             <LogOut size={16} /> Logout
@@ -268,7 +268,7 @@ export default function ClientOverview() {
                                         </div>
                                     </motion.div>
                                 )) : (
-                                    <div className="p-12 bg-white rounded-[2rem] border border-dashed border-slate-200 text-center">
+                                    <div className="p-12 bg-white rounded-4xl border border-dashed border-slate-200 text-center">
                                         <p className="text-slate-400 font-medium text-sm">No active deployments found.</p>
                                     </div>
                                 )}
@@ -288,7 +288,7 @@ export default function ClientOverview() {
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm">
+                            <div className="bg-white rounded-4xl border border-slate-100 p-6 shadow-sm">
                                 <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest mb-4">Quick Support</h4>
                                 <div className="space-y-2">
                                     <button className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-[#4177BC]/5 transition-colors group">

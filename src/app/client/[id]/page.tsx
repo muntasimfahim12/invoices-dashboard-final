@@ -249,7 +249,7 @@ function QuickStat({ label, value, sub, icon }: any) {
                 </div>
                 <span className="text-[8px] font-black bg-slate-100 px-2 py-1 rounded-md text-slate-400 uppercase tracking-widest">Live</span>
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">{label}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
             <h4 className="text-3xl font-black tracking-tighter italic text-slate-950 mt-1">{value}</h4>
             <p className="text-[10px] font-bold text-slate-400 uppercase mt-2">{sub}</p>
         </div>

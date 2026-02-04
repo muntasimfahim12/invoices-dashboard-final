@@ -122,9 +122,9 @@ export default function InvoicesPage() {
             
             {/* Header / Navbar */}
             <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50 transition-all duration-300">
-                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="max-w-400 mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-4 w-full sm:w-auto">
-                        <div className="w-12 h-12 bg-gradient-to-br from-[#4177BC] to-[#2A5298] rounded-2xl flex items-center justify-center shadow-lg shadow-[#4177BC]/20">
+                        <div className="w-12 h-12 bg-linear-to-br from-[#4177BC] to-[#2A5298] rounded-2xl flex items-center justify-center shadow-lg shadow-[#4177BC]/20">
                             <FileText className="text-white" size={24} strokeWidth={1.5} />
                         </div>
                         <div>
@@ -165,7 +165,7 @@ export default function InvoicesPage() {
                 </div>
             </div>
 
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 mt-8 lg:mt-12 grid grid-cols-12 gap-8">
+            <div className="max-w-400 mx-auto px-4 sm:px-6 mt-8 lg:mt-12 grid grid-cols-12 gap-8">
                 
                 {/* Left Sidebar (Stats & Filters) */}
                 <div className="col-span-12 lg:col-span-3 space-y-8">
@@ -249,7 +249,7 @@ export default function InvoicesPage() {
                     </div>
 
                     {/* Desktop Table View */}
-                    <div className="hidden md:block bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden min-h-[600px] flex flex-col justify-between">
+                    <div className="hidden md:block bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden min-h-150 flex-col justify-between">
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-slate-50/80 border-b border-slate-100">
                                 <tr>
@@ -405,7 +405,7 @@ export default function InvoicesPage() {
 function StatCard({ label, value, icon, color }: any) {
     return (
         <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-500 group relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-transparent to-current opacity-[0.03] rounded-bl-full pointer-events-none" style={{ color }} />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-transparent to-current opacity-[0.03] rounded-bl-full pointer-events-none" style={{ color }} />
             
             <div className="flex items-start justify-between mb-4">
                 <div className="p-3.5 rounded-2xl transition-all duration-300" style={{ backgroundColor: `${color}15`, color }}>

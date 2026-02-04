@@ -125,10 +125,10 @@ export default function ProjectsPage() {
 
     return (
         <div className="min-h-screen bg-[#FFFFFF] p-4 lg:p-8 selection:bg-[#4177BC] selection:text-white font-sans text-slate-900">
-            <div className="max-w-[1600px] mx-auto">
+            <div className="max-w-400 mx-auto">
 
                 {/* --- NAVIGATION --- */}
-                <nav className="flex items-center justify-between mb-8 bg-white/80 backdrop-blur-xl p-4 rounded-[2rem] sticky top-4 z-[60] border border-white">
+                <nav className="flex items-center justify-between mb-8 bg-white/80 backdrop-blur-xl p-4 rounded-4xl sticky top-4 z-60 border border-white">
                     <Link href="/admin">
                         <motion.button whileHover={{ x: -4 }} className="flex items-center gap-3 px-6 py-3  rounded-2xl text-black font-bold text-xs uppercase tracking-widest shadow-lg shadow-slate-200">
                             <ArrowLeft size={16} /> Back to Admin
@@ -156,7 +156,7 @@ export default function ProjectsPage() {
                             <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-50 rounded-full blur-3xl" />
 
                             <div className="relative z-10">
-                                <div className="w-16 h-16 bg-gradient-to-br from-[#4177BC] to-[#2D5A92] rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-blue-100">
+                                <div className="w-16 h-16 bg-linear-to-br from-[#4177BC] to-[#2D5A92] rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-blue-100">
                                     <Layers className="text-white" size={28} />
                                 </div>
                                 <h1 className="text-3xl font-bold text-slate-900 tracking-tight judson-bold italic mb-2">All <span className="text-[#4177BC] not-italic font-sans uppercase text-xl">Project</span></h1>
@@ -191,7 +191,7 @@ export default function ProjectsPage() {
 
                         {/* Table Section */}
                         <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl shadow-slate-200/30 overflow-hidden">
-                            <div className="p-6 md:p-8 border-b border-slate-50 flex flex-col md:row justify-between items-center gap-6 bg-gradient-to-r from-white to-slate-50/50">
+                            <div className="p-6 md:p-8 border-b border-slate-50 flex flex-col md:row justify-between items-center gap-6 bg-linear-to-r from-white to-slate-50/50">
                                 <div className="flex p-1.5 bg-slate-100/80 rounded-2xl w-full md:w-auto border border-slate-200/50">
                                     {["All", "Active", "Completed"].map((status) => (
                                         <button
@@ -215,7 +215,7 @@ export default function ProjectsPage() {
                                 </div>
                             </div>
 
-                            <div className="overflow-x-auto min-h-[400px]">
+                            <div className="overflow-x-auto min-h-100">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-slate-50/50">
@@ -336,7 +336,7 @@ export default function ProjectsPage() {
             {/* --- MODAL (ANIMATED) --- */}
             <AnimatePresence>
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -417,7 +417,7 @@ function StatCard({ title, value, icon, color }: any) {
     return (
         <motion.div
             whileHover={{ y: -5 }}
-            className="bg-white p-7 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden group"
+            className="bg-white p-7 rounded-4xl border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden group"
         >
             <div className="absolute top-0 right-0 w-24 h-24 blur-3xl rounded-full opacity-20 transition-opacity group-hover:opacity-40" style={{ backgroundColor: color }} />
             <div className="relative z-10 flex items-center gap-6">

@@ -89,7 +89,7 @@ export default function ProfessionalPaymentsManager() {
 
     return (
         <div className="min-h-screen bg-[#FFFFFF] p-6 md:p-12 text-slate-900 selection:bg-[#4177BC]/10">
-            <div className="max-w-[1400px] mx-auto">
+            <div className="max-w-350 mx-auto">
 
                 {/* --- HEADER SECTION --- */}
                 <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
@@ -261,7 +261,7 @@ export default function ProfessionalPaymentsManager() {
                 {/* --- MODERN TRANSACTION MODAL --- */}
                 <AnimatePresence>
                     {selectedClient && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
                             <motion.div
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                 onClick={() => !isUpdating && setSelectedClient(null)}
@@ -278,7 +278,7 @@ export default function ProfessionalPaymentsManager() {
                                 </button>
 
                                 <div className="text-center mb-10">
-                                    <div className="w-20 h-20 bg-[#4177BC]/10 text-[#4177BC] rounded-[2rem] flex items-center justify-center mx-auto mb-6">
+                                    <div className="w-20 h-20 bg-[#4177BC]/10 text-[#4177BC] rounded-4xl flex items-center justify-center mx-auto mb-6">
                                         <CreditCard size={32} />
                                     </div>
                                     <h3 className="text-3xl font-black text-slate-900 tracking-tighter judson-bold italic uppercase">Collection Entry</h3>
@@ -293,7 +293,7 @@ export default function ProfessionalPaymentsManager() {
                                             <input
                                                 autoFocus
                                                 type="number"
-                                                className="w-full pl-16 pr-8 py-7 bg-slate-50 border border-slate-100 rounded-[1.5rem] outline-none inter-bold text-slate-900 focus:bg-white focus:ring-4 ring-[#4177BC]/5 focus:border-[#4177BC] transition-all text-4xl"
+                                                className="w-full pl-16 pr-8 py-7 bg-slate-50 border border-slate-100 rounded-3xl outline-none inter-bold text-slate-900 focus:bg-white focus:ring-4 ring-[#4177BC]/5 focus:border-[#4177BC] transition-all text-4xl"
                                                 value={newPaymentAmount}
                                                 onChange={(e) => setNewPaymentAmount(e.target.value)}
                                             />
@@ -303,7 +303,7 @@ export default function ProfessionalPaymentsManager() {
                                     <button
                                         disabled={isUpdating || !newPaymentAmount}
                                         onClick={handleUpdatePayment}
-                                        className="w-full py-6 bg-slate-900 hover:bg-[#4177BC] text-white rounded-[1.5rem] inter-bold uppercase tracking-widest text-[11px] shadow-2xl shadow-slate-900/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                                        className="w-full py-6 bg-slate-900 hover:bg-[#4177BC] text-white rounded-3xl inter-bold uppercase tracking-widest text-[11px] shadow-2xl shadow-slate-900/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
                                     >
                                         {isUpdating ? <Loader2 className="animate-spin" size={20} /> : (
                                             <>Confirm Entry <ArrowUpRight size={18} /></>

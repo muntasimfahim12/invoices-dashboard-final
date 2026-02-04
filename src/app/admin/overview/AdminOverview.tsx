@@ -116,7 +116,7 @@ export default function AdminOverview() {
   return (
     <div className="min-h-screen bg-[#FFFFFF] pb-24 font-sans text-[#0F172A] selection:bg-[#4177BC] selection:text-white">
       <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-100/50">
-        <div className="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-360 mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-12">
             <span className="text-2xl font-black tracking-tighter text-[#4177BC] judson-bold">Genie oVerview</span>
           </div>
@@ -133,7 +133,7 @@ export default function AdminOverview() {
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center gap-3 p-1 bg-white rounded-full border border-slate-200 transition-all hover:shadow-md active:scale-95"
               >
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#4177BC] to-[#2D5A91] flex items-center justify-center text-white text-xs font-black inter-bold">
+                <div className="w-9 h-9 rounded-full bg-linear-to-br from-[#4177BC] to-[#2D5A91] flex items-center justify-center text-white text-xs font-black inter-bold">
                   {adminData.name.substring(0, 2).toUpperCase()}
                 </div>
               </button>
@@ -163,7 +163,7 @@ export default function AdminOverview() {
         </div>
       </header>
 
-      <main className="max-w-[1440px] mx-auto px-6 mt-12">
+      <main className="max-w-360 mx-auto px-6 mt-12">
         <section className="mb-20 grid grid-cols-1 lg:grid-cols-2 items-center gap-12">
           <div className="animate-scaleIn">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#4177BC]/5 rounded-full mb-8 border border-[#4177BC]/10">
@@ -238,7 +238,7 @@ export default function AdminOverview() {
             </div>
           </div>
 
-          <div className="lg:col-span-4 space-y-8 max-w-[380px] mx-auto w-full">
+          <div className="lg:col-span-4 space-y-8 max-w-95 mx-auto w-full">
             {/* --- Ultra Modern Cash Intel Card --- */}
             <div className="bg-white rounded-[3rem] border border-slate-100  p-8 shadow-[0_20px_50px_rgba(0,0,0,0.02)] relative overflow-hidden group">
               {/* Decorative Gradient Background */}
@@ -255,7 +255,7 @@ export default function AdminOverview() {
               </div>
 
               {/* Doughnut Chart with Center Metric */}
-              <div className="h-[220px] w-full relative mb-6">
+              <div className="h-55 w-full relative mb-6">
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
                   <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Portfolio</span>
                   <span className="text-2xl font-black text-slate-900 inter-bold tracking-tighter">
@@ -290,7 +290,7 @@ export default function AdminOverview() {
               {/* Compact Legend Grid */}
               <div className="grid grid-cols-2 gap-3 relative z-10">
                 {chartData.map((item, i) => (
-                  <div key={i} className="p-3 bg-[#F8FAFC] rounded-[1.5rem] border border-transparent hover:border-blue-100 hover:bg-white hover:shadow-md transition-all duration-300 group/item">
+                  <div key={i} className="p-3 bg-[#F8FAFC] rounded-3xl border border-transparent hover:border-blue-100 hover:bg-white hover:shadow-md transition-all duration-300 group/item">
                     <div className="flex items-center gap-2 mb-1.5">
                       <div className="w-1.5 h-1.5 rounded-full shadow-sm" style={{ backgroundColor: item.color }} />
                       <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 inter-bold">{item.name}</p>
@@ -306,9 +306,9 @@ export default function AdminOverview() {
             {/* --- Floating Quick Operations Suite --- */}
             <div className="space-y-3">
               <div className="flex items-center gap-3 px-4 mb-4">
-                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+                <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-200 to-transparent" />
                 <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-300 inter-bold whitespace-nowrap">Command Center</h3>
-                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+                <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-200 to-transparent" />
               </div>
 
               {[
@@ -319,7 +319,7 @@ export default function AdminOverview() {
                 <button
                   key={i}
                   onClick={() => router.push(item.route)}
-                  className="w-full group relative flex items-center justify-between p-4 bg-white/60 backdrop-blur-sm border border-slate-100 rounded-[2rem] hover:bg-white hover:shadow-[0_15px_35px_rgba(0,0,0,0.05)] hover:border-[#4177BC]/30 transition-all duration-500 active:scale-95"
+                  className="w-full group relative flex items-center justify-between p-4 bg-white/60 backdrop-blur-sm border border-slate-100 rounded-4xl hover:bg-white hover:shadow-[0_15px_35px_rgba(0,0,0,0.05)] hover:border-[#4177BC]/30 transition-all duration-500 active:scale-95"
                 >
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 ${item.bg} ${item.color} rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-sm`}>
@@ -376,7 +376,7 @@ export default function AdminOverview() {
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#0F172A] text-white p-5 rounded-[24px] shadow-2xl border border-white/10 backdrop-blur-xl scale-110">
+      <div className="bg-[#0F172A] text-white p-5 rounded-3xl shadow-2xl border border-white/10 backdrop-blur-xl scale-110">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#4177BC] mb-2 inter-bold">{payload[0].name}</p>
         <p className="text-2xl font-black inter-bold">${payload[0].value.toLocaleString()}</p>
       </div>

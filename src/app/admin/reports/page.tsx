@@ -158,14 +158,14 @@ export default function ReportsPage() {
                     <div className="w-full h-full flex items-end justify-center relative">
 
                       {/* Visual Line (Connecting Dot Look) */}
-                      <div className="absolute bottom-0 w-[1px] h-full bg-gradient-to-t from-blue-100/50 to-transparent group-hover:from-[#4177BC]/20 transition-all" />
+                      <div className="absolute bottom-0 w-px h-full bg-linear-to-t from-blue-100/50 to-transparent group-hover:from-[#4177BC]/20 transition-all" />
 
                       {/* Main Bar / Interactive Element */}
                       <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: `${height}%`, opacity: 1 }}
                         transition={{ duration: 1.2, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
-                        className="w-full max-w-[12px] md:max-w-[20px] bg-slate-100/50 group-hover:bg-[#4177BC] rounded-full transition-all duration-500 relative"
+                        className="w-full max-w-3 md:max-w-5 bg-slate-100/50 group-hover:bg-[#4177BC] rounded-full transition-all duration-500 relative"
                       >
                         {/* Glowing Dot at Top */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 md:w-3 md:h-3 bg-white border-2 md:border-[3px] border-[#4177BC] rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all scale-50 group-hover:scale-100" />
@@ -176,7 +176,7 @@ export default function ReportsPage() {
                         <div className="bg-slate-900 text-white text-[10px] inter-bold py-2 px-3 rounded-xl shadow-2xl flex flex-col items-center gap-1">
                           <span className="text-blue-300 text-[8px] uppercase tracking-tighter">Collection</span>
                           ${val.toLocaleString()}
-                          <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
+                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
                         </div>
                       </div>
                     </div>
