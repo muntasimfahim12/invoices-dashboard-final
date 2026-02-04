@@ -63,6 +63,7 @@ import {
 } from "@react-pdf/renderer";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -208,6 +209,10 @@ const pdfStyles = StyleSheet.create({
 
 
 export default function UltimateDigitalLedger() {
+  const searchParams = useSearchParams();
+  const urlEmail = searchParams.get("email");
+
+
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emailSending, setEmailSending] = useState(false);

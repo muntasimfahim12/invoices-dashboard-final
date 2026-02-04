@@ -6,7 +6,7 @@ import React, { use, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Briefcase, Receipt, DollarSign,
-  ShieldCheck, Mail, MapPin, X, Plus, Target, 
+  ShieldCheck, Mail, MapPin, X, Plus, Target,
   CheckCircle2, Trash2, ExternalLink, Key, LayoutGrid, Zap, Fingerprint
 } from "lucide-react";
 import Link from "next/link";
@@ -24,7 +24,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
-  
+
   // Project Form State
   const [milestones, setMilestones] = useState([{ title: "", amount: "", date: "" }]);
 
@@ -54,36 +54,74 @@ export default function ClientDetailsPage(props: { params: Params }) {
     setMilestones(updated);
   };
 
-  // --- Add Project Logic ---
   const handleAddProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    const newProject = {
-      projectId: `P-${Math.floor(Math.random() * 9000) + 1000}`,
-      name: formData.get("projectName"),
-      budget: Number(formData.get("budget")),
-      type: formData.get("type"),
-      status: "Active",
-      milestones: milestones.map(m => ({
-        ...m,
-        amount: Number(m.amount),
-        status: "Unpaid"
+    const budget = Number(formData.get("budget"));
+    const projectName = formData.get("projectName") as string;
+    const projectType = formData.get("type");
+
+    // প্রতিবার ইউনিক আইডি জেনারেট করার জন্য টাইমস্ট্যাম্প ব্যবহার করা হয়েছে
+    const uniqueId = `INV-${Date.now().toString().slice(-6)}`;
+    const projectId = `PRJ-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const invoiceData = {
+      invoiceId: uniqueId,
+      projectTitle: projectName,
+      clientName: clientData?.name,
+      clientEmail: clientData?.email?.toLowerCase(),
+      adminEmail: "admin@geniehack.com", // আপনার অ্যাডমিন ইমেইলটি এখানে দিন
+      grandTotal: budget,
+      remainingDue: budget,
+      currency: "$",
+      status: "Unpaid",
+      items: milestones.map(m => ({
+        name: m.title || "Project Milestone",
+        qty: 1,
+        price: Number(m.amount)
       }))
     };
 
     try {
-      const updatedProjects = [...(clientData.projects || []), newProject];
-      await axios.put(`${API_BASE}/clinets/${clientId}`, {
-        projects: updatedProjects,
-        activeProjects: updatedProjects.length
-      });
-      setIsModalOpen(false);
-      setMilestones([{ title: "", amount: "", date: "" }]);
-      fetchClientDetails();
-    } catch (error) {
-      console.error(error);
+      // ১. ইনভয়েস তৈরি (আপনার ব্যাকএন্ডের router.post('/') এ হিট করবে)
+      const invoiceRes = await axios.post(`${API_BASE}/invoices`, invoiceData);
+
+      if (invoiceRes.status === 201 || invoiceRes.status === 200) {
+
+        // ২. ক্লায়েন্ট প্রোফাইলে প্রজেক্ট লিস্ট আপডেট
+        const newProject = {
+          projectId: projectId,
+          name: projectName,
+          budget: budget,
+          type: projectType,
+          status: "Active",
+          createdAt: new Date().toISOString(),
+          milestones: milestones.map(m => ({
+            ...m,
+            amount: Number(m.amount),
+            status: "Unpaid"
+          }))
+        };
+
+        const updatedProjects = [...(clientData.projects || []), newProject];
+
+        // ক্লায়েন্ট ডাটা আপডেট (আপনার ব্যাকএন্ডের PUT /clinets/:id রাউট)
+        await axios.put(`${API_BASE}/clinets/${clientId}`, {
+          projects: updatedProjects,
+          activeProjects: updatedProjects.length,
+          totalDue: (clientData.totalDue || 0) + budget
+        });
+
+        setIsModalOpen(false);
+        setMilestones([{ title: "", amount: "", date: "" }]);
+        fetchClientDetails(); 
+        alert("✅ Project and Invoice synced successfully!");
+      }
+    } catch (error: any) {
+      console.error("Sync Error:", error.response?.data || error.message);
+      alert(`❌ Error: ${error.response?.data?.error || "Failed to add project"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -102,7 +140,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
   return (
     <div className="min-h-screen bg-[#FFFFFF] p-4 lg:p-8 selection:bg-[#4177BC] selection:text-white">
       <div className="max-w-400 mx-auto">
-        
+
         {/* TOP NAV */}
         <nav className="flex items-center justify-between mb-8 bg-[#FFFFFF]/50 backdrop-blur-md p-4 rounded-3xl border border-[#FFFFFF] shadow-sm">
           <Link href="/admin/all-clients">
@@ -119,28 +157,28 @@ export default function ClientDetailsPage(props: { params: Params }) {
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* LEFT COLUMN: IDENTITY CARD */}
           <aside className="lg:col-span-3 space-y-6">
             <div className="bg-[#FFFFFF] rounded-[40px] p-8 border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#4177BC]/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150" />
-              
+
               <div className="relative z-10">
                 <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center mb-6 shadow-2xl rotate-3 group-hover:rotate-0 transition-transform">
                   <span className="text-3xl font-bold text-[#FFFFFF] judson-bold">{clientData?.name?.charAt(0)}</span>
                 </div>
-                
+
                 <h1 className="text-3xl font-bold text-slate-900 tracking-tight judson-bold mb-1">{clientData?.name}</h1>
                 <span className="px-3 py-1 bg-[#4177BC]/10 text-[#4177BC] text-[10px] font-black uppercase rounded-full border border-[#4177BC]/20">{clientData?.status}</span>
-                
+
                 <div className="mt-10 space-y-5">
                   <IdentityItem icon={<Mail size={14} />} label="Primary Email" value={clientData?.email} />
                   <IdentityItem icon={<MapPin size={14} />} label="Hailing From" value={clientData?.address} />
                   <IdentityItem icon={<ShieldCheck size={14} />} label="Client UID" value={clientId.slice(-8).toUpperCase()} />
                 </div>
 
-                <motion.button 
-                  onClick={() => { navigator.clipboard.writeText(clientData?.password); setCopied(true); setTimeout(()=>setCopied(false), 2000); }}
+                <motion.button
+                  onClick={() => { navigator.clipboard.writeText(clientData?.password); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
                   className="w-full mt-10 py-4 bg-slate-50 hover:bg-slate-900 hover:text-[#FFFFFF] text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-100 flex items-center justify-center gap-2"
                 >
                   {copied ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Key size={14} />}
@@ -148,11 +186,11 @@ export default function ClientDetailsPage(props: { params: Params }) {
                 </motion.button>
               </div>
             </div>
-            
+
             <div className="bg-linear-to-br from-[#4177BC] to-[#345e96] rounded-[35px] p-8 text-[#FFFFFF] shadow-xl shadow-[#4177BC]/20 relative overflow-hidden">
-               <Zap className="absolute -right-2.5 -bottom-2.5 w-32 h-32 text-white/10 rotate-12" />
-               <p className="text-[10px] font-black uppercase tracking-widest text-[#FFFFFF]/70 mb-2">Internal Note</p>
-               <p className="text-xs leading-relaxed font-medium italic">&quot;{clientData?.adminNotes || "No briefing available."}&quot;</p>
+              <Zap className="absolute -right-2.5 -bottom-2.5 w-32 h-32 text-white/10 rotate-12" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#FFFFFF]/70 mb-2">Internal Note</p>
+              <p className="text-xs leading-relaxed font-medium italic">&quot;{clientData?.adminNotes || "No briefing available."}&quot;</p>
             </div>
           </aside>
 
@@ -172,7 +210,7 @@ export default function ClientDetailsPage(props: { params: Params }) {
                   </h3>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Lifecycle Management</p>
                 </div>
-                <motion.button 
+                <motion.button
                   whileHover={{ scale: 1.02 }}
                   onClick={() => setIsModalOpen(true)}
                   className="bg-[#4177BC] text-[#FFFFFF] px-8 py-4 rounded-[20px] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:shadow-lg transition-all"
@@ -183,18 +221,18 @@ export default function ClientDetailsPage(props: { params: Params }) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {clientData?.projects?.map((project: any, idx: number) => (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={idx}
                     className="group p-6 bg-slate-50/50 border border-slate-100 rounded-[35px] hover:bg-[#FFFFFF] hover:border-[#4177BC]/30 transition-all duration-300"
                   >
                     <div className="flex justify-between mb-6">
-                       <div>
-                         <h4 className="font-bold text-slate-900 text-lg group-hover:text-[#4177BC] transition-colors">{project.name}</h4>
-                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{project.type} • ID: {project.projectId}</p>
-                       </div>
-                       <div className="w-10 h-10 bg-[#FFFFFF] rounded-xl flex items-center justify-center border border-slate-100 text-slate-400 group-hover:text-[#4177BC] shadow-sm">
-                         <ExternalLink size={16} />
-                       </div>
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-lg group-hover:text-[#4177BC] transition-colors">{project.name}</h4>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{project.type} • ID: {project.projectId}</p>
+                      </div>
+                      <div className="w-10 h-10 bg-[#FFFFFF] rounded-xl flex items-center justify-center border border-slate-100 text-slate-400 group-hover:text-[#4177BC] shadow-sm">
+                        <ExternalLink size={16} />
+                      </div>
                     </div>
                     <div className="flex items-center gap-4 mb-4 p-3 bg-[#FFFFFF] rounded-2xl border border-slate-50">
                       <div className="flex-1">
@@ -219,24 +257,24 @@ export default function ClientDetailsPage(props: { params: Params }) {
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsModalOpen(false)}
               className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
             />
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="relative w-full max-w-2xl bg-[#FFFFFF] rounded-[40px] shadow-2xl overflow-hidden"
             >
               <form onSubmit={handleAddProject}>
                 <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
-                   <div>
-                      <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tight">Initialize Engagement</h2>
-                      <p className="text-[10px] font-bold text-[#4177BC] uppercase tracking-widest mt-0.5">Project Blueprinting</p>
-                   </div>
-                   <button type="button" onClick={() => setIsModalOpen(false)} className="p-3 hover:bg-[#FFFFFF] rounded-2xl transition-all shadow-sm">
-                      <X size={20} className="text-slate-400" />
-                   </button>
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tight">Initialize Engagement</h2>
+                    <p className="text-[10px] font-bold text-[#4177BC] uppercase tracking-widest mt-0.5">Project Blueprinting</p>
+                  </div>
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="p-3 hover:bg-[#FFFFFF] rounded-2xl transition-all shadow-sm">
+                    <X size={20} className="text-slate-400" />
+                  </button>
                 </div>
 
                 <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
@@ -274,8 +312,8 @@ export default function ClientDetailsPage(props: { params: Params }) {
                     <div className="space-y-3">
                       {milestones.map((m, idx) => (
                         <motion.div initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} key={idx} className="flex gap-3 items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                          <input value={m.title} onChange={(e)=>updateMilestone(idx, 'title', e.target.value)} placeholder="Milestone Name" className="flex-2 bg-[#FFFFFF] px-4 py-2.5 rounded-xl text-[11px] font-bold outline-none border border-slate-100" />
-                          <input value={m.amount} onChange={(e)=>updateMilestone(idx, 'amount', e.target.value)} type="number" placeholder="$" className="flex-1 bg-[#FFFFFF] px-4 py-2.5 rounded-xl text-[11px] font-bold outline-none border border-slate-100" />
+                          <input value={m.title} onChange={(e) => updateMilestone(idx, 'title', e.target.value)} placeholder="Milestone Name" className="flex-2 bg-[#FFFFFF] px-4 py-2.5 rounded-xl text-[11px] font-bold outline-none border border-slate-100" />
+                          <input value={m.amount} onChange={(e) => updateMilestone(idx, 'amount', e.target.value)} type="number" placeholder="$" className="flex-1 bg-[#FFFFFF] px-4 py-2.5 rounded-xl text-[11px] font-bold outline-none border border-slate-100" />
                           {milestones.length > 1 && (
                             <button type="button" onClick={() => removeMilestoneField(idx)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
                               <Trash2 size={16} />
@@ -288,10 +326,10 @@ export default function ClientDetailsPage(props: { params: Params }) {
                 </div>
 
                 <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
-                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 tracking-widest">Cancel</button>
-                   <button disabled={isSubmitting} type="submit" className="flex-2 py-4 bg-[#4177BC] text-[#FFFFFF] rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[#4177BC]/20 disabled:opacity-50 flex items-center justify-center gap-3">
-                     {isSubmitting ? "Processing..." : "Confirm & Launch"}
-                   </button>
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 tracking-widest">Cancel</button>
+                  <button disabled={isSubmitting} type="submit" className="flex-2 py-4 bg-[#4177BC] text-[#FFFFFF] rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[#4177BC]/20 disabled:opacity-50 flex items-center justify-center gap-3">
+                    {isSubmitting ? "Processing..." : "Confirm & Launch"}
+                  </button>
                 </div>
               </form>
             </motion.div>

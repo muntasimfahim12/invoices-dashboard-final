@@ -39,7 +39,8 @@ export default function AdminOverview() {
   const [dashboardData, setDashboardData] = useState({
     invoices: [] as any[],
     clients: [] as any[],
-    projects: [] as any[]
+    projects: [] as any[],
+    stats: { totalRevenue: 0, totalDue: 0 }
   });
 
   useEffect(() => {
@@ -62,24 +63,29 @@ export default function AdminOverview() {
       const email = localStorage.getItem("user_email");
       const role = localStorage.getItem("user_role") || "admin";
 
-      const [invoiceRes, clientRes] = await Promise.all([
+     
+      const [invoiceRes, clientRes, statsRes] = await Promise.all([
         axios.get(`${API_BASE}/invoices`, { params: { email, role } }),
-        axios.get(`${API_BASE}/clinets`, { params: { email, role } })
+        axios.get(`${API_BASE}/clinets`, { params: { email, role } }),
+        axios.get(`${API_BASE}/dashboard-stats`).catch(() => ({ data: null })) 
       ]);
 
       const projectsList: any[] = [];
       const clients = Array.isArray(clientRes.data) ? clientRes.data : [];
 
       clients.forEach((c: any) => {
-        if (c.projects) c.projects.forEach((p: any) =>
-          projectsList.push({ ...p, clientName: c.name || "Unknown" })
-        );
+        if (c.projects) {
+          c.projects.forEach((p: any) =>
+            projectsList.push({ ...p, clientName: c.name || "Unknown" })
+          );
+        }
       });
 
       setDashboardData({
         invoices: Array.isArray(invoiceRes.data) ? invoiceRes.data : [],
         clients: clients,
-        projects: projectsList
+        projects: projectsList,
+        stats: statsRes.data || { totalRevenue: 0, totalDue: 0 }
       });
     } catch (err: any) {
       console.error("Fetch Error:", err);
@@ -90,24 +96,30 @@ export default function AdminOverview() {
 
   useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
-  const stats = useMemo(() => {
+const stats = useMemo(() => {
     const inv = dashboardData.invoices;
+
+    
     const totalRev = inv.reduce((sum, i) => sum + (Number(i.receivedAmount) || 0), 0);
-    const totalDue = inv.reduce((sum, i) => sum + (Number(i.grandTotal) || 0), 0) - totalRev;
+
+    const totalDue = (inv.reduce((sum, i) => sum + (Number(i.grandTotal) || 0), 0) - totalRev);
 
     return {
       revenue: totalRev,
-      due: totalDue,
+      due: totalDue < 0 ? 0 : totalDue,
       clientCount: dashboardData.clients.length,
       projectCount: dashboardData.projects.length,
     };
-  }, [dashboardData]);
+}, [dashboardData]);
 
   const chartData = useMemo(() => {
     const inv = dashboardData.invoices;
+    const paidCount = inv.filter(i => i.status === 'Paid').length;
+    const pendingCount = inv.filter(i => i.status !== 'Paid').length;
+
     return [
-      { name: 'Collected', value: inv.filter(i => i.status === 'Paid').length || 0, color: '#4177BC' },
-      { name: 'Pending', value: inv.filter(i => i.status !== 'Paid').length || 0, color: '#EB9C2C' },
+      { name: 'Collected', value: paidCount, color: '#4177BC' },
+      { name: 'Pending', value: pendingCount, color: '#EB9C2C' },
     ].filter(item => item.value > 0);
   }, [dashboardData.invoices]);
 
@@ -239,9 +251,7 @@ export default function AdminOverview() {
           </div>
 
           <div className="lg:col-span-4 space-y-8 max-w-95 mx-auto w-full">
-            {/* --- Ultra Modern Cash Intel Card --- */}
             <div className="bg-white rounded-[3rem] border border-slate-100  p-8 shadow-[0_20px_50px_rgba(0,0,0,0.02)] relative overflow-hidden group">
-              {/* Decorative Gradient Background */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/40 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[#4177BC]/10 transition-colors duration-700" />
 
               <div className="flex justify-between items-center mb-6 relative z-10">
@@ -254,12 +264,11 @@ export default function AdminOverview() {
                 </div>
               </div>
 
-              {/* Doughnut Chart with Center Metric */}
               <div className="h-55 w-full relative mb-6">
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
                   <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Portfolio</span>
                   <span className="text-2xl font-black text-slate-900 inter-bold tracking-tighter">
-                    ${chartData.reduce((acc, curr) => acc + curr.value, 0).toLocaleString()}
+                    ${(stats.revenue + stats.due).toLocaleString()}
                   </span>
                 </div>
 
@@ -274,7 +283,7 @@ export default function AdminOverview() {
                       stroke="none"
                       cornerRadius={40}
                     >
-                      {chartData.map((entry, index) => (
+                      {chartData.map((entry: any, index: number) => (
                         <Cell
                           key={index}
                           fill={entry.color}
@@ -287,9 +296,8 @@ export default function AdminOverview() {
                 </ResponsiveContainer>
               </div>
 
-              {/* Compact Legend Grid */}
               <div className="grid grid-cols-2 gap-3 relative z-10">
-                {chartData.map((item, i) => (
+                {chartData.map((item: any, i: number) => (
                   <div key={i} className="p-3 bg-[#F8FAFC] rounded-3xl border border-transparent hover:border-blue-100 hover:bg-white hover:shadow-md transition-all duration-300 group/item">
                     <div className="flex items-center gap-2 mb-1.5">
                       <div className="w-1.5 h-1.5 rounded-full shadow-sm" style={{ backgroundColor: item.color }} />
@@ -303,7 +311,6 @@ export default function AdminOverview() {
               </div>
             </div>
 
-            {/* --- Floating Quick Operations Suite --- */}
             <div className="space-y-3">
               <div className="flex items-center gap-3 px-4 mb-4">
                 <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-200 to-transparent" />
@@ -330,7 +337,6 @@ export default function AdminOverview() {
                       <span className="text-[8px] text-slate-400 font-bold uppercase tracking-[0.15em] opacity-0 group-hover:opacity-100 transition-all duration-500">Quick Access</span>
                     </div>
                   </div>
-
                   <div className="w-8 h-8 rounded-full border border-slate-50 flex items-center justify-center text-slate-200 group-hover:bg-[#4177BC] group-hover:text-white group-hover:border-[#4177BC] transition-all duration-500">
                     <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                   </div>
@@ -348,7 +354,7 @@ export default function AdminOverview() {
             </div>
           </div>
           <div className="space-y-8">
-            {dashboardData.clients.slice(0, 4).map((c, i) => (
+            {dashboardData.clients.slice(0, 4).map((c: any, i: number) => (
               <ListItem key={i} title={c.name} meta={c.email || "Premier Client"} />
             ))}
           </div>

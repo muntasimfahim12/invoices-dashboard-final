@@ -65,10 +65,14 @@ export default function ProfessionalPaymentsManager() {
 
     const stats = useMemo(() => {
         const totalRev = clients.reduce((acc, c) => acc + (Number(c.totalPaid) || 0), 0);
-        const totalBudget = clients.reduce((acc, c) => acc + (Number(c.projects?.[0]?.budget) || 0), 0);
+        const totalBudget = clients.reduce((acc, c) => {
+            const clientBudget = c.projects?.reduce((sum: number, p: any) => sum + (Number(p.budget) || 0), 0) || 0;
+            return acc + clientBudget;
+        }, 0);
+
         return {
             collected: totalRev,
-            pending: totalBudget - totalRev,
+            pending: Math.max(0, totalBudget - totalRev),
             count: clients.length
         };
     }, [clients]);

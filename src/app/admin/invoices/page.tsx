@@ -27,7 +27,7 @@ interface Invoice {
     client?: Client;
     projectTitle: string;
     createdAt: string;
-    status: 'Paid' | 'Pending' | 'Overdue' | 'Partial' | 'Unpaid';
+    status: 'Paid' | 'Pending' | 'Overdue' | 'Partial' | 'Unpaid' | 'Sent';
     currency: string;
     grandTotal: number;
     receivedAmount: number;
@@ -51,7 +51,7 @@ export default function InvoicesPage() {
         setUserRole(localStorage.getItem("user_role") || "client");
     }, []);
 
-    const fetchInvoices = useCallback(async (signal: AbortSignal) => {
+    const fetchInvoices = useCallback(async (signal?: AbortSignal) => {
         if (!userEmail) return;
         try {
             setLoading(true);
@@ -79,6 +79,32 @@ export default function InvoicesPage() {
         fetchInvoices(controller.signal);
         return () => controller.abort();
     }, [mounted, userEmail, fetchInvoices]);
+
+    // --- NEW: Handle Bulk Delete Function ---
+    const handleDeleteSelected = async () => {
+        if (selectedInvoices.length === 0) return;
+
+        const confirmDelete = window.confirm(`Are you sure you want to delete ${selectedInvoices.length} invoices globally?`);
+        if (!confirmDelete) return;
+
+        try {
+            setLoading(true);
+            // ব্যাকএন্ডের নতুন bulk-delete এপিআই কল করা হচ্ছে
+            await axios.post(`${API_BASE}/invoices/bulk-delete`, {
+                ids: selectedInvoices
+            });
+
+            // সাকসেস হলে লোকাল স্টেট থেকে রিমুভ করা
+            setInvoices(prev => prev.filter(inv => !selectedInvoices.includes(inv._id)));
+            setSelectedInvoices([]);
+            alert("✅ Invoices deleted successfully");
+        } catch (error: any) {
+            console.error("Delete Error:", error);
+            alert("❌ Failed to delete invoices. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const totalPages = Math.ceil(invoices.length / ITEMS_PER_PAGE);
     const paginatedInvoices = useMemo(() => {
@@ -125,6 +151,7 @@ export default function InvoicesPage() {
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
+                                    onClick={handleDeleteSelected} // <--- ফাংশনটি এখানে যুক্ত করা হয়েছে
                                     className="flex items-center gap-2 bg-red-50 text-red-600 px-5 py-2.5 rounded-xl border border-red-100 text-xs font-bold hover:bg-red-600 hover:text-white transition-all shadow-sm"
                                 >
                                     <Trash2 size={16} /> <span className="hidden sm:inline">Delete Selected</span> ({selectedInvoices.length})
@@ -156,7 +183,7 @@ export default function InvoicesPage() {
                             <h3 className="text-xs font-bold uppercase tracking-widest inter-bold">Filter Status</h3>
                         </div>
                         <div className="space-y-1">
-                            {["All", "Paid", "Pending", "Overdue"].map((status) => (
+                            {["All", "Paid", "Pending", "Overdue", "Sent"].map((status) => (
                                 <button
                                     key={status}
                                     onClick={() => setFilterStatus(status)}
@@ -211,9 +238,13 @@ export default function InvoicesPage() {
                             <tbody className="divide-y divide-slate-50">
                                 <AnimatePresence mode="wait">
                                     {loading ? (
-                                        <tr><td colSpan={5} className="py-32 text-center"><Loader2 className="animate-spin mx-auto text-[#4177BC]" size={40} /></td></tr>
+                                        <motion.tr initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}>
+                                            <td colSpan={5} className="py-32 text-center"><Loader2 className="animate-spin mx-auto text-[#4177BC]" size={40} /></td>
+                                        </motion.tr>
                                     ) : paginatedInvoices.length === 0 ? (
-                                        <tr><td colSpan={5} className="py-32 text-center text-slate-400 italic">No invoices found.</td></tr>
+                                        <motion.tr initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}>
+                                            <td colSpan={5} className="py-32 text-center text-slate-400 italic">No invoices found.</td>
+                                        </motion.tr>
                                     ) : paginatedInvoices.map((inv) => (
                                         <motion.tr key={inv._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="group hover:bg-slate-50/50 transition-colors">
                                             <td className="pl-8 py-6">
@@ -272,7 +303,15 @@ export default function InvoicesPage() {
                                     <div className="flex gap-3">
                                         <div className="w-10 h-10 bg-[#4177BC]/10 rounded-lg flex items-center justify-center text-[#4177BC]"><FileText size={18} /></div>
                                         <div>
-                                            <p className="inter-bold text-slate-900">{inv.invoiceId}</p>
+                                            <div className="flex items-center gap-2">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={selectedInvoices.includes(inv._id)}
+                                                    onChange={() => setSelectedInvoices(prev => prev.includes(inv._id) ? prev.filter(i => i !== inv._id) : [...prev, inv._id])}
+                                                    className="w-4 h-4 rounded border-slate-300 text-[#4177BC]"
+                                                />
+                                                <p className="inter-bold text-slate-900">{inv.invoiceId}</p>
+                                            </div>
                                             <p className="text-xs text-slate-500">{inv.clientName}</p>
                                         </div>
                                     </div>
@@ -321,6 +360,7 @@ function StatusBadge({ status }: { status: string }) {
         Paid: { bg: "bg-emerald-50 border-emerald-200/60 text-emerald-700", dot: "bg-emerald-500" },
         Pending: { bg: "bg-amber-50 border-amber-200/60 text-amber-700", dot: "bg-amber-500" },
         Overdue: { bg: "bg-red-50 border-red-200/60 text-red-700", dot: "bg-red-500" },
+        Sent: { bg: "bg-blue-50 border-blue-200/60 text-blue-700", dot: "bg-blue-500" },
         Default: { bg: "bg-slate-50 border-slate-200 text-slate-600", dot: "bg-slate-400" }
     };
     const style = config[status] || config.Default;
