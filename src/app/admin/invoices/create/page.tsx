@@ -351,7 +351,6 @@ export default function UltimateDigitalLedger() {
   if (!mounted) return null;
 
   const COMPANY_INFO = {
-    name: "Geniehack Ltd.",
     address: "Sylhet, Bangladesh | Budapest, Hungary",
     phone: "+880-123456789",
     email: "geniehack.team@gmail.com",
@@ -370,9 +369,7 @@ const InvoicePDF = () => (
 
         <Image src={COMPANY_LOGO} style={pdfStyles.logo} />
 
-        <Text style={pdfStyles.companyName}>
-          {COMPANY_INFO.name}
-        </Text>
+       
 
         <Text style={pdfStyles.companyText}>
           {COMPANY_INFO.address}
