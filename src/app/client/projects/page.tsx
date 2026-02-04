@@ -90,12 +90,12 @@ export default function ClientProjectsPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-10 judson-bold">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-2">
-                    <h1 className="text-4xl md:text-5xl font-[1000] text-slate-900 tracking-tighter uppercase leading-none">
-                        My Projects<span className="text-[#4177BC]">.</span>
+                    <h1 className="text-4xl md:text-4xl font-[1000] judson-bold  tracking-tighter uppercase leading-none">
+                        My <span className="text-[#4177BC]">Projects</span>
                     </h1>
                     <p className="text-slate-400 font-bold text-[11px] uppercase tracking-[0.3em] flex items-center gap-2">
                         <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />

@@ -145,7 +145,7 @@ function LoginFormContent() {
             <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center group-hover:bg-[#4177BC] transition-colors duration-500 shadow-lg shadow-slate-200">
               <ShieldCheck className="text-white" size={24} />
             </div>
-            <span className="text-2xl font-black tracking-tighter text-slate-900">VAULT<span className="text-[#4177BC]">.</span></span>
+            <span className="text-2xl font-black tracking-tighter text-slate-900">Geniehack<span className="text-[#4177BC]">.</span></span>
           </div>
 
           <AnimatePresence mode="wait">
@@ -157,7 +157,7 @@ function LoginFormContent() {
               transition={{ duration: 0.4 }}
             >
               <h1 className="text-[42px] font-bold text-slate-900 leading-tight tracking-tight mb-4" style={{ fontFamily: 'var(--font-judson)' }}>
-                {role === "client" ? "Secure Portal" : "Admin Central"}
+                {role === "client" ? "Client Portal" : "Admin Central"}
               </h1>
               <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.25em] mb-12">
                 {role === "client" ? "End-to-end encrypted project access" : "Agency management & operational control"}
