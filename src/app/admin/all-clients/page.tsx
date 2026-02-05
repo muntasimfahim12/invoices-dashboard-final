@@ -79,7 +79,7 @@ export default function AllClients() {
               <span className="text-[9px] font-black uppercase tracking-widest text-[#4177BC] inter-bold">Management Console</span>
             </div>
             <h1 className="text-5xl font-bold text-slate-900 tracking-tighter judson-bold">
-              Client <span className="text-slate-300">Vault.</span>
+              Client <span className="text-slate-300">All.</span>
             </h1>
           </div>
 

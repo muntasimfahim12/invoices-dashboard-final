@@ -220,7 +220,7 @@ export default function ClientOverview() {
                                 <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
                                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Operational Console</span>
                             </div>
-                            <h2 className="text-4xl font-black tracking-tight text-slate-900">Portfolio<span className="text-[#4177BC]">Intelligence</span></h2>
+                            <h2 className="text-4xl font-black tracking-tight text-slate-900">Welcome<span className="text-[#4177BC]">GenieHack</span></h2>
                         </div>
                         <button className="flex items-center gap-2 bg-[#4177BC] text-white px-7 py-4 rounded-2xl font-bold text-[11px] uppercase tracking-wider hover:opacity-90 transition-all shadow-lg shadow-blue-100">
                             <Plus size={16} strokeWidth={3} /> Create Request

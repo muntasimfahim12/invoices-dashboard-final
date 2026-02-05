@@ -43,7 +43,7 @@ function LoginFormContent() {
   const autoEmail = searchParams.get("email") || "";
   const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
 
-  /* ================= ALL YOUR LOGIC (UNCHANGED) ================= */
+  /* ================= ALL YOUR LOGIC (FIXED FOR SESSION PERSISTENCE) ================= */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>, currentRole: "client" | "admin") => {
     e.preventDefault();
     setLoading(true);
@@ -60,6 +60,7 @@ function LoginFormContent() {
       const data = await response.json();
 
       if (response.ok) {
+        // ১. লোকাল স্টোরেজে ডাটা সেভ করা
         const storageItems = {
           vault_token: data.token,
           user_role: data.role,
@@ -68,8 +69,17 @@ function LoginFormContent() {
           user_id: data.id || ""
         };
         Object.entries(storageItems).forEach(([key, val]) => localStorage.setItem(key, val));
-        Cookies.set("vault_token", data.token, { expires: 7, secure: true, sameSite: 'strict' });
-        Cookies.set("user_role", data.role, { expires: 7 });
+        
+        // ২. কুকি কনফিগারেশন (রিফ্রেশ প্রবলেম সলভ করার জন্য)
+        // expires: 1 মানে ১ দিন। আপনি চাইলে ৭ দিতে পারেন।
+        Cookies.set("vault_token", data.token, { 
+          expires: 1, 
+          secure: process.env.NODE_ENV === "production", 
+          sameSite: 'lax' 
+        });
+        
+        Cookies.set("user_role", data.role, { expires: 1 });
+
         router.push(data.role.toLowerCase() === "admin" ? "/admin" : "/client/overview");
       } else {
         alert(data.error || "Invalid Credentials");

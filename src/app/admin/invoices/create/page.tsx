@@ -580,7 +580,7 @@ const handleSendEmail = async () => {
               ) : (
                 <Save size={14} />
               )}
-              {loading ? "Saving..." : "Save Draft"}
+              {loading ? "Saving..." : "Save"}
             </button>
 
             <button

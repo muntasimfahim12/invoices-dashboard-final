@@ -80,27 +80,24 @@ export default function InvoicesPage() {
         return () => controller.abort();
     }, [mounted, userEmail, fetchInvoices]);
 
-    // --- NEW: Handle Bulk Delete Function ---
     const handleDeleteSelected = async () => {
         if (selectedInvoices.length === 0) return;
 
-        const confirmDelete = window.confirm(`Are you sure you want to delete ${selectedInvoices.length} invoices globally?`);
-        if (!confirmDelete) return;
+        if (!window.confirm(`Are you sure you want to delete ${selectedInvoices.length} invoices globally?`)) return;
 
         try {
             setLoading(true);
-            // ব্যাকএন্ডের নতুন bulk-delete এপিআই কল করা হচ্ছে
             await axios.post(`${API_BASE}/invoices/bulk-delete`, {
                 ids: selectedInvoices
             });
 
-            // সাকসেস হলে লোকাল স্টেট থেকে রিমুভ করা
+            
             setInvoices(prev => prev.filter(inv => !selectedInvoices.includes(inv._id)));
             setSelectedInvoices([]);
-            alert("✅ Invoices deleted successfully");
+
+            alert("✅ Deleted globally from Admin and Client panels!");
         } catch (error: any) {
-            console.error("Delete Error:", error);
-            alert("❌ Failed to delete invoices. Please try again.");
+            alert("❌ Error deleting invoices");
         } finally {
             setLoading(false);
         }
@@ -158,7 +155,7 @@ export default function InvoicesPage() {
                                 </motion.button>
                             )}
                         </AnimatePresence>
-                        
+
                         {userRole === 'admin' && (
                             <Link href="/admin/invoices/create" className="bg-[#4177BC] text-white px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xl shadow-slate-900/10 hover:opacity-90 transition-all">
                                 <Plus size={18} /> New Invoice
@@ -187,11 +184,10 @@ export default function InvoicesPage() {
                                 <button
                                     key={status}
                                     onClick={() => setFilterStatus(status)}
-                                    className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl text-sm font-semibold transition-all border border-transparent ${
-                                        filterStatus === status 
-                                        ? 'bg-[#4177BC] text-white shadow-lg shadow-[#4177BC]/30' 
+                                    className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl text-sm font-semibold transition-all border border-transparent ${filterStatus === status
+                                        ? 'bg-[#4177BC] text-white shadow-lg shadow-[#4177BC]/30'
                                         : 'text-slate-500 hover:bg-slate-50'
-                                    }`}
+                                        }`}
                                 >
                                     <span className={filterStatus === status ? "inter-bold" : "inter-medium"}>{status}</span>
                                     {filterStatus === status && <ChevronRight size={16} />}
@@ -206,9 +202,9 @@ export default function InvoicesPage() {
                     <div className="bg-white p-2 rounded-2xl border border-slate-200/60 shadow-sm flex items-center gap-2">
                         <div className="relative flex-1">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <input 
-                                type="text" 
-                                placeholder="Search invoices..." 
+                            <input
+                                type="text"
+                                placeholder="Search invoices..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full bg-transparent border-none pl-12 pr-4 py-3 text-sm font-medium focus:ring-0 outline-none inter-medium text-slate-700"
@@ -222,9 +218,9 @@ export default function InvoicesPage() {
                             <thead className="bg-slate-50/80 border-b border-slate-100">
                                 <tr>
                                     <th className="pl-8 py-6 w-14">
-                                        <input 
-                                            type="checkbox" 
-                                            className="w-4 h-4 rounded border-slate-300 text-[#4177BC] cursor-pointer" 
+                                        <input
+                                            type="checkbox"
+                                            className="w-4 h-4 rounded border-slate-300 text-[#4177BC] cursor-pointer"
                                             checked={selectedInvoices.length === paginatedInvoices.length && paginatedInvoices.length > 0}
                                             onChange={() => setSelectedInvoices(selectedInvoices.length === paginatedInvoices.length ? [] : paginatedInvoices.map(i => i._id))}
                                         />
@@ -238,18 +234,18 @@ export default function InvoicesPage() {
                             <tbody className="divide-y divide-slate-50">
                                 <AnimatePresence mode="wait">
                                     {loading ? (
-                                        <motion.tr initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}>
+                                        <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                             <td colSpan={5} className="py-32 text-center"><Loader2 className="animate-spin mx-auto text-[#4177BC]" size={40} /></td>
                                         </motion.tr>
                                     ) : paginatedInvoices.length === 0 ? (
-                                        <motion.tr initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}>
+                                        <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                             <td colSpan={5} className="py-32 text-center text-slate-400 italic">No invoices found.</td>
                                         </motion.tr>
                                     ) : paginatedInvoices.map((inv) => (
                                         <motion.tr key={inv._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="group hover:bg-slate-50/50 transition-colors">
                                             <td className="pl-8 py-6">
-                                                <input 
-                                                    type="checkbox" 
+                                                <input
+                                                    type="checkbox"
                                                     checked={selectedInvoices.includes(inv._id)}
                                                     onChange={() => setSelectedInvoices(prev => prev.includes(inv._id) ? prev.filter(i => i !== inv._id) : [...prev, inv._id])}
                                                     className="w-4 h-4 rounded border-slate-300 text-[#4177BC] cursor-pointer"
@@ -263,7 +259,7 @@ export default function InvoicesPage() {
                                                     <div>
                                                         <p className="inter-bold text-slate-900 text-sm flex items-center gap-2">
                                                             {inv.invoiceId}
-                                                            <button onClick={() => navigator.clipboard.writeText(inv.invoiceId)} className="opacity-0 group-hover:opacity-100 text-[#4177BC] transition-all"><Copy size={12}/></button>
+                                                            <button onClick={() => navigator.clipboard.writeText(inv.invoiceId)} className="opacity-0 group-hover:opacity-100 text-[#4177BC] transition-all"><Copy size={12} /></button>
                                                         </p>
                                                         <p className="text-xs text-slate-500">{inv.clientName || "Unknown Client"}</p>
                                                         <p className="text-[10px] text-slate-400 mt-1">{inv.projectTitle}</p>
@@ -279,8 +275,8 @@ export default function InvoicesPage() {
                                             </td>
                                             <td className="pr-8 py-6 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Link 
-                                                        href={`${userRole === 'admin' ? '/admin' : '/dashboard'}/invoices/${inv._id}`} 
+                                                    <Link
+                                                        href={`${userRole === 'admin' ? '/admin' : '/dashboard'}/invoices/${inv._id}`}
                                                         className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-900 text-white hover:bg-[#4177BC] transition-all"
                                                     >
                                                         <ChevronRight size={16} />
@@ -304,8 +300,8 @@ export default function InvoicesPage() {
                                         <div className="w-10 h-10 bg-[#4177BC]/10 rounded-lg flex items-center justify-center text-[#4177BC]"><FileText size={18} /></div>
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <input 
-                                                    type="checkbox" 
+                                                <input
+                                                    type="checkbox"
                                                     checked={selectedInvoices.includes(inv._id)}
                                                     onChange={() => setSelectedInvoices(prev => prev.includes(inv._id) ? prev.filter(i => i !== inv._id) : [...prev, inv._id])}
                                                     className="w-4 h-4 rounded border-slate-300 text-[#4177BC]"
@@ -329,7 +325,7 @@ export default function InvoicesPage() {
                             </div>
                         ))}
                         <div className="bg-white p-4 rounded-xl border border-slate-200">
-                             <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} totalItems={invoices.length} />
+                            <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} totalItems={invoices.length} />
                         </div>
                     </div>
                 </div>
@@ -376,7 +372,7 @@ function Pagination({ currentPage, totalPages, setCurrentPage, totalItems }: any
     return (
         <div className="px-8 py-5 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-slate-500 inter-medium">
-                Showing <span className="text-slate-900 font-bold">{(currentPage-1)*ITEMS_PER_PAGE + 1}</span> - <span className="text-slate-900 font-bold">{Math.min(currentPage*ITEMS_PER_PAGE, totalItems)}</span> of <span className="text-slate-900 font-bold">{totalItems}</span>
+                Showing <span className="text-slate-900 font-bold">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> - <span className="text-slate-900 font-bold">{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)}</span> of <span className="text-slate-900 font-bold">{totalItems}</span>
             </p>
             <div className="flex items-center gap-2">
                 <button disabled={currentPage === 1} onClick={() => setCurrentPage((p: any) => p - 1)} className="p-2 rounded-lg border border-slate-200 bg-white disabled:opacity-50 transition-all shadow-sm"><ChevronLeft size={16} /></button>
