@@ -224,9 +224,9 @@ export default function UltimateDigitalLedger() {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientAddress, setClientAddress] = useState("");
-  const [freelancerName, setFreelancerName] = useState("John Doe");
+  const [freelancerName, setFreelancerName] = useState("  ");
   const [freelancerAddress, setFreelancerAddress] = useState(
-    "Road 10, Dhaka, Bangladesh",
+    "",
   );
   const [items, setItems] = useState([
     { id: 1, name: "", desc: "", qty: 1, price: 0 },
