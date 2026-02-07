@@ -183,7 +183,7 @@ export default function ProfessionalPaymentsManager() {
     }, [clients, searchQuery]);
 
     return (
-        <div className="min-h-screen bg-[#FFFFFF] p-4 md:p-10 text-slate-900 selection:bg-[#4177BC]/10">
+        <div className="min-h-screen bg-[#FFFFFF] p-4 md:p-10 text-slate-900 judson-regular selection:bg-[#4177BC]/10">
             <Toaster position="top-right" />
             <div className="max-w-7xl mx-auto">
 
@@ -195,8 +195,8 @@ export default function ProfessionalPaymentsManager() {
                                 Enterprise Ledger v2.0
                             </span>
                         </div>
-                        <h1 className="text-5xl font-bold tracking-tight text-slate-900">
-                            All <span className="text-[#4177BC] font-normal italic">Payments</span>
+                        <h1 className="text-5xl font-bold judson-bold tracking-tight text-slate-900">
+                            All <span className="text-[#4177BC] font-normal ">Payments</span>
                         </h1>
                     </motion.div>
 
