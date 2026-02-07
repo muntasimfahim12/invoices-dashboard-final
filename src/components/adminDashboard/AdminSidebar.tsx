@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
-import Link from "next/link"; // সংশোধিত: next/image থেকে নয়, next/link থেকে হবে
+import React, { useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
@@ -13,22 +13,33 @@ import {
   CreditCard,
   BarChart,
   Settings,
-  Sparkles
+  Sparkles,
+  ChevronDown,
+  PlusCircle,
+  FolderOpen
 } from "lucide-react";
 
 const menu = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Clients", href: "/admin/all-clients", icon: Users },
-  { name: "Projects", href: "/admin/projects", icon: Briefcase },
+  { 
+    name: "Projects", 
+    href: "/admin/projects", 
+    icon: Briefcase,
+    isDropdown: true,
+    subItems: [
+      { name: "All Projects", href: "/admin/projects", icon: FolderOpen },
+      { name: "Create Project", href: "/admin/projects/create", icon: PlusCircle },
+    ]
+  },
   { name: "Invoices", href: "/admin/invoices", icon: Receipt },
   { name: "Payments", href: "/admin/payments", icon: CreditCard },
   { name: "Reports", href: "/admin/reports", icon: BarChart },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-const mobileMenu = menu.slice(0, 5); // মোবাইলে ৫টির বেশি আইটেম দিলে ঘিঞ্জি লাগে, তাই স্লাইস করা হয়েছে।
+const mobileMenu = menu.slice(0, 5);
 
-// লোগো কম্পোনেন্ট
 const LogoBrand = () => (
   <Link href="/admin" className="flex items-center gap-3 md:gap-4 group relative">
     <div className="relative">
@@ -73,15 +84,14 @@ const LogoBrand = () => (
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const [projectOpen, setProjectOpen] = useState(pathname.includes("/admin/projects"));
 
   return (
     <>
-      {/* ================= MOBILE TOP HEADER (Logo Only) ================= */}
       <header className="md:hidden fixed top-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-[100] flex items-center px-6">
         <LogoBrand />
       </header>
 
-      {/* ================= DESKTOP SIDEBAR ================= */}
       <aside className="hidden md:flex fixed left-0 top-0 h-screen w-72 bg-white border-r border-slate-100/80 z-50">
         <div className="w-full flex flex-col">
           <div className="h-28 flex items-center px-8 relative">
@@ -93,7 +103,57 @@ export default function AdminSidebar() {
               Main Menu
             </p>
             {menu.map((item) => {
-              const active = pathname === item.href;
+              const active = item.isDropdown 
+                ? pathname.includes(item.href) 
+                : pathname === item.href;
+
+              if (item.isDropdown) {
+                return (
+                  <div key={item.name} className="flex flex-col">
+                    <button
+                      onClick={() => setProjectOpen(!projectOpen)}
+                      className={`group relative flex items-center justify-between px-5 py-3.5 rounded-2xl text-[14px] font-bold transition-all duration-300
+                        ${active ? "text-[#4177BC]" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"}`}
+                    >
+                      <div className="flex items-center gap-3.5">
+                         <item.icon size={20} className={active ? "text-[#4177BC]" : "text-slate-400 group-hover:text-slate-600"} />
+                         <span>{item.name}</span>
+                      </div>
+                      <ChevronDown size={16} className={`transition-transform duration-300 ${projectOpen ? "rotate-180" : ""}`} />
+                      {active && !projectOpen && (
+                        <motion.div layoutId="desktopActiveNav" className="absolute inset-0 bg-blue-50/60 rounded-2xl border border-[#4177BC]/10 -z-10" />
+                      )}
+                    </button>
+
+                    <AnimatePresence>
+                      {projectOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden flex flex-col ml-12 space-y-1 mt-1"
+                        >
+                          {item.subItems?.map((sub) => {
+                            const subActive = pathname === sub.href;
+                            return (
+                              <Link
+                                key={sub.href}
+                                href={sub.href}
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all
+                                  ${subActive ? "text-[#4177BC] bg-blue-50/40" : "text-slate-400 hover:text-slate-700"}`}
+                              >
+                                <sub.icon size={16} />
+                                {sub.name}
+                              </Link>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={item.href}
@@ -117,11 +177,10 @@ export default function AdminSidebar() {
         </div>
       </aside>
 
-      {/* ================= MOBILE BOTTOM NAV ================= */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-[0_-10px_30px_rgba(0,0,0,0.04)]">
         <nav className="flex justify-around items-center px-4 pb-8 pt-4">
           {mobileMenu.map((item) => {
-            const active = pathname === item.href;
+            const active = pathname.includes(item.href);
             return (
               <Link
                 key={item.href}
@@ -145,18 +204,10 @@ export default function AdminSidebar() {
       </div>
 
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #f1f5f9;
-          border-radius: 10px;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #f1f5f9; border-radius: 10px; }
         @media (max-width: 768px) {
-          main {
-            margin-top: 80px !important;
-            margin-bottom: 90px !important;
-          }
+          main { margin-top: 80px !important; margin-bottom: 90px !important; }
         }
       `}</style>
     </>

@@ -1,17 +1,14 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Search, Trash2, Download,
-    CheckCircle2, RefreshCcw, FileText,
-    Plus, CreditCard, X, Loader2, ArrowUpRight, TrendingUp, Users,
-    ChevronLeft, ChevronRight, MoreHorizontal
+    Search, TrendingUp, Users, Wallet, X, Loader2,
+    ArrowUpRight, Briefcase, ArrowRightLeft, ChevronDown
 } from "lucide-react";
 import axios from "axios";
-import Link from "next/link";
+import toast, { Toaster } from "react-hot-toast";
 
 const API_BASE = "http://localhost:5000";
 
@@ -20,12 +17,13 @@ export default function ProfessionalPaymentsManager() {
     const [loading, setLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedClient, setSelectedClient] = useState<any>(null);
-    const [newPaymentAmount, setNewPaymentAmount] = useState("");
 
-    // Pagination State
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 6;
+    // Modal & Selection States
+    const [selectedClient, setSelectedClient] = useState<any>(null);
+    const [selectedProject, setSelectedProject] = useState<any>(null);
+    const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+    const [paymentMethod, setPaymentMethod] = useState("Bank Transfer");
+    const [newPaymentAmount, setNewPaymentAmount] = useState("");
 
     const fetchData = async () => {
         setLoading(true);
@@ -33,7 +31,8 @@ export default function ProfessionalPaymentsManager() {
             const response = await axios.get(`${API_BASE}/clinets`);
             setClients(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
-            console.error("Error fetching ledger:", error);
+            console.error("Error fetching data:", error);
+            toast.error("Failed to sync with ledger.");
         } finally {
             setLoading(false);
         }
@@ -41,40 +40,104 @@ export default function ProfessionalPaymentsManager() {
 
     useEffect(() => { fetchData(); }, []);
 
+    // --- পেমেন্ট মোডাল ওপেন করার লজিক ---
+    const handleLogPaymentClick = (client: any) => {
+        setSelectedClient(client);
+        
+        // ১. ডিফল্টভাবে প্রথম প্রোজেক্ট সিলেক্ট করা
+        const firstProject = client.projects && client.projects.length > 0 ? client.projects[0] : null;
+        
+        if (firstProject) {
+            setSelectedProject(firstProject);
+            
+            // ২. ঐ প্রোজেক্টের প্রথম Unpaid মাইলস্টোন খোঁজা
+            const firstUnpaidMilestone = firstProject.milestones?.find(
+                (m: any) => m.status?.toLowerCase() !== "paid"
+            );
+
+            if (firstUnpaidMilestone) {
+                setSelectedInvoice(firstUnpaidMilestone);
+                setNewPaymentAmount(firstUnpaidMilestone.amount?.toString() || "");
+            } else {
+                setSelectedInvoice(null);
+                setNewPaymentAmount("");
+            }
+        }
+    };
+
+    // --- প্রোজেক্ট ম্যানুয়ালি চেঞ্জ করলে মাইলস্টোন আপডেট ---
+    const handleProjectChange = (proj: any) => {
+        setSelectedProject(proj);
+        const firstUnpaid = proj.milestones?.find((m: any) => m.status?.toLowerCase() !== "paid");
+        
+        if (firstUnpaid) {
+            setSelectedInvoice(firstUnpaid);
+            setNewPaymentAmount(firstUnpaid.amount?.toString() || "");
+        } else {
+            setSelectedInvoice(null);
+            setNewPaymentAmount("");
+        }
+    };
+
+    // --- মাইলস্টোন ম্যানুয়ালি চেঞ্জ করলে ---
+    const handleMilestoneChange = (milestoneId: string) => {
+        const milestone = selectedProject?.milestones?.find((m: any) => m._id === milestoneId);
+        if (milestone) {
+            setSelectedInvoice(milestone);
+            setNewPaymentAmount(milestone.amount?.toString() || "");
+        } else {
+            setSelectedInvoice(null);
+            setNewPaymentAmount("");
+        }
+    };
+
+    const closePaymentModal = () => {
+        setSelectedClient(null);
+        setSelectedProject(null);
+        setSelectedInvoice(null);
+        setNewPaymentAmount("");
+        setPaymentMethod("Bank Transfer");
+    };
+
     const handleUpdatePayment = async () => {
-        if (!selectedClient || !newPaymentAmount || isUpdating) return;
+        if (!selectedClient || !selectedProject || !selectedInvoice || !newPaymentAmount) {
+            toast.error("Please ensure a project and milestone are selected.");
+            return;
+        }
+
         setIsUpdating(true);
         try {
-            const currentPaid = Number(selectedClient.totalPaid || 0);
-            const addedAmount = Number(newPaymentAmount);
-            const updatedTotal = currentPaid + addedAmount;
+            const payload = {
+                projectId: selectedProject._id,
+                invoiceId: selectedInvoice._id,
+                amount: Number(newPaymentAmount),
+                method: paymentMethod,
+                date: new Date().toISOString()
+            };
 
-            await axios.put(`${API_BASE}/clinets/${selectedClient._id}`, {
-                totalPaid: updatedTotal
-            });
-
-            setSelectedClient(null);
-            setNewPaymentAmount("");
-            fetchData();
-        } catch (error) {
-            alert("Failed to update payment.");
+            await axios.put(`${API_BASE}/clinets/${selectedClient._id}/payment`, payload);
+            
+            toast.success(`Payment successful for ${selectedInvoice.name || 'Milestone'}`);
+            
+            closePaymentModal();
+            fetchData(); // লেজার রিফ্রেশ করা
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.response?.data?.message || "Payment update failed.");
         } finally {
             setIsUpdating(false);
         }
     };
 
+    // Stats Logic
     const stats = useMemo(() => {
-        const totalRev = clients.reduce((acc, c) => acc + (Number(c.totalPaid) || 0), 0);
-        const totalBudget = clients.reduce((acc, c) => {
-            const clientBudget = c.projects?.reduce((sum: number, p: any) => sum + (Number(p.budget) || 0), 0) || 0;
-            return acc + clientBudget;
-        }, 0);
-
-        return {
-            collected: totalRev,
-            pending: Math.max(0, totalBudget - totalRev),
-            count: clients.length
-        };
+        let collected = 0;
+        let totalBudget = 0;
+        clients.forEach(c => {
+            collected += Number(c.totalPaid || 0);
+            c.projects?.forEach((p: any) => totalBudget += Number(p.budget || 0));
+        });
+        return { collected, pending: Math.max(0, totalBudget - collected), count: clients.length };
     }, [clients]);
 
     const filteredClients = useMemo(() => {
@@ -84,234 +147,205 @@ export default function ProfessionalPaymentsManager() {
         );
     }, [clients, searchQuery]);
 
-    // Pagination Calculation
-    const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
-    const paginatedClients = filteredClients.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
     return (
-        <div className="min-h-screen bg-[#FFFFFF] p-6 md:p-12 text-slate-900 selection:bg-[#4177BC]/10">
-            <div className="max-w-350 mx-auto">
+        <div className="min-h-screen bg-[#FFFFFF] p-4 md:p-10 text-slate-900 selection:bg-[#4177BC]/10 inter-medium">
+            <Toaster position="top-right" />
+            <div className="max-w-7xl mx-auto">
 
-                {/* --- HEADER SECTION --- */}
-                <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="w-2 h-2 rounded-full bg-[#4177BC] animate-pulse" />
-                            <span className="text-[10px] inter-bold uppercase tracking-[0.3em] text-[#4177BC]">Financial Intelligence</span>
+                {/* --- HEADER --- */}
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className="px-3 py-1 rounded-full bg-[#4177BC]/10 text-[#4177BC] text-[10px] uppercase tracking-widest inter-bold">
+                                Enterprise Ledger v2.0
+                            </span>
                         </div>
-                        <h1 className="text-5xl font-black tracking-tighter text-slate-900 judson-bold">
-                            Capital <span className="text-[#4177BC] text-5xl font-black tracking-tighter judson-bold">Ledger</span>
+                        <h1 className="text-5xl font-bold tracking-tight text-slate-900 judson-bold">
+                            All <span className="text-[#4177BC] judson-regular">Payments</span>
                         </h1>
                     </motion.div>
 
-                    <div className="flex items-center gap-3">
-                        <button onClick={fetchData} className="group p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#4177BC]/30 transition-all shadow-sm active:scale-95">
-                            <RefreshCcw size={20} className={`${loading ? "animate-spin text-[#4177BC]" : "text-slate-400 group-hover:rotate-180 transition-transform duration-700"}`} />
-                        </button>
-                        <Link href="/admin/invoices/create" className="flex items-center gap-3 px-8 py-4 bg-[#4177BC] text-white rounded-2xl inter-bold text-[11px] uppercase tracking-widest hover:bg-[#4177BC] transition-all shadow-2xl shadow-slate-200 active:scale-95">
-                            <Plus size={18} /> Add Statement
-                        </Link>
+                    <div className="relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#4177BC]" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Search clients..."
+                            className="pl-12 pr-6 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none w-64 focus:ring-2 ring-[#4177BC]/20 transition-all"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
+                </header>
+
+                {/* --- STATS --- */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                    <StatCard label="Total Collected" value={`$${stats.collected.toLocaleString()}`} icon={<TrendingUp />} color="text-[#4177BC]" />
+                    <StatCard label="Pending Receivables" value={`$${stats.pending.toLocaleString()}`} icon={<ArrowRightLeft />} color="text-orange-500" />
+                    <StatCard label="Active Clients" value={stats.count.toString()} icon={<Users />} color="text-slate-800" />
                 </div>
 
-                {/* --- ANALYTICS GRID --- */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                    <StatCard label="Total Settlement" value={`$${stats.collected.toLocaleString()}`} icon={<TrendingUp />} trend="+12.5%" />
-                    <StatCard label="Receivables" value={`$${stats.pending.toLocaleString()}`} icon={<Loader2 />} trend="Net Due" color="text-amber-500" />
-                    <StatCard label="Live Portfolios" value={stats.count.toString()} icon={<Users />} trend="Active" />
-                </div>
-
-                {/* --- DATA TABLE CONTAINER --- */}
-                <div className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.04)] overflow-hidden">
-                    <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-50/30">
-                        <div className="relative w-full md:max-w-md">
-                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Search client directory..."
-                                className="w-full pl-14 pr-6 py-4 bg-white border border-slate-100 rounded-2xl text-sm inter-medium outline-none focus:border-[#4177BC] focus:ring-4 ring-[#4177BC]/5 transition-all"
-                                value={searchQuery}
-                                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                            />
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <button className="flex items-center gap-2 px-5 py-3 text-slate-400 inter-bold text-[10px] uppercase tracking-widest hover:text-slate-900 transition-all">
-                                <Download size={16} /> Export
-                            </button>
-                        </div>
-                    </div>
-
+                {/* --- CLIENTS TABLE --- */}
+                <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-slate-50/50 text-[10px] inter-bold text-slate-400 uppercase tracking-[0.2em]">
+                            <thead className="bg-slate-50/50 border-b border-slate-100">
                                 <tr>
-                                    <th className="px-10 py-6 w-20 text-center">ID</th>
-                                    <th className="px-6 py-6">Identity</th>
-                                    <th className="px-6 py-6">Valuation</th>
-                                    <th className="px-6 py-6">Cleared</th>
-                                    <th className="px-6 py-6">Balance</th>
-                                    <th className="px-10 py-6 text-right">Actions</th>
+                                    <th className="px-8 py-5 text-[11px] inter-bold text-slate-400 uppercase tracking-widest">Client Identity</th>
+                                    <th className="px-6 py-5 text-[11px] inter-bold text-slate-400 uppercase tracking-widest">Portfolio</th>
+                                    <th className="px-6 py-5 text-[11px] inter-bold text-slate-400 uppercase tracking-widest">Financials</th>
+                                    <th className="px-8 py-5 text-right text-[11px] inter-bold text-slate-400 uppercase tracking-widest">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                 {loading ? (
-                                    <tr>
-                                        <td colSpan={6} className="py-40 text-center">
-                                            <div className="flex flex-col items-center gap-3">
-                                                <Loader2 className="animate-spin text-[#4177BC]" size={32} />
-                                                <p className="inter-bold text-[10px] text-slate-400 uppercase tracking-widest">Refreshing Ledger...</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : paginatedClients.map((client, idx) => {
-                                    const budget = Number(client.projects?.[0]?.budget || 0);
+                                    <tr><td colSpan={4} className="py-24 text-center"><Loader2 className="animate-spin mx-auto text-[#4177BC]" size={32} /></td></tr>
+                                ) : filteredClients.map((client, cIdx) => {
+                                    const budget = client.projects?.reduce((sum: any, p: any) => sum + (Number(p.budget) || 0), 0) || 0;
                                     const paid = Number(client.totalPaid || 0);
-                                    const due = budget - paid;
+                                    const due = Math.max(0, budget - paid);
 
                                     return (
-                                        <motion.tr
-                                            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                            key={client._id}
-                                            className="group hover:bg-slate-50/80 transition-colors"
-                                        >
-                                            <td className="px-10 py-7 text-center">
-                                                <span className="text-xs inter-bold text-slate-300">{(idx + 1 + (currentPage - 1) * itemsPerPage).toString().padStart(2, '0')}</span>
-                                            </td>
-                                            <td className="px-6 py-7">
+                                        <tr key={client._id || `client-${cIdx}`} className="hover:bg-slate-50/50 transition-all">
+                                            <td className="px-8 py-6">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-11 h-11 rounded-2xl bg-[#4177BC] flex items-center justify-center text-white judson-bold italic text-lg shadow-lg">
+                                                    <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white judson-bold text-xl shadow-lg">
                                                         {client.name?.charAt(0)}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm inter-bold text-slate-900 uppercase tracking-tight">{client.name}</p>
-                                                        <p className="text-[11px] inter-medium text-slate-400">{client.email}</p>
+                                                        <p className="text-sm inter-semibold text-slate-900">{client.name}</p>
+                                                        <p className="text-xs text-slate-400">{client.email}</p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-7 text-sm inter-bold text-slate-600">${budget.toLocaleString()}</td>
-                                            <td className="px-6 py-7 text-sm inter-bold text-emerald-600">${paid.toLocaleString()}</td>
-                                            <td className="px-6 py-7">
+                                            <td className="px-6 py-6">
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`text-sm inter-bold italic ${due > 0 ? 'text-amber-500' : 'text-slate-200'}`}>
-                                                        ${due.toLocaleString()}
-                                                    </span>
-                                                    {due > 0 && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
+                                                    <Briefcase size={14} className="text-slate-300" />
+                                                    <span className="text-xs font-medium text-slate-600">{client.projects?.length || 0} active nodes</span>
                                                 </div>
                                             </td>
-                                            <td className="px-10 py-7 text-right">
-                                                <div className="flex justify-end items-center gap-3">
-                                                    {due > 0 ? (
-                                                        <button
-                                                            onClick={() => setSelectedClient(client)}
-                                                            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl inter-bold text-[9px] uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 shadow-sm"
-                                                        >
-                                                            <CreditCard size={14} /> Log Payment
-                                                        </button>
-                                                    ) : (
-                                                        <div className="flex items-center gap-2 text-emerald-500 inter-bold text-[9px] uppercase tracking-widest px-4 py-2 bg-emerald-50/50 rounded-xl border border-emerald-100">
-                                                            <CheckCircle2 size={12} /> Settled
-                                                        </div>
-                                                    )}
-                                                    <button className="p-2 text-slate-200 hover:text-red-500 transition-colors">
-                                                        <Trash2 size={18} />
-                                                    </button>
+                                            <td className="px-6 py-6">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-sm inter-bold text-emerald-600">${paid.toLocaleString()}</span>
+                                                    <span className="text-sm inter-bold text-orange-500">${due.toLocaleString()} Due</span>
                                                 </div>
                                             </td>
-                                        </motion.tr>
+                                            <td className="px-8 py-6 text-right">
+                                                <button
+                                                    onClick={() => handleLogPaymentClick(client)}
+                                                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs hover:border-[#4177BC] hover:text-[#4177BC] transition-all"
+                                                >
+                                                    <Wallet size={14} /> Log Payment
+                                                </button>
+                                            </td>
+                                        </tr>
                                     );
                                 })}
                             </tbody>
                         </table>
                     </div>
-
-                    {/* --- MODERN PAGINATION --- */}
-                    <div className="p-8 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-[11px] inter-semibold text-slate-400">
-                            Showing <span className="text-slate-900">{paginatedClients.length}</span> of <span className="text-slate-900">{filteredClients.length}</span> entities
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(prev => prev - 1)}
-                                className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-30 transition-all"
-                            >
-                                <ChevronLeft size={20} />
-                            </button>
-
-                            {[...Array(totalPages)].map((_, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setCurrentPage(i + 1)}
-                                    className={`w-10 h-10 rounded-xl inter-bold text-xs transition-all ${currentPage === i + 1 ? 'bg-[#4177BC] text-white shadow-lg shadow-[#4177BC]/20' : 'text-slate-400 hover:bg-slate-50'}`}
-                                >
-                                    {i + 1}
-                                </button>
-                            ))}
-
-                            <button
-                                disabled={currentPage === totalPages}
-                                onClick={() => setCurrentPage(prev => prev + 1)}
-                                className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-30 transition-all"
-                            >
-                                <ChevronRight size={20} />
-                            </button>
-                        </div>
-                    </div>
                 </div>
 
-                {/* --- MODERN TRANSACTION MODAL --- */}
+                {/* --- MODAL --- */}
                 <AnimatePresence>
                     {selectedClient && (
-                        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                             <motion.div
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                onClick={() => !isUpdating && setSelectedClient(null)}
-                                className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+                                onClick={() => !isUpdating && closePaymentModal()}
+                                className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
                             />
                             <motion.div
-                                initial={{ scale: 0.9, opacity: 0, y: 30 }}
-                                animate={{ scale: 1, opacity: 1, y: 0 }}
-                                exit={{ scale: 0.9, opacity: 0, y: 30 }}
-                                className="relative bg-white w-full max-w-lg rounded-[3rem] p-12 shadow-2xl border border-slate-100"
+                                initial={{ y: 50, opacity: 0, scale: 0.95 }}
+                                animate={{ y: 0, opacity: 1, scale: 1 }}
+                                exit={{ y: 50, opacity: 0, scale: 0.95 }}
+                                className="relative bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-white"
                             >
-                                <button onClick={() => setSelectedClient(null)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900">
-                                    <X size={24} />
-                                </button>
-
-                                <div className="text-center mb-10">
-                                    <div className="w-20 h-20 bg-[#4177BC]/10 text-[#4177BC] rounded-4xl flex items-center justify-center mx-auto mb-6">
-                                        <CreditCard size={32} />
-                                    </div>
-                                    <h3 className="text-3xl font-black text-slate-900 tracking-tighter judson-bold italic uppercase">Collection Entry</h3>
-                                    <p className="text-slate-400 text-[10px] inter-bold mt-2 uppercase tracking-[0.2em]">Agent: {selectedClient.name}</p>
+                                <div className="bg-[#4177BC] p-8 text-white relative">
+                                    <button onClick={closePaymentModal} className="absolute top-6 right-6 p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+                                    <h3 className="text-3xl judson-bold mb-1">Settlement Entry</h3>
+                                    <p className="text-white/70 text-sm uppercase tracking-widest">Client: {selectedClient.name}</p>
                                 </div>
 
-                                <div className="space-y-8">
+                                <div className="p-8 space-y-6">
+                                    {/* 1. Project Selection */}
                                     <div>
-                                        <label className="text-[10px] inter-bold text-slate-400 uppercase tracking-widest block mb-3 px-1">Settlement Amount ($)</label>
-                                        <div className="relative">
-                                            <span className="absolute left-8 top-1/2 -translate-y-1/2 text-3xl inter-bold text-[#4177BC]">$</span>
+                                        <label className="text-[10px] inter-bold text-slate-400 uppercase tracking-widest block mb-3">1. Select Portfolio (Project)</label>
+                                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                            {selectedClient.projects?.map((proj: any, pIdx: number) => (
+                                                <button
+                                                    key={proj._id || `proj-${pIdx}`}
+                                                    onClick={() => handleProjectChange(proj)}
+                                                    className={`shrink-0 px-4 py-3 rounded-2xl border transition-all text-left ${selectedProject?._id === proj._id ? 'border-[#4177BC] bg-[#4177BC]/5 ring-2 ring-[#4177BC]/10' : 'border-slate-100 bg-slate-50'}`}
+                                                >
+                                                    <p className={`text-xs inter-bold ${selectedProject?._id === proj._id ? 'text-[#4177BC]' : 'text-slate-600'}`}>{proj.name}</p>
+                                                    <p className="text-[10px] text-slate-400">Budget: ${proj.budget}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Milestone Selection (Filtering only Unpaid) */}
+                                    {selectedProject && (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                                            <label className="text-[10px] inter-bold text-slate-400 uppercase tracking-widest block mb-2">2. Select Unpaid Milestone</label>
+                                            <div className="relative">
+                                                <select
+                                                    value={selectedInvoice?._id || ""}
+                                                    onChange={(e) => handleMilestoneChange(e.target.value)}
+                                                    className="w-full appearance-none p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm inter-bold outline-none focus:ring-2 ring-[#4177BC]/10"
+                                                >
+                                                    <option value="">Choose Milestone...</option>
+                                                    {selectedProject?.milestones
+                                                        ?.filter((m: any) => m.status?.toLowerCase() !== "paid")
+                                                        .map((mile: any, mIdx: number) => (
+                                                            <option key={mile._id || `mile-${mIdx}`} value={mile._id}>
+                                                                {mile.name || 'Task'} — ${mile.amount}
+                                                            </option>
+                                                        ))
+                                                    }
+                                                </select>
+                                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                                            </div>
+                                            {selectedProject.milestones?.filter((m: any) => m.status?.toLowerCase() !== "paid").length === 0 && (
+                                                <p className="text-[10px] text-emerald-600 mt-2 inter-medium">✓ All milestones are fully paid for this project.</p>
+                                            )}
+                                        </motion.div>
+                                    )}
+
+                                    {/* 3. Method & Amount */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] inter-bold text-slate-400 uppercase tracking-widest">Method</label>
+                                            <select
+                                                value={paymentMethod}
+                                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm inter-bold outline-none"
+                                            >
+                                                <option>Bank Transfer</option>
+                                                <option>bKash</option>
+                                                <option>Nagad</option>
+                                                <option>Cash</option>
+                                                <option>Payoneer</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] inter-bold text-slate-400 uppercase tracking-widest">Amount ($)</label>
                                             <input
-                                                autoFocus
                                                 type="number"
-                                                className="w-full pl-16 pr-8 py-7 bg-slate-50 border border-slate-100 rounded-3xl outline-none inter-bold text-slate-900 focus:bg-white focus:ring-4 ring-[#4177BC]/5 focus:border-[#4177BC] transition-all text-4xl"
                                                 value={newPaymentAmount}
                                                 onChange={(e) => setNewPaymentAmount(e.target.value)}
+                                                placeholder="0.00"
+                                                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm inter-bold text-[#4177BC] outline-none focus:ring-2 ring-[#4177BC]/10"
                                             />
                                         </div>
                                     </div>
 
                                     <button
-                                        disabled={isUpdating || !newPaymentAmount}
+                                        disabled={isUpdating || !selectedInvoice || !newPaymentAmount}
                                         onClick={handleUpdatePayment}
-                                        className="w-full py-6 bg-slate-900 hover:bg-[#4177BC] text-white rounded-3xl inter-bold uppercase tracking-widest text-[11px] shadow-2xl shadow-slate-900/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                                        className="w-full py-5 bg-slate-900 hover:bg-[#4177BC] text-white rounded-2xl inter-bold uppercase tracking-widest text-[11px] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {isUpdating ? <Loader2 className="animate-spin" size={20} /> : (
-                                            <>Confirm Entry <ArrowUpRight size={18} /></>
-                                        )}
+                                        {isUpdating ? <Loader2 className="animate-spin" size={18} /> : <>Execute Payment <ArrowUpRight size={18} /></>}
                                     </button>
                                 </div>
                             </motion.div>
@@ -323,29 +357,17 @@ export default function ProfessionalPaymentsManager() {
     );
 }
 
-function StatCard({ label, value, icon, trend, color = "text-[#4177BC]", isPrimary = false }: any) {
+function StatCard({ label, value, icon, color }: any) {
     return (
-        <motion.div
-            whileHover={{ y: -5 }}
-            className={`p-10 rounded-[2.5rem] border relative overflow-hidden group transition-all duration-500 ${isPrimary ? 'bg-slate-900 border-slate-900 text-white shadow-2xl shadow-slate-200' : 'bg-white border-slate-200/60 shadow-sm hover:shadow-xl'}`}
-        >
-            <div className="flex justify-between items-start relative z-10">
-                <div>
-                    <p className={`text-[10px] inter-bold uppercase tracking-[0.2em] mb-4 ${isPrimary ? 'text-slate-400' : 'text-slate-400'}`}>{label}</p>
-                    <h3 className={`text-5xl judson-bold italic tracking-tighter uppercase ${isPrimary ? 'text-white' : color}`}>{value}</h3>
-                </div>
-                <div className={`p-4 rounded-2xl transition-all ${isPrimary ? 'bg-white/10 text-white' : 'bg-slate-50 text-slate-400 group-hover:bg-[#4177BC] group-hover:text-white'}`}>
-                    {React.cloneElement(icon, { size: 24 })}
-                </div>
+        <motion.div whileHover={{ y: -5 }} className="p-8 rounded-[2.5rem] bg-white border border-slate-200/60 shadow-sm relative group">
+            <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity">
+                {React.cloneElement(icon, { size: 60 })}
             </div>
-
-            <div className="mt-8 flex items-center gap-3">
-                <span className={`text-[10px] inter-bold px-2 py-1 rounded-md ${isPrimary ? 'bg-white/10 text-emerald-400' : 'bg-emerald-50 text-emerald-500'}`}>{trend}</span>
-                <span className={`text-[10px] inter-medium tracking-wide ${isPrimary ? 'text-slate-500' : 'text-slate-300'}`}>Live Update</span>
-            </div>
-
-            <div className={`absolute -right-4 -bottom-4 opacity-[0.03] transition-all duration-700 pointer-events-none ${isPrimary ? 'text-white' : 'text-slate-900'}`}>
-                <FileText size={140} />
+            <p className="text-[10px] inter-bold uppercase tracking-[0.2em] text-slate-400 mb-2">{label}</p>
+            <h3 className={`text-4xl judson-bold tracking-tight ${color} mb-4`}>{value}</h3>
+            <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] text-slate-400 uppercase tracking-tighter">Live System Sync</span>
             </div>
         </motion.div>
     );
