@@ -393,7 +393,6 @@ export default function ProfessionalPaymentsManager() {
     );
 }
 
-// --- সাহায্যকারী কম্পোনেন্ট (StatCard) ---
 function StatCard({ label, value, icon, color }: any) {
     return (
         <motion.div whileHover={{ y: -5 }} className="p-8 rounded-[2.5rem] bg-white border border-slate-200/60 shadow-sm relative group">
