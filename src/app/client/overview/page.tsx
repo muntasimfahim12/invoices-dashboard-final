@@ -17,8 +17,8 @@ import {
 } from "lucide-react";
 
 // --- BRAND COLORS ---
-const PRIMARY = "#4177BC"; // Blue
-const ACCENT = "#EB9C2C";  // Orange
+const PRIMARY = "#4177BC"; 
+const ACCENT = "#EB9C2C";  
 const WHITE = "#FFFFFF";
 
 // --- FOODPANDA STYLE BOX SKELETON LOADING ---

@@ -8,7 +8,7 @@ export default function ClientLayout({
   return (
     <div className="flex">
       <ClientSidebar />
-      <main className="flex-1 md:ml-64 pb-16 md:pb-0 p-6 bg-gray-50 min-h-screen">
+      <main className="flex-1 md:ml-64 pb-16 md:pb-0 p-6 bg-white min-h-screen">
         {children}
       </main>
     </div>

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
@@ -17,12 +18,12 @@ import {
 export default function AdvancedClientDashboard() {
     const router = useRouter();
     const [clientData, setClientData] = useState<any>(null);
-    const [selectedProject, setSelectedProject] = useState<any>(null);
+    // অবজেক্টের বদলে ইনডেক্স ব্যবহার করা হয়েছে যাতে ডেটা সিঙ্ক থাকে
+    const [selectedProjectIndex, setSelectedProjectIndex] = useState(0); 
     const [paypalUrl, setPaypalUrl] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
-    // BRAND COLORS
     const COLORS = {
         white: "#FFFFFF",
         blue: "#4177BC",
@@ -31,34 +32,37 @@ export default function AdvancedClientDashboard() {
 
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const userEmail = localStorage.getItem("user_email");
-                if (!userEmail) { router.push("/"); return; }
+    const fetchDashboardData = async () => {
+        try {
+            const userEmail = localStorage.getItem("user_email");
+            if (!userEmail) { router.push("/"); return; }
 
-                const [clientRes, settingsRes] = await Promise.all([
-                    axios.get(`${API_BASE}/clinets`),
-                    axios.get(`${API_BASE}/settings`)
-                ]);
+            // ক্যাশ সমস্যা এড়াতে টাইমস্ট্যাম্প যোগ করা হয়েছে
+            const [clientRes, settingsRes] = await Promise.all([
+                axios.get(`${API_BASE}/clinets?t=${new Date().getTime()}`),
+                axios.get(`${API_BASE}/settings`)
+            ]);
 
-                const myProfile = clientRes.data.find((c: any) => c.email === userEmail);
-                if (settingsRes.data?.paypalLink) setPaypalUrl(settingsRes.data.paypalLink);
+            const myProfile = clientRes.data.find((c: any) => c.email === userEmail);
+            if (settingsRes.data?.paypalLink) setPaypalUrl(settingsRes.data.paypalLink);
 
-                if (myProfile) {
-                    setClientData(myProfile);
-                    if (myProfile.projects?.length > 0) setSelectedProject(myProfile.projects[0]);
-                } else {
-                    setError(true);
-                }
-            } catch (err) {
+            if (myProfile) {
+                setClientData(myProfile);
+            } else {
                 setError(true);
-            } finally {
-                setLoading(false);
             }
-        };
+        } catch (err) {
+            setError(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchDashboardData();
     }, [API_BASE, router]);
+
+    const selectedProject = clientData?.projects ? clientData.projects[selectedProjectIndex] : null;
 
     const handlePayNow = (amount: number, note?: string) => {
         if (!paypalUrl) return alert("Payment link not configured.");
@@ -73,22 +77,19 @@ export default function AdvancedClientDashboard() {
     if (loading) return <LoadingScreen colors={COLORS} />;
     if (error) return <ErrorState colors={COLORS} />;
 
+    // ক্যালকুলেশনগুলো এখন সবসময় লেটেস্ট clientData থেকে আসবে
     const budget = Number(selectedProject?.budget) || 0;
-    const paid = Number(selectedProject?.paidAmount) || 0;
+    const paid = Number(selectedProject?.paidAmount) || 0; 
     const remaining = budget - paid;
     const progressPercent = budget > 0 ? Math.round((paid / budget) * 100) : 0;
 
     return (
-        <div className="min-h-screen bg-[#F4F7FA] text-slate-900 font-sans selection:bg-[#4177BC]/20">
-            {/* Top Navigation Bar */}
-           
-
+        <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-[#4177BC]/20">
             <main className="max-w-7xl mx-auto px-6 py-10">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     
                     {/* --- LEFT SIDEBAR --- */}
                     <div className="lg:col-span-4 space-y-6">
-                        {/* PROJECT SELECTOR */}
                         <section className="bg-[#FFFFFF] rounded-[2rem] p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
                             <div className="flex items-center justify-between mb-6 px-2">
                                 <h3 className="text-[11px] font-black text-[#4177BC] uppercase tracking-[0.2em]">Your Ecosystem</h3>
@@ -96,11 +97,11 @@ export default function AdvancedClientDashboard() {
                             </div>
                             <div className="space-y-3">
                                 {clientData?.projects?.map((p: any, i: number) => {
-                                    const isActive = selectedProject?.projectName === p.projectName;
+                                    const isActive = selectedProjectIndex === i;
                                     return (
                                         <button 
                                             key={i}
-                                            onClick={() => setSelectedProject(p)}
+                                            onClick={() => setSelectedProjectIndex(i)}
                                             className={`w-full group flex items-center gap-4 p-4 rounded-2xl transition-all duration-500 ${
                                                 isActive ? 'bg-[#4177BC] text-white shadow-xl shadow-[#4177BC]/30 translate-x-2' : 'hover:bg-slate-50 text-slate-500'
                                             }`}
@@ -119,12 +120,12 @@ export default function AdvancedClientDashboard() {
                             </div>
                         </section>
 
-                        {/* TOTAL INVESTMENT CARD */}
                         <div className="bg-[#4177BC] rounded-[2rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-[#4177BC]/40">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-[#EB9C2C] opacity-10 rounded-full -mr-16 -mt-16" />
                             <Zap className="absolute -right-4 -bottom-4 opacity-10" size={120} />
                             <p className="text-[10px] font-black opacity-80 uppercase tracking-widest mb-2">Portfolio Value</p>
-                            <h2 className="text-4xl font-light mb-8">${Number(clientData?.totalPaid || 0).toLocaleString()}</h2>
+                            {/* totalPaid ও এখন ডাইনামিকালি ক্যালকুলেট করা ভালো */}
+                            <h2 className="text-4xl font-light mb-8">${Number(clientData?.projects?.reduce((acc:any, curr:any) => acc + Number(curr.paidAmount || 0), 0)).toLocaleString()}</h2>
                             <div className="flex items-center gap-2 bg-[#FFFFFF]/10 w-fit px-4 py-2 rounded-xl backdrop-blur-md">
                                 <div className="w-2 h-2 rounded-full bg-[#EB9C2C] animate-pulse" />
                                 <span className="text-[10px] font-bold uppercase tracking-tighter">Verified Assets</span>
@@ -135,7 +136,6 @@ export default function AdvancedClientDashboard() {
                     {/* --- RIGHT CONTENT --- */}
                     <div className="lg:col-span-8 space-y-8">
                         
-                        {/* MAIN PROJECT OVERVIEW */}
                         <div className="bg-[#FFFFFF] rounded-[2.5rem] p-10 shadow-xl shadow-slate-200/50 border border-slate-100">
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
                                 <div>
@@ -185,7 +185,6 @@ export default function AdvancedClientDashboard() {
                             )}
                         </div>
 
-                        {/* ROADMAP SECTION */}
                         <div className="bg-[#FFFFFF] rounded-[2.5rem] p-10 shadow-xl shadow-slate-200/50 border border-slate-100">
                             <div className="flex items-center justify-between mb-10">
                                 <div className="flex items-center gap-3">
@@ -242,7 +241,6 @@ export default function AdvancedClientDashboard() {
                                 })}
                             </div>
                         </div>
-
                     </div>
                 </div>
             </main>
@@ -250,8 +248,7 @@ export default function AdvancedClientDashboard() {
     );
 }
 
-// --- PREMIUM SUPPORTING COMPONENTS ---
-
+// --- SUPPORTING COMPONENTS (Same as before) ---
 function LoadingScreen({ colors }: any) {
     return (
         <div className="min-h-screen bg-[#FFFFFF] flex flex-col items-center justify-center">
