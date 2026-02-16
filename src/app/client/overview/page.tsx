@@ -16,12 +16,12 @@ import {
     Mail, HelpCircle, ShieldCheck, Wallet, History, RefreshCw
 } from "lucide-react";
 
-// --- BRAND COLORS ---
+//  BRAND COLORS 
 const PRIMARY = "#4177BC"; 
 const ACCENT = "#EB9C2C";  
 const WHITE = "#FFFFFF";
 
-// --- FOODPANDA STYLE BOX SKELETON LOADING ---
+//  FOODPANDA STYLE BOX SKELETON LOADING 
 function LoadingScreen() {
     return (
         <div className="fixed inset-0 z-200 bg-[#FDFEFF] overflow-hidden">
@@ -83,7 +83,7 @@ function LoadingScreen() {
     );
 }
 
-// --- STAT CARD ---
+//  STAT CARD 
 function StatCard({ title, value, icon, subtitle, color, progress }: any) {
     return (
         <motion.div

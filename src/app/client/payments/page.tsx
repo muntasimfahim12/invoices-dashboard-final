@@ -77,7 +77,6 @@ export default function AdvancedClientDashboard() {
     if (loading) return <LoadingScreen colors={COLORS} />;
     if (error) return <ErrorState colors={COLORS} />;
 
-    // ক্যালকুলেশনগুলো এখন সবসময় লেটেস্ট clientData থেকে আসবে
     const budget = Number(selectedProject?.budget) || 0;
     const paid = Number(selectedProject?.paidAmount) || 0; 
     const remaining = budget - paid;
@@ -124,7 +123,6 @@ export default function AdvancedClientDashboard() {
                             <div className="absolute top-0 right-0 w-32 h-32 bg-[#EB9C2C] opacity-10 rounded-full -mr-16 -mt-16" />
                             <Zap className="absolute -right-4 -bottom-4 opacity-10" size={120} />
                             <p className="text-[10px] font-black opacity-80 uppercase tracking-widest mb-2">Portfolio Value</p>
-                            {/* totalPaid ও এখন ডাইনামিকালি ক্যালকুলেট করা ভালো */}
                             <h2 className="text-4xl font-light mb-8">${Number(clientData?.projects?.reduce((acc:any, curr:any) => acc + Number(curr.paidAmount || 0), 0)).toLocaleString()}</h2>
                             <div className="flex items-center gap-2 bg-[#FFFFFF]/10 w-fit px-4 py-2 rounded-xl backdrop-blur-md">
                                 <div className="w-2 h-2 rounded-full bg-[#EB9C2C] animate-pulse" />
