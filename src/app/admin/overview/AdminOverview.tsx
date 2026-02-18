@@ -13,19 +13,7 @@ import ListItem from "../../../components/adminDashboard/ListItem";
 import SectionTitle from "../../../components/adminDashboard/SectionTitle";
 import StatCard from "@/src/shared/StatCard";
 import {
-  LogOut,
-  Bell,
-  CircleUserRound,
-  ArrowRight,
-  ShieldCheck,
-  Plus,
-  TrendingUp,
-  Users,
-  LayoutDashboard,
-  Wallet,
-  ArrowUpRight,
-  Settings,
-  Activity
+  LogOut, Bell, CircleUserRound, ArrowRight, ShieldCheck, Plus, TrendingUp, Users, LayoutDashboard, Wallet, ArrowUpRight, Settings, Activity
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "";
@@ -63,11 +51,11 @@ export default function AdminOverview() {
       const email = localStorage.getItem("user_email");
       const role = localStorage.getItem("user_role") || "admin";
 
-     
+
       const [invoiceRes, clientRes, statsRes] = await Promise.all([
         axios.get(`${API_BASE}/invoices`, { params: { email, role } }),
         axios.get(`${API_BASE}/clinets`, { params: { email, role } }),
-        axios.get(`${API_BASE}/dashboard-stats`).catch(() => ({ data: null })) 
+        axios.get(`${API_BASE}/dashboard-stats`).catch(() => ({ data: null }))
       ]);
 
       const projectsList: any[] = [];
@@ -96,10 +84,10 @@ export default function AdminOverview() {
 
   useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
-const stats = useMemo(() => {
+  const stats = useMemo(() => {
     const inv = dashboardData.invoices;
 
-    
+
     const totalRev = inv.reduce((sum, i) => sum + (Number(i.receivedAmount) || 0), 0);
 
     const totalDue = (inv.reduce((sum, i) => sum + (Number(i.grandTotal) || 0), 0) - totalRev);
@@ -110,7 +98,7 @@ const stats = useMemo(() => {
       clientCount: dashboardData.clients.length,
       projectCount: dashboardData.projects.length,
     };
-}, [dashboardData]);
+  }, [dashboardData]);
 
   const chartData = useMemo(() => {
     const inv = dashboardData.invoices;

@@ -40,19 +40,22 @@ export default function ProfessionalPaymentsManager() {
 
     useEffect(() => { fetchData(); }, []);
 
+    // Helper to find the first unpaid milestone
+    const getFirstUnpaidMilestone = (project: any) => {
+        return project?.milestones?.find(
+            (m: any) => m.status?.toLowerCase() !== "paid"
+        );
+    };
+
     const handleLogPaymentClick = (client: any) => {
         setSelectedClient(client);
-
         const firstProject = client.projects && client.projects.length > 0 ? client.projects[0] : null;
 
         if (firstProject) {
             setSelectedProject(firstProject);
-            const unpaidMilestones = firstProject.milestones?.filter(
-                (m: any) => m.status?.toLowerCase() !== "paid"
-            ) || [];
-
-            if (unpaidMilestones.length > 0) {
-                const firstUnpaid = unpaidMilestones[0];
+            const firstUnpaid = getFirstUnpaidMilestone(firstProject);
+            
+            if (firstUnpaid) {
                 setSelectedInvoice(firstUnpaid);
                 setNewPaymentAmount(firstUnpaid.amount?.toString() || "");
             } else {
@@ -62,15 +65,11 @@ export default function ProfessionalPaymentsManager() {
         }
     };
 
-    // --- প্রোজেক্ট ম্যানুয়ালি চেঞ্জ করলে মাইলস্টোন এবং অ্যামাউন্ট আপডেট ---
     const handleProjectChange = (proj: any) => {
         setSelectedProject(proj);
-        const unpaidMilestones = proj.milestones?.filter(
-            (m: any) => m.status?.toLowerCase() !== "paid"
-        ) || [];
+        const firstUnpaid = getFirstUnpaidMilestone(proj);
 
-        if (unpaidMilestones.length > 0) {
-            const firstUnpaid = unpaidMilestones[0];
+        if (firstUnpaid) {
             setSelectedInvoice(firstUnpaid);
             setNewPaymentAmount(firstUnpaid.amount?.toString() || "");
         } else {
@@ -79,7 +78,6 @@ export default function ProfessionalPaymentsManager() {
         }
     };
 
-    // --- মাইলস্টোন ড্রপডাউন থেকে সিলেক্ট করলে অ্যামাউন্ট অটো-ফিল ---
     const handleMilestoneChange = (milestoneId: string) => {
         if (!milestoneId) {
             setSelectedInvoice(null);
@@ -109,62 +107,65 @@ export default function ProfessionalPaymentsManager() {
         }
 
         setIsUpdating(true);
+        const loadingToast = toast.loading("Processing payment...");
+
         try {
             const payload = {
                 projectId: selectedProject._id,
                 invoiceId: selectedInvoice._id,
                 amount: Number(newPaymentAmount),
                 method: paymentMethod,
+                clientEmail: selectedClient.email, 
+                clientName: selectedClient.name,
+                projectName: selectedProject.name,
+                milestoneName: selectedInvoice.name,
                 date: new Date().toISOString()
             };
 
-            // ব্যাকএন্ডে পেমেন্ট আপডেট কল
-            await axios.put(`${API_BASE}/clinets/${selectedClient._id}/payment`, payload);
+            const res = await axios.put(`${API_BASE}/clinets/${selectedClient._id}/payment`, payload);
 
-            toast.success(`Payment successful for ${selectedInvoice.name || 'Milestone'}`);
+            if (res.status === 200) {
+                toast.success(`Success! Email sent to ${selectedClient.name}`, { id: loadingToast });
 
-            // ১. লেটেস্ট ডাটা ফেচ করা
-            const response = await axios.get(`${API_BASE}/clinets`);
-            const updatedClients = Array.isArray(response.data) ? response.data : [];
-            setClients(updatedClients);
+                // ১. সরাসরি ব্যাকএন্ড থেকে এই নির্দিষ্ট ক্লায়েন্টের ফ্রেশ ডেটা আনুন
+                const freshRes = await axios.get(`${API_BASE}/clinets`);
+                const allUpdatedClients = Array.isArray(freshRes.data) ? freshRes.data : [];
+                setClients(allUpdatedClients);
 
-            // ২. কারেন্ট ক্লায়েন্ট এবং প্রজেক্ট খুঁজে বের করা
-            const currentClient = updatedClients.find((c: any) => c._id === selectedClient._id);
-            if (currentClient) {
-                const currentProject = currentClient.projects?.find((p: any) => p._id === selectedProject._id);
-
-                if (currentProject) {
-                    const remainingUnpaid = currentProject.milestones?.filter(
-                        (m: any) => m.status?.toLowerCase() !== "paid"
-                    ) || [];
-
-                    if (remainingUnpaid.length > 0) {
-                        // পরবর্তী আনপেইড মাইলস্টোন সেট করা
-                        setSelectedClient(currentClient);
-                        setSelectedProject(currentProject);
-                        setSelectedInvoice(remainingUnpaid[0]);
-                        setNewPaymentAmount(remainingUnpaid[0].amount?.toString() || "");
-                        setPaymentMethod("Bank Transfer");
+                // ২. কারেন্ট অবজেক্টগুলো রি-ম্যাপ করুন যাতে UI অটো-আপডেট হয়
+                const updatedClient = allUpdatedClients.find((c: any) => c._id === selectedClient._id);
+                if (updatedClient) {
+                    const updatedProject = updatedClient.projects?.find((p: any) => p._id === selectedProject._id);
+                    
+                    if (updatedProject) {
+                        const nextUnpaid = getFirstUnpaidMilestone(updatedProject);
+                        
+                        if (nextUnpaid) {
+                            // আরও মাইলস্টোন থাকলে সেগুলো সেট করো
+                            setSelectedClient(updatedClient);
+                            setSelectedProject(updatedProject);
+                            setSelectedInvoice(nextUnpaid);
+                            setNewPaymentAmount(nextUnpaid.amount?.toString() || "");
+                        } else {
+                            // কোনো আনপেইড মাইলস্টোন না থাকলে মোডাল বন্ধ করো
+                            toast.success("All milestones cleared for this project!");
+                            closePaymentModal();
+                        }
                     } else {
-                        // সব পেইড হয়ে গেলে মোডাল বন্ধ
                         closePaymentModal();
                     }
                 } else {
                     closePaymentModal();
                 }
-            } else {
-                closePaymentModal();
             }
-
         } catch (error: any) {
-            console.error(error);
-            toast.error(error.response?.data?.error || "Payment update failed.");
+            toast.error(error.response?.data?.error || "Payment failed.", { id: loadingToast });
         } finally {
             setIsUpdating(false);
         }
     };
 
-    // Stats Logic
+    // Stats calculation based on totalPaid field from backend
     const stats = useMemo(() => {
         let collected = 0;
         let totalBudget = 0;
@@ -183,7 +184,7 @@ export default function ProfessionalPaymentsManager() {
     }, [clients, searchQuery]);
 
     return (
-        <div className="min-h-screen bg-[#FFFFFF] p-4 md:p-10 text-slate-900 judson-regular selection:bg-[#4177BC]/10">
+        <div className="min-h-screen bg-[#FFFFFF] p-4 md:p-10 text-slate-900 selection:bg-[#4177BC]/10">
             <Toaster position="top-right" />
             <div className="max-w-7xl mx-auto">
 
@@ -192,10 +193,10 @@ export default function ProfessionalPaymentsManager() {
                     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
                         <div className="flex items-center gap-3 mb-2">
                             <span className="px-3 py-1 rounded-full bg-[#4177BC]/10 text-[#4177BC] text-[10px] uppercase tracking-widest font-bold">
-                                Enterprise Ledger v2.0
+                                Enterprise Ledger
                             </span>
                         </div>
-                        <h1 className="text-5xl font-bold judson-bold tracking-tight text-slate-900">
+                        <h1 className="text-5xl font-bold tracking-tight text-slate-900">
                             All <span className="text-[#4177BC] font-normal ">Payments</span>
                         </h1>
                     </motion.div>
@@ -269,7 +270,7 @@ export default function ProfessionalPaymentsManager() {
                                                     onClick={() => handleLogPaymentClick(client)}
                                                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs hover:border-[#4177BC] hover:text-[#4177BC] transition-all"
                                                 >
-                                                    <Wallet size={14} /> Log Payment
+                                                    <Wallet size={14} />  Payment
                                                 </button>
                                             </td>
                                         </tr>
@@ -293,7 +294,7 @@ export default function ProfessionalPaymentsManager() {
                                 initial={{ y: 50, opacity: 0, scale: 0.95 }}
                                 animate={{ y: 0, opacity: 1, scale: 1 }}
                                 exit={{ y: 50, opacity: 0, scale: 0.95 }}
-                                className="relative bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-white"
+                                className="relative bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden "
                             >
                                 <div className="bg-[#4177BC] p-8 text-white relative">
                                     <button onClick={closePaymentModal} className="absolute top-6 right-6 p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>

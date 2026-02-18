@@ -217,7 +217,10 @@ export default function ProfessionalLedgerEditor() {
 
                             {/* Items List */}
                             {invoiceData.items?.map((item: any, index: number) => (
-                                <div key={item.id || item._id} className="grid grid-cols-12 gap-4 items-center group">
+                                <div
+                                    key={item.id || item._id || `item-${index}`}
+                                    className="grid grid-cols-12 gap-4 items-center group mb-4"
+                                >
                                     {/* Name/Description */}
                                     <div className="col-span-6">
                                         <input
@@ -225,7 +228,7 @@ export default function ProfessionalLedgerEditor() {
                                             value={item.name}
                                             onChange={(e) => {
                                                 const newItems = [...invoiceData.items];
-                                                newItems[index].name = e.target.value;
+                                                newItems[index] = { ...newItems[index], name: e.target.value };
                                                 updateField("items", newItems);
                                             }}
                                             placeholder="e.g. Website Development"
@@ -240,7 +243,7 @@ export default function ProfessionalLedgerEditor() {
                                             value={item.qty}
                                             onChange={(e) => {
                                                 const newItems = [...invoiceData.items];
-                                                newItems[index].qty = Number(e.target.value);
+                                                newItems[index] = { ...newItems[index], qty: Number(e.target.value) };
                                                 updateField("items", newItems);
                                             }}
                                         />
@@ -258,7 +261,7 @@ export default function ProfessionalLedgerEditor() {
                                                 value={item.price}
                                                 onChange={(e) => {
                                                     const newItems = [...invoiceData.items];
-                                                    newItems[index].price = Number(e.target.value);
+                                                    newItems[index] = { ...newItems[index], price: Number(e.target.value) };
                                                     updateField("items", newItems);
                                                 }}
                                             />
@@ -273,7 +276,8 @@ export default function ProfessionalLedgerEditor() {
                                     {/* Delete Action */}
                                     <div className="col-span-1 flex justify-center">
                                         <button
-                                            onClick={() => removeItem(item.id || item._id)}
+                                            type="button" // ফর্ম সাবমিট হওয়া রোধ করতে
+                                            onClick={() => removeItem(item.id || item._id || index)}
                                             className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
                                         >
                                             <Trash2 size={20} />
