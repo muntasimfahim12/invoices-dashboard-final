@@ -1,319 +1,263 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Briefcase, Clock, CheckCircle2, 
-    Zap, LogOut, ChevronDown,
-    Plus, PieChart, RefreshCw, 
-    TrendingUp, ShieldAlert, Activity, ArrowRight, MoreHorizontal, Check
+    Briefcase, Clock, CheckCircle2,
+    LogOut, ChevronDown, Plus, 
+    Calendar, AlertCircle, 
+    RefreshCw, Layers, ArrowUpRight,
+    Wallet, ShieldCheck, Zap
 } from "lucide-react";
 
-// BRAND COLORS FROM IMAGE
-const PRIMARY = "#4177BC"; 
-const ACCENT = "#EB9C2C"; 
-const SUCCESS = "#10B981";
+const PRIMARY = "#4177BC";
+const ACCENT = "#EB9C2C";
 
-export default function ClientDashboard() {
+/** 1️⃣ Minimal Loading **/
+function LoadingScreen() {
+    return (
+        <div className="fixed inset-0 z-[200] bg-white flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <div className="w-10 h-10 border-2 border-slate-100 border-t-[#4177BC] rounded-full animate-spin" />
+                <p className="text-[10px] tracking-[0.2em] text-slate-400 font-medium">SECURE LOADING</p>
+            </div>
+        </div>
+    );
+}
+
+/** 2️⃣ Clean Stat Card **/
+function StatCard({ title, value, icon, subtitle, color, progress }: any) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-300"
+        >
+            <div className="flex justify-between items-start mb-4">
+                <div className="p-2.5 rounded-xl" style={{ backgroundColor: `${color}08`, color: color }}>
+                    {React.cloneElement(icon, { size: 18, strokeWidth: 2 })}
+                </div>
+                <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
+                    {progress}%
+                </span>
+            </div>
+            
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">{title}</p>
+            <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{value}</h3>
+            
+            <div className="mt-4 w-full h-1 bg-slate-50 rounded-full overflow-hidden">
+                <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 1 }}
+                    className="h-full"
+                    style={{ backgroundColor: color }}
+                />
+            </div>
+        </motion.div>
+    );
+}
+
+export default function ClientOverview() {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const router = useRouter();
 
-    // Logic: Same as original
-    const fetchOverviewData = async () => {
-        setLoading(true);
+    const fetchOverviewData = useCallback(async (showSkeleton = true) => {
+        if (showSkeleton) setLoading(true);
+        else setRefreshing(true);
         try {
             const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
             const userEmail = localStorage.getItem("user_email");
+            if (!userEmail) { router.push("/"); return; }
+
             const response = await axios.get(`${API_BASE}/clinets`);
-            const myProfile = response.data.find((c: any) => c.email === userEmail);
-            
-            setTimeout(() => {
-                if (myProfile) setData(myProfile);
-                setLoading(false);
-            }, 800);
+            const myProfile = response.data.find((c: any) => c.email === userEmail || c.portalEmail === userEmail);
+            if (myProfile) setData(myProfile);
         } catch (err) {
-            console.error("API Error");
+            console.error("Fetch Error:", err);
+        } finally {
             setLoading(false);
+            setRefreshing(false);
         }
-    };
+    }, [router]);
 
-    useEffect(() => {
-        fetchOverviewData();
-    }, []);
+    useEffect(() => { fetchOverviewData(); }, [fetchOverviewData]);
 
-    const handleLogout = () => {
-        Cookies.remove("vault_token");
-        localStorage.clear();
-        router.push("/");
-    };
+    const stats = useMemo(() => {
+        const projects = data?.projects || [];
+        let budget = 0, paid = 0;
+        projects.forEach((project: any) => {
+            budget += Number(project.budget) || 0;
+            project.milestones?.forEach((m: any) => {
+                if (m.status === 'Paid' || m.status === 'paid' || m.paidDate) {
+                    paid += Number(m.amount) || 0;
+                }
+            });
+        });
+        const locked = budget - paid;
+        const progress = budget > 0 ? Math.round((paid / budget) * 100) : 0;
+        return { activeProjects: projects, totalBudget: budget, currentPaid: paid, lockedFunds: locked, paymentProgress: progress };
+    }, [data]);
 
-    // Calculations: Same as original
-    const activeProjects = data?.projects || [];
-    const totalPaid = Number(data?.totalPaid) || 0;
-    const totalBudget = activeProjects.reduce((acc: any, p: any) => acc + (Number(p.budget) || 0), 0);
-    const lockedFunds = totalBudget - totalPaid;
-
-    if (loading) return <LoadingSkeleton />;
+    if (loading) return <LoadingScreen />;
 
     return (
-        <div className="min-h-screen bg-[#FFFFF] text-slate-900 inter-font">
-            {/* Top Navigation Bar */}
-            <header className="bg-white border-b border-slate-100 sticky top-0 z-50 px-8 py-3">
-                <div className="max-w-[1600px] mx-auto flex justify-between items-center">
-                    <div>
-                        <h1 className="text-xl font-bold text-slate-800 tracking-tight">Client Financial Sync</h1>
-                        <p className="text-xs text-slate-400">Real-time view of assets, settled payments, and outstanding liquidity.</p>
+        <div className="min-h-screen bg-white text-slate-900 selection:bg-blue-50">
+            {/* Header */}
+            <nav className="border-b border-slate-100 sticky top-0 bg-white/80 backdrop-blur-md z-[100]">
+                <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-[#4177BC] rounded-xl flex items-center justify-center shadow-lg shadow-blue-100">
+                            <Layers className="text-white" size={18} />
+                        </div>
+                        <div>
+                            <h1 className="text-lg font-bold tracking-tight">Client </h1>
+                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">Project Management</p>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
-                        <nav className="hidden md:flex bg-slate-50 p-1 rounded-lg border border-slate-100">
-                            {['Overview', 'Detailed View', 'Audit Log'].map((tab) => (
-                                <button key={tab} className={`px-4 py-1.5 text-[11px] font-bold rounded-md transition-all ${tab === 'Overview' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-400 hover:text-slate-600'}`}>
-                                    {tab}
-                                </button>
-                            ))}
-                        </nav>
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={() => fetchOverviewData(false)}
+                            className={`p-2 rounded-lg hover:bg-slate-50 transition-colors ${refreshing ? 'animate-spin text-blue-500' : 'text-slate-400'}`}
+                        >
+                            <RefreshCw size={18} />
+                        </button>
                         
                         <div className="relative">
-                            <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
-                                    {data?.image ? <img src={data.image} alt="avatar" /> : <div className="w-full h-full flex items-center justify-center font-bold text-slate-400 text-xs">{data?.name?.charAt(0)}</div>}
+                            <button 
+                                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                                className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full border border-slate-100 hover:bg-slate-50 transition-all"
+                            >
+                                <span className="text-[11px] font-bold text-slate-600 ml-1">{data?.name?.split(' ')[0]}</span>
+                                <div className="w-7 h-7 rounded-full bg-slate-100 overflow-hidden">
+                                    {data?.image ? <img src={data.image} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px] font-bold">{data?.name?.charAt(0)}</div>}
                                 </div>
-                                <ChevronDown size={14} className="text-slate-400" />
                             </button>
-                            {isProfileOpen && (
-                                <div className="absolute right-0 mt-3 w-44 bg-white shadow-2xl rounded-xl border border-slate-100 p-2">
-                                    <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg text-xs font-bold">
-                                        <LogOut size={14} /> Logout
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </header>
 
-            <main className="max-w-[1600px] mx-auto p-8">
-                {/* 4-Column Stat Grid (Direct Image Match) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <StatBox 
-                        title="Total Asset Value" 
-                        value={`$${totalBudget.toLocaleString()}`} 
-                        subtitle="Gross value of all contracts" 
-                        icon={<Briefcase className="text-[#4177BC]" />} 
-                        trend="+12.5%" 
-                    />
-                    <StatBox 
-                        title="Capital Settled" 
-                        value={`$${totalPaid.toLocaleString()}`} 
-                        subtitle="Successfully processed" 
-                        icon={<CheckCircle2 className="text-[#10B981]" />} 
-                        statusBadge="Verified"
-                        borderColor="border-l-[#10B981]"
-                    />
-                    <StatBox 
-                        title="Locked Liquidity" 
-                        value={`$${lockedFunds.toLocaleString()}`} 
-                        subtitle="Remaining dues in escrow" 
-                        icon={<Clock className="text-[#EB9C2C]" />} 
-                        statusBadge="Action Required"
-                        badgeColor="bg-orange-50 text-orange-600"
-                        borderColor="border-l-[#EB9C2C]"
-                    />
-                    <StatBox 
-                        title="Operational Nodes" 
-                        value={`${activeProjects.length} / 18`} 
-                        subtitle="Active projects currently running" 
-                        icon={<Activity className="text-purple-500" />} 
-                        showDots 
-                    />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left: Revenue Analytics */}
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm relative overflow-hidden">
-                            <div className="flex justify-between items-center mb-10">
-                                <h3 className="text-lg font-bold text-slate-800">Revenue Analytics</h3>
-                                <select className="text-[11px] font-bold text-slate-500 bg-slate-50 border-none rounded-md px-3 py-1">
-                                    <option>Last 6 months</option>
-                                </select>
-                            </div>
-                            <div className="h-[300px] w-full bg-[#FAFBFC] rounded-xl flex items-end justify-between px-4 pb-4 relative border-b border-slate-100">
-                                {/* Visual Chart Representation matching image */}
-                                <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
-                                     <PieChart size={120} className="text-slate-200" />
-                                </div>
-                                <div className="absolute top-1/2 left-[60%] -translate-y-1/2 bg-[#10B981] text-white px-3 py-1 rounded text-[10px] font-bold shadow-lg">
-                                    $25,000 April
-                                </div>
-                                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map((m) => (
-                                    <span key={m} className="text-[10px] font-bold text-slate-300">{m}</span>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Project Health & Asset Allocation Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-sm font-bold text-slate-800">Project Health</h3>
-                                    <MoreHorizontal size={16} className="text-slate-300" />
-                                </div>
-                                <div className="h-40 flex items-center justify-center border-t border-slate-50 pt-4">
-                                    <TrendingUp size={48} className="text-orange-400 opacity-20" />
-                                </div>
-                            </div>
-                            <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-sm font-bold text-slate-800">Asset Allocation</h3>
-                                    <MoreHorizontal size={16} className="text-slate-300" />
-                                </div>
-                                <div className="flex justify-center py-4">
-                                    <div className="w-32 h-32 rounded-full border-[12px] border-blue-500 border-t-green-500 border-r-purple-500 relative" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right: Milestone Log & Transactions */}
-                    <div className="space-y-8">
-                        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-                            <div className="flex justify-between items-center mb-8">
-                                <h3 className="text-sm font-bold text-slate-800">Milestone Log</h3>
-                                <span className="text-[10px] font-bold text-slate-300 uppercase">Real-time Feed</span>
-                            </div>
-                            
-                            <div className="space-y-8 relative before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-50">
-                                <MilestoneItem 
-                                    title="Phase 3 Deployment" 
-                                    desc="Core infrastructure setup complete." 
-                                    time="Today, 10:42 AM" 
-                                    amount="+$45,000 Released" 
-                                    status="VERIFIED" 
-                                    statusColor="text-green-500 bg-green-50"
-                                    dotColor="bg-green-500"
-                                />
-                                <MilestoneItem 
-                                    title="UX/UI Finalization" 
-                                    desc="Design system approval signed off." 
-                                    time="Feb 12, 2024" 
-                                    amount="$28,500 Released" 
-                                    status="SETTLED" 
-                                    statusColor="text-slate-400 bg-slate-50"
-                                    dotColor="bg-slate-200"
-                                />
-                                <MilestoneItem 
-                                    title="API Integration" 
-                                    desc="Third-party gateway connectivity." 
-                                    status="PENDING" 
-                                    statusColor="text-orange-500 bg-orange-50"
-                                    dotColor="bg-orange-500 ring-4 ring-orange-100"
-                                    isCurrent
-                                />
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-sm font-bold text-slate-800">Recent Transactions</h3>
-                                <button className="text-[10px] font-bold text-[#4177BC] hover:underline">View All</button>
-                            </div>
-                            <div className="space-y-4">
-                                {activeProjects.slice(0, 3).map((proj: any, idx: number) => (
-                                    <div key={idx} className="flex justify-between items-center text-[11px]">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-slate-50 rounded flex items-center justify-center font-black text-slate-400">
-                                                {proj.projectName?.charAt(0)}
-                                            </div>
-                                            <span className="font-bold text-slate-700">{proj.projectName}</span>
+                            <AnimatePresence>
+                                {isProfileOpen && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 8 }} 
+                                        animate={{ opacity: 1, y: 0 }} 
+                                        exit={{ opacity: 0, y: 8 }} 
+                                        className="absolute right-0 mt-3 w-56 bg-white shadow-xl rounded-xl border border-slate-100 p-2 z-[110]"
+                                    >
+                                        <div className="px-4 py-3 border-b border-slate-50">
+                                            <p className="text-xs font-bold text-slate-900">{data?.name}</p>
+                                            <p className="text-[10px] text-slate-400 truncate">{data?.email}</p>
                                         </div>
-                                        <span className="font-black text-slate-800">${Number(proj.budget).toLocaleString()}</span>
-                                    </div>
-                                ))}
-                            </div>
+                                        <button 
+                                            onClick={() => { Cookies.remove("vault_token"); localStorage.clear(); router.push("/"); }}
+                                            className="w-full flex items-center justify-between px-4 py-3 text-[11px] font-bold text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                        >
+                                            Sign Out <LogOut size={14} />
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
+                </div>
+            </nav>
+
+            <main className="max-w-7xl mx-auto px-6 py-12">
+                {/* Minimal Hero */}
+                <div className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h2 className="text-4xl font-bold text-slate-900 tracking-tight mb-2 judson-bold">
+                            Welcome back, <span className="text-[#4177BC]">{data?.name?.split(' ')[0]}</span>
+                        </h2>
+                        <p className="text-slate-500 text-sm font-medium">
+                            You have <span className="text-slate-900 font-bold">{stats.activeProjects.length} active projects</span> currently in progress.
+                        </p>
+                    </div>
+                    
+                    <button className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-slate-800 transition-all">
+                        <Plus size={16} /> New Project Request
+                    </button>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
+                    <StatCard title="Total Budget" value={`$${stats.totalBudget.toLocaleString()}`} icon={<Wallet />} progress={100} color={PRIMARY} />
+                    <StatCard title="Total Paid" value={`$${stats.currentPaid.toLocaleString()}`} icon={<ShieldCheck />} progress={stats.paymentProgress} color="#10B981" />
+                    <StatCard title="Remaining" value={`$${stats.lockedFunds.toLocaleString()}`} icon={<Clock />} progress={100 - stats.paymentProgress} color={ACCENT} />
+                    <StatCard title="Active Projects" value={stats.activeProjects.length} icon={<Briefcase />} progress={100} color="#8B5CF6" />
+                </div>
+
+                {/* Projects Section */}
+                <div className="space-y-16">
+                    {stats.activeProjects.length > 0 ? stats.activeProjects.map((project: any, i: number) => (
+                        <div key={i}>
+                            <div className="flex items-center justify-between mb-8 border-l-4 border-[#4177BC] pl-6">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900">{project.name || project.projectName}</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">ID: {project._id?.slice(-8).toUpperCase()}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Budget</p>
+                                    <p className="text-xl font-bold text-slate-900">${Number(project.budget).toLocaleString()}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                {project.milestones?.map((m: any, idx: number) => {
+                                    const isPaid = m.status === 'Paid' || m.status === 'paid' || m.paidDate;
+                                    return (
+                                        <motion.div
+                                            key={idx}
+                                            whileHover={{ y: -4 }}
+                                            className="p-6 rounded-2xl border border-slate-100 bg-white shadow-sm"
+                                        >
+                                            <div className="flex justify-between items-center mb-6">
+                                                <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-md ${isPaid ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-500'}`}>
+                                                    {isPaid ? 'Completed' : 'Pending'}
+                                                </span>
+                                                {isPaid && <CheckCircle2 size={14} className="text-emerald-500" />}
+                                            </div>
+
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{m.name}</p>
+                                            <p className="text-2xl font-bold text-slate-900 mb-6">${Number(m.amount).toLocaleString()}</p>
+
+                                            <div className="pt-4 border-t border-slate-50 flex items-center justify-between text-[11px]">
+                                                <div className="flex items-center gap-2 text-slate-500 font-medium">
+                                                    <Calendar size={13} />
+                                                    {isPaid ? (m.paidDate || "Paid") : (m.dueDate || "TBD")}
+                                                </div>
+                                                {!isPaid && <ArrowUpRight size={14} className="text-slate-300" />}
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )) : (
+                        <div className="py-20 bg-slate-50 rounded-2xl text-center border border-dashed border-slate-200">
+                            <AlertCircle className="text-slate-300 mx-auto mb-3" size={32} />
+                            <h3 className="text-sm font-bold text-slate-900">No Projects Found</h3>
+                            <p className="text-xs text-slate-400 mt-1">When you start a project, it will appear here.</p>
+                        </div>
+                    )}
                 </div>
             </main>
-        </div>
-    );
-}
 
-// SUB-COMPONENTS
-function StatBox({ title, value, subtitle, icon, trend, statusBadge, badgeColor, borderColor, showDots }: any) {
-    return (
-        <div className={`bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden ${borderColor ? `border-l-4 ${borderColor}` : ''}`}>
-            <div className="flex justify-between items-start mb-4">
-                <div className="p-2.5 bg-slate-50 rounded-xl">
-                    {React.cloneElement(icon, { size: 18 })}
+            <footer className="max-w-7xl mx-auto px-6 py-10 border-t border-slate-50 flex justify-between items-center">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">© 2026 Secure Portal</p>
+                <div className="flex gap-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <a href="#" className="hover:text-slate-900">Privacy</a>
+                    <a href="#" className="hover:text-slate-900">Support</a>
                 </div>
-                {trend && (
-                    <div className="flex items-center gap-1 text-[10px] font-bold text-green-500 bg-green-50 px-2 py-0.5 rounded-full">
-                        <TrendingUp size={10} /> {trend}
-                    </div>
-                )}
-                {statusBadge && (
-                    <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-md ${badgeColor || 'text-green-500 bg-green-50'}`}>
-                        {statusBadge}
-                    </span>
-                )}
-                {showDots && <MoreHorizontal size={16} className="text-slate-200" />}
-            </div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{title}</p>
-            <h2 className="text-2xl font-black text-slate-800 mb-1">{value}</h2>
-            <p className="text-[10px] text-slate-400">{subtitle}</p>
-            {/* Background design element from image */}
-            <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-slate-50 rounded-full opacity-50" />
-        </div>
-    );
-}
-
-function MilestoneItem({ title, desc, time, amount, status, statusColor, dotColor, isCurrent }: any) {
-    return (
-        <div className="flex gap-4 relative">
-            <div className={`w-4 h-4 rounded-full z-10 mt-1 shrink-0 ${dotColor}`} />
-            <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start">
-                    <h4 className="text-[12px] font-black text-slate-800 truncate">{title}</h4>
-                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${statusColor}`}>{status}</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">{desc}</p>
-                <div className="flex items-center gap-2 mt-2">
-                    {time && <span className="text-[9px] font-bold text-slate-300 flex items-center gap-1"><Clock size={10} /> {time}</span>}
-                    {amount && <span className="text-[9px] font-black text-green-500">• {amount}</span>}
-                </div>
-                {isCurrent && (
-                    <div className="mt-4 space-y-1">
-                         <div className="flex items-center gap-2 text-[9px] font-bold text-orange-500 uppercase">
-                            <ShieldAlert size={12} /> Awaiting Admin Approval
-                         </div>
-                         <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-orange-500 w-[70%]" />
-                         </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
-
-function LoadingSkeleton() {
-    return (
-        <div className="fixed inset-0 bg-white flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-                <RefreshCw size={40} className="text-[#4177BC] animate-spin" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Syncing Assets...</p>
-            </div>
+            </footer>
         </div>
     );
 }
