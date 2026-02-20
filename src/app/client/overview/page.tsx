@@ -143,7 +143,7 @@ export default function ClientOverview() {
                     <div className="animate-scaleIn">
                         <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#4177BC]/5 rounded-full mb-8 border border-[#4177BC]/10">
                             <span className="w-2 h-2 bg-[#4177BC] rounded-full animate-pulse"></span>
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#4177BC] inter-bold">Client Portal v2.0</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#4177BC] inter-bold">Client Portal</span>
                         </div>
                         <h1 className="text-3xl md:text-5xl font-bold text-[#0F172A] tracking-tighter leading-tight judson-bold">
                             Welcome <span className="text-slate-300">{data?.name?.split(' ')[0].toLowerCase() || 'genie'}</span>

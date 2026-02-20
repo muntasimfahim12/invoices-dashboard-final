@@ -5,61 +5,15 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import {
-  Plus,
-  Trash2,
-  ArrowLeft,
-  Building2,
-  Download,
-  Send,
-  Briefcase,
-  Mail,
-  CalendarClock,
-  Banknote,
-  UserPlus,
-  Hash,
-  Save,
-  RefreshCw,
-  Loader2,
-  Globe,
-  FileText,
-  CreditCard,
-  Info,
-  AlertCircle,
-  ChevronDown,
-} from "lucide-react"; // Note: fix the import to "lucide-react" if it was a typo
+  Plus, Trash2, ArrowLeft, Building2, Download, Send, Briefcase, Mail, CalendarClock, Banknote, UserPlus, Hash, Save, RefreshCw, Loader2, Globe, FileText, CreditCard, Info, AlertCircle, ChevronDown,
+} from "lucide-react";
 import {
-  LucideProps,
-  Plus as PlusIcon,
-  Trash2 as TrashIcon,
-  ArrowLeft as ArrowIcon,
-  Building2 as BuildingIcon,
-  Download as DownloadIcon,
-  Send as SendIcon,
-  Briefcase as BriefcaseIcon,
-  Mail as MailIcon,
-  CalendarClock as CalendarIcon,
-  Banknote as BanknoteIcon,
-  UserPlus as UserIcon,
-  Hash as HashIcon,
-  Save as SaveIcon,
-  RefreshCw as RefreshIcon,
-  Loader2 as LoaderIcon,
-  Globe as GlobeIcon,
-  FileText as FileIcon,
-  CreditCard as CreditIcon,
-  Info as InfoIcon,
-  AlertCircle as AlertIcon,
-  ChevronDown as ChevronIcon,
+  LucideProps, Plus as PlusIcon, Trash2 as TrashIcon, ArrowLeft as ArrowIcon, Building2 as BuildingIcon, Download as DownloadIcon, Send as SendIcon, Briefcase as BriefcaseIcon, Mail as MailIcon, CalendarClock as CalendarIcon, Banknote as BanknoteIcon,
+  UserPlus as UserIcon, Hash as HashIcon, Save as SaveIcon, RefreshCw as RefreshIcon, Loader2 as LoaderIcon, Globe as GlobeIcon, FileText as FileIcon, CreditCard as CreditIcon, Info as InfoIcon, AlertCircle as AlertIcon, ChevronDown as ChevronIcon,
 } from "lucide-react";
 import Link from "next/link";
 import {
-  PDFDownloadLink,
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-  Image,
+  PDFDownloadLink, Document, Page, Text, View, StyleSheet, Image,
 } from "@react-pdf/renderer";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -205,19 +159,13 @@ const pdfStyles = StyleSheet.create({
     color: "#94A3B8",
   },
 });
-
-
-
 export default function UltimateDigitalLedger() {
   const searchParams = useSearchParams();
   const urlEmail = searchParams.get("email");
-
-
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
   const router = useRouter();
-
   // --- STATE MANAGEMENT ---
   const [adminEmail, setAdminEmail] = useState(""); // Initialize empty
   const [projectTitle, setProjectTitle] = useState("");
@@ -302,26 +250,7 @@ export default function UltimateDigitalLedger() {
   };
 
   const getInvoiceData = () => ({
-    invoiceId,
-    projectTitle,
-    clientName,
-    clientEmail,
-    clientAddress,
-    freelancerName,
-    freelancerAddress,
-    items,
-    subtotal,
-    taxRate,
-    taxAmount,
-    discount,
-    grandTotal,
-    receivedAmount,
-    remainingDue,
-    adminEmail,
-    status,
-    dueDate,
-    currency,
-    bankDetails,
+    invoiceId, projectTitle, clientName, clientEmail, clientAddress, freelancerName, freelancerAddress, items, subtotal, taxRate, taxAmount, discount, grandTotal, receivedAmount, remainingDue, adminEmail, status, dueDate, currency, bankDetails,
     createdAt: new Date(),
   });
 
@@ -342,7 +271,7 @@ export default function UltimateDigitalLedger() {
     }
   };
 
-const handleSendEmail = async () => {
+  const handleSendEmail = async () => {
     // 1. Validation: Email empty kina check kora
     if (!clientEmail) {
       return alert("❌ Client email is required!");
@@ -354,7 +283,7 @@ const handleSendEmail = async () => {
       // 2. Performance Fix: Dynamic Import for react-pdf
       // Eita frontend slow hoya bondho korbe
       const { pdf } = await import('@react-pdf/renderer');
-      
+
       // 3. Current state theke Invoice PDF generate kora
       const blob = await pdf(<InvoicePDF />).toBlob();
 
@@ -385,11 +314,11 @@ const handleSendEmail = async () => {
     } catch (error: any) {
       // 7. Robust Error Handling (Ager error-ta ekhon solve hobe)
       console.error("Full Email Error Context:", error);
-      
-      const errorMessage = 
-        error.response?.data?.error || 
-        error.response?.data?.message || 
-        error.message || 
+
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
         "Something went wrong while sending email.";
 
       alert("❌ Sending Failed: " + errorMessage);

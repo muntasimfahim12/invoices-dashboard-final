@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { LayoutGrid, List, Search, Layers, Clock, DollarSign, Loader2, ArrowUpRight, Activity } from "lucide-react";
+import { LayoutGrid, List, Search, Layers, DollarSign, Loader2, ArrowUpRight, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import Link from "next/link";
@@ -17,10 +16,13 @@ export default function ClientProjectsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [clientEmail, setClientEmail] = useState<string | null>(null);
 
+    // ১. ইনিশিয়াল ডাটা লোড (ইমেইল এবং ভিউ মোড)
     useEffect(() => {
         if (typeof window !== "undefined") {
             const savedEmail = localStorage.getItem("user_email");
+            const savedView = localStorage.getItem("project_view_mode") as 'grid' | 'list';
             setClientEmail(savedEmail);
+            if (savedView) setViewMode(savedView);
         }
     }, []);
 
@@ -32,7 +34,21 @@ export default function ClientProjectsPage() {
                 const response = await axios.get(`${API_BASE}/projects`, { 
                     params: { email: clientEmail } 
                 });
-                setProjects(Array.isArray(response.data) ? response.data : []);
+                
+                const data = Array.isArray(response.data) ? response.data : [];
+                
+                const processedProjects = data.map(p => {
+                    let calculatedProgress = 0;
+                    if (p.milestones && p.milestones.length > 0) {
+                        const paidCount = p.milestones.filter((m: any) => m.status?.toLowerCase() === 'paid').length;
+                        calculatedProgress = Math.round((paidCount / p.milestones.length) * 100);
+                    } else {
+                        calculatedProgress = p.progress || 0;
+                    }
+                    return { ...p, calculatedProgress };
+                });
+
+                setProjects(processedProjects);
             } catch (error) { 
                 console.error("API Error:", error); 
                 setProjects([]);
@@ -42,6 +58,11 @@ export default function ClientProjectsPage() {
         };
         fetchProjects();
     }, [clientEmail]);
+
+    const handleViewChange = (mode: 'grid' | 'list') => {
+        setViewMode(mode);
+        localStorage.setItem("project_view_mode", mode);
+    };
 
     const filtered = useMemo(() => {
         return projects.filter(p => {
@@ -61,9 +82,9 @@ export default function ClientProjectsPage() {
 
     return (
         <div className="min-h-screen bg-white pb-24 font-sans text-[#0F172A]">
-            <main className="max-w-360 mx-auto px-6 mt-12">
+            <main className="max-w-[1600px] mx-auto px-8 mt-12">
                 
-                {/* 1. Header Section - Matching Overview Style */}
+                {/* Header Section */}
                 <section className="mb-16">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#4177BC]/5 rounded-full mb-8 border border-[#4177BC]/10">
                         <span className="w-2 h-2 bg-[#4177BC] rounded-full animate-pulse"></span>
@@ -81,13 +102,13 @@ export default function ClientProjectsPage() {
                         {/* View Switcher */}
                         <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
                             <button 
-                                onClick={() => setViewMode('grid')} 
+                                onClick={() => handleViewChange('grid')} 
                                 className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white text-[#4177BC] shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                             >
                                 <LayoutGrid size={18}/>
                             </button>
                             <button 
-                                onClick={() => setViewMode('list')} 
+                                onClick={() => handleViewChange('list')} 
                                 className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white text-[#4177BC] shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                             >
                                 <List size={18}/>
@@ -96,7 +117,7 @@ export default function ClientProjectsPage() {
                     </div>
                 </section>
 
-                {/* 2. Quick Stats - Same StatCard Style */}
+                {/* Quick Stats */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
                     <QuickStatCard 
                         title="Active Builds" 
@@ -112,7 +133,7 @@ export default function ClientProjectsPage() {
                     />
                 </div>
 
-                {/* 3. Search Bar - Matching Overview Cleanliness */}
+                {/* Search Bar */}
                 <div className="relative mb-16 group">
                     <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors" size={20} />
                     <input 
@@ -123,7 +144,7 @@ export default function ClientProjectsPage() {
                     />
                 </div>
 
-                {/* 4. Projects Display */}
+                {/* Projects Display */}
                 <AnimatePresence mode="popLayout">
                     {filtered.length > 0 ? (
                         <motion.div 
@@ -148,7 +169,7 @@ export default function ClientProjectsPage() {
     );
 }
 
-// --- Helper Components (UI Perfected) ---
+// --- Helper Components ---
 
 function QuickStatCard({ title, value, icon, color }: any) {
     return (
@@ -168,6 +189,7 @@ function QuickStatCard({ title, value, icon, color }: any) {
 
 function ProjectItemCard({ project, mode }: any) {
     const title = project.title || project.name || "Unnamed Workspace";
+    const progressVal = project.calculatedProgress || 0;
     
     if (mode === 'list') return (
         <motion.div 
@@ -185,13 +207,13 @@ function ProjectItemCard({ project, mode }: any) {
             </div>
             <div className="flex items-center gap-12">
                 <div className="hidden md:block text-right">
-                    <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest inter-bold mb-1">Valuation</p>
-                    <p className="font-black text-[#0F172A] inter-bold">${Number(project.budget).toLocaleString()}</p>
+                    <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest inter-bold mb-1">Status</p>
+                    <p className="font-black text-[#4177BC] inter-bold">{progressVal}% Complete</p>
                 </div>
                 <div className="px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100 inter-bold">
                     {project.status || "Active"}
                 </div>
-                <ArrowUpRight size={18} className="text-slate-200 group-hover:text-[#4177BC] group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                <ArrowUpRight size={18} className="text-slate-200 group-hover:text-[#4177BC] transition-all" />
             </div>
         </motion.div>
     );
@@ -218,12 +240,13 @@ function ProjectItemCard({ project, mode }: any) {
                 <div>
                     <div className="flex justify-between items-end mb-3">
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest inter-bold">Development Progress</p>
-                        <p className="text-sm font-black text-[#4177BC] inter-bold">{project.progress || 0}%</p>
+                        <p className="text-sm font-black text-[#4177BC] inter-bold">{progressVal}%</p>
                     </div>
                     <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
                         <motion.div 
                             initial={{ width: 0 }}
-                            animate={{ width: `${project.progress || 0}%` }}
+                            animate={{ width: `${progressVal}%` }}
+                            transition={{ duration: 1 }}
                             className="h-full bg-[#4177BC] rounded-full" 
                         />
                     </div>
