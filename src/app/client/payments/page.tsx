@@ -21,7 +21,9 @@ interface Milestone {
     amount: number | string;
     isCompleted?: boolean | string;
     status?: string;
-    activeDate?: string; // Format: YYYY-MM-DD
+    dueDate?: string; // ব্যাকএন্ড থেকে এই নামেই ডেটা আসছে
+    isPayable?: boolean; // ব্যাকএন্ডের ক্যালকুলেটেড লজিক
+    isLocked?: boolean;  // ব্যাকএন্ডের ক্যালকুলেটেড লজিক
 }
 
 interface Project {
@@ -44,19 +46,14 @@ export default function AdvancedClientDashboard() {
 
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+    // বাটন অ্যাক্টিভ কিনা তা চেক করার জন্য হেল্পার ফাংশন
     const isDateActive = (dateString?: string) => {
         if (!dateString) return true;
-
-
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-
-
         const mDate = new Date(dateString);
         const milestoneTime = new Date(mDate.getFullYear(), mDate.getMonth(), mDate.getDate()).getTime();
-
         if (isNaN(milestoneTime)) return true;
-
         return today >= milestoneTime;
     };
 
@@ -119,10 +116,9 @@ export default function AdvancedClientDashboard() {
         return clientData?.projects?.reduce((acc, curr) => acc + Number(curr.budget || 0), 0) || 0;
     }, [clientData]);
 
-    const handlePayNow = (amount: number, activeDate?: string) => {
-        // নিরাপত্তার জন্য ফাংশনের ভেতরেও চেক করা হলো
-        if (!isDateActive(activeDate)) {
-            alert("This payment is scheduled for " + activeDate);
+    const handlePayNow = (amount: number, dueDate?: string) => {
+        if (!isDateActive(dueDate)) {
+            alert("This payment is scheduled for " + dueDate);
             return;
         }
         if (!paypalUrl) return alert("Payment gateway is not configured yet. Please contact admin.");
@@ -266,7 +262,7 @@ export default function AdvancedClientDashboard() {
                             )}
                         </div>
 
-                        {/* --- Milestones Section (Logical Fix applied here) --- */}
+                        {/* --- Milestones Section --- */}
                         <div className="bg-white rounded-[2.5rem] p-10 shadow-xl shadow-slate-200/50 border border-slate-100">
                             <div className="flex items-center justify-between mb-10">
                                 <div className="flex items-center gap-3">
@@ -280,10 +276,12 @@ export default function AdvancedClientDashboard() {
 
                             <div className="space-y-4">
                                 {selectedProject?.milestones?.map((m, i) => {
-                                    console.log("Milestone Date Check:", m.activeDate); 
-
+                                    // BACKEND FIX: m.dueDate ব্যবহার করা হয়েছে
                                     const isCompleted = m.isCompleted === true || m.isCompleted === "true" || m.status?.toLowerCase() === "paid" || m.status?.toLowerCase() === "completed";
-                                    const canPay = isDateActive(m.activeDate);
+                                    
+                                    // BACKEND FIX: সরাসরি ব্যাকএন্ড থেকে আসা isPayable লজিক ব্যবহার করা হয়েছে
+                                    const canPay = m.isPayable; 
+                                    const isLocked = m.isLocked;
 
                                     return (
                                         <motion.div
@@ -305,12 +303,14 @@ export default function AdvancedClientDashboard() {
                                                     </h4>
                                                     <div className="flex flex-wrap items-center gap-3 mt-1">
                                                         <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-md ${isCompleted ? 'bg-green-100 text-green-600' : (canPay ? 'bg-blue-100 text-[#4177BC]' : 'bg-amber-100 text-amber-600')}`}>
-                                                            {isCompleted ? 'SUCCESSFUL' : (canPay ? 'READY TO PAY' : 'LOCKED')}
+                                                            {isCompleted ? 'SUCCESSFUL' : (isLocked ? 'LOCKED' : 'READY TO PAY')}
                                                         </span>
                                                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Valued at ${Number(m.amount).toLocaleString()}</span>
-                                                        {!isCompleted && m.activeDate && (
+                                                        
+                                                        {/* BACKEND FIX: m.dueDate এখানে ডিসপ্লে করা হচ্ছে */}
+                                                        {!isCompleted && m.dueDate && (
                                                             <span className="text-[9px] text-[#EB9C2C] font-bold bg-[#EB9C2C]/10 px-2 py-0.5 rounded flex items-center gap-1">
-                                                                <Calendar size={10} /> Schedule: {m.activeDate}
+                                                                <Calendar size={10} /> Schedule: {m.dueDate}
                                                             </span>
                                                         )}
                                                     </div>
@@ -320,9 +320,8 @@ export default function AdvancedClientDashboard() {
                                             <div className="flex items-center gap-4 w-full md:w-auto mt-6 md:mt-0 pt-6 md:pt-0 border-t md:border-t-0 border-slate-100 justify-between md:justify-end">
                                                 {!isCompleted ? (
                                                     <button
-                                                        // ১ তারিখের আগে canPay false থাকবে, তাই বাটন ডিজেবল হবে
                                                         disabled={!canPay}
-                                                        onClick={() => handlePayNow(Number(m.amount), m.activeDate)}
+                                                        onClick={() => handlePayNow(Number(m.amount), m.dueDate)}
                                                         className={`px-8 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm border-2 ${canPay
                                                             ? 'bg-white border-[#4177BC] text-[#4177BC] hover:bg-[#4177BC] hover:text-white cursor-pointer'
                                                             : 'bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed grayscale'
