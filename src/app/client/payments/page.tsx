@@ -135,7 +135,7 @@ export default function AdvancedClientDashboard() {
     if (error || !clientData) return <ErrorState />;
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-[#4177BC]/20">
+        <div className="min-h-screen bg-[#FFFFFF] text-slate-900 font-sans selection:bg-[#4177BC]/20">
             <main className="max-w-7xl mx-auto px-6 py-10">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
