@@ -21,7 +21,6 @@ const menu = [
   { name: "My Projects", href: "/client/projects", icon: Briefcase },
   { name: "Invoices", href: "/client/invoices", icon: Receipt },
   { name: "Payments", href: "/client/payments", icon: CreditCard },
-  { name: "Documents", href: "/client/documents", icon: FileText },
 ];
 
 // Mobile menu often shows fewer items for space
