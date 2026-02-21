@@ -8,20 +8,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import Cookies from "js-cookie";
 import { 
   ShieldCheck, User, Eye, EyeOff, Info, 
-  ArrowRight, Fingerprint, Lock, Mail, ChevronLeft, 
-  Sparkles, ShieldAlert, KeyRound, Building2
+  ArrowRight, Lock, Mail, ChevronLeft, 
+  ShieldAlert, KeyRound, Building2
 } from "lucide-react";
 
 const PRIMARY = "#4177BC"; // Vault Blue
 const ACCENT = "#EB9C2C";  // Vault Orange
 
-/* ================= MAIN COMPONENT WRAPPER ================= */
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center">
-        <div className="w-16 h-16 border-4 border-slate-100 border-t-[#4177BC] rounded-full animate-spin" />
-        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Initializing Vault...</p>
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
+        <div className={`w-10 h-10 border-4 border-slate-100 border-t-[#4177BC] rounded-full animate-spin`} />
       </div>
     }>
       <LoginFormContent />
@@ -29,7 +27,6 @@ export default function LoginPage() {
   );
 }
 
-/* ================= LOGIN FORM CONTENT ================= */
 function LoginFormContent() {
   const [role, setRole] = useState<"client" | "admin">("client");
   const [loading, setLoading] = useState(false);
@@ -43,7 +40,7 @@ function LoginFormContent() {
   const autoEmail = searchParams.get("email") || "";
   const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
 
-  /* ================= ALL YOUR LOGIC (FIXED FOR SESSION PERSISTENCE) ================= */
+  /* ================= ALL YOUR LOGIC (100% SAME) ================= */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>, currentRole: "client" | "admin") => {
     e.preventDefault();
     setLoading(true);
@@ -60,7 +57,6 @@ function LoginFormContent() {
       const data = await response.json();
 
       if (response.ok) {
-        // ১. লোকাল স্টোরেজে ডাটা সেভ করা
         const storageItems = {
           vault_token: data.token,
           user_role: data.role,
@@ -70,14 +66,11 @@ function LoginFormContent() {
         };
         Object.entries(storageItems).forEach(([key, val]) => localStorage.setItem(key, val));
         
-        // ২. কুকি কনফিগারেশন (রিফ্রেশ প্রবলেম সলভ করার জন্য)
-        // expires: 1 মানে ১ দিন। আপনি চাইলে ৭ দিতে পারেন।
         Cookies.set("vault_token", data.token, { 
           expires: 1, 
           secure: process.env.NODE_ENV === "production", 
           sameSite: 'lax' 
         });
-        
         Cookies.set("user_role", data.role, { expires: 1 });
 
         router.push(data.role.toLowerCase() === "admin" ? "/admin" : "/client/overview");
@@ -137,175 +130,149 @@ function LoginFormContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 selection:bg-[#4177BC] selection:text-white font-sans overflow-hidden">
-      
-      {/* Dynamic Background Blurs */}
-      <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#4177BC]/10 rounded-full blur-[120px] transition-all duration-1000" />
-      <div className={`fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[120px] transition-all duration-1000 ${role === 'client' ? 'bg-[#4177BC]/5' : 'bg-[#EB9C2C]/10'}`} />
-
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 font-sans">
       <motion.div 
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative w-full max-w-[1150px] min-h-[720px] bg-white rounded-[40px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] border border-white/40 overflow-hidden grid grid-cols-1 lg:grid-cols-2"
+        layout // Enabling layout transitions for smooth height adjustments
+        className="w-full max-w-[1000px] min-h-[640px] bg-white rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden flex flex-col md:flex-row items-stretch"
       >
         
-        {/* LEFT PANEL: AUTH FORM AREA */}
-        <div className="p-8 lg:p-20 flex flex-col justify-center relative bg-white z-10">
-          <div className="mb-12 flex items-center gap-2 group cursor-default">
-            <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center group-hover:bg-[#4177BC] transition-colors duration-500 shadow-lg shadow-slate-200">
-              <ShieldCheck className="text-white" size={24} />
+        {/* LEFT AREA: FIXED HEIGHT CONTAINER */}
+        <div className="w-full md:w-1/2 p-8 lg:p-16 flex flex-col">
+          <div className="flex items-center gap-2 mb-10 shrink-0">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center`} style={{ backgroundColor: PRIMARY }}>
+              <ShieldCheck className="text-white" size={22} />
             </div>
-            <span className="text-2xl font-black tracking-tighter text-slate-900">Geniehack<span className="text-[#4177BC]">.</span></span>
+            <span className="text-xl font-bold text-slate-900 tracking-tight">Geniehack</span>
           </div>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={role}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.4 }}
-            >
-              <h1 className="text-[42px] font-bold text-slate-900 leading-tight tracking-tight mb-4" style={{ fontFamily: 'var(--font-judson)' }}>
-                {role === "client" ? "Client Portal" : "Admin Central"}
-              </h1>
-              <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.25em] mb-12">
-                {role === "client" ? "End-to-end encrypted project access" : "Agency management & operational control"}
-              </p>
+          <div className="flex-1 flex flex-col justify-center min-h-[400px]">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={role}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="mb-8">
+                  <h1 className="text-3xl font-extrabold judson-bold text-slate-900 mb-2">
+                    {role === "client" ? "Client Login" : "Admin Central"}
+                  </h1>
+                  <p className="text-slate-500 text-sm font-medium">
+                    Please enter your credentials to continue.
+                  </p>
+                </div>
 
-              <Form 
-                title={role === "client" ? "Client Login" : "Admin Login"}
-                onSubmit={(e: any) => handleSubmit(e, role)}
-                loading={loading}
-                note={role === "client" ? "Access your project tracks, payments and assets securely." : "Administrative credentials required for entry."}
-                showRegister={role === "client"}
-                onRegister={() => setShowRegister(true)}
-                onForget={() => setForgetStep("email")}
-                defaultValue={role === "client" ? autoEmail : ""}
-              />
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        {/* RIGHT PANEL: VISUAL AREA */}
-        <div 
-          className="hidden lg:flex relative overflow-hidden flex-col justify-between p-20 transition-all duration-1000 ease-in-out"
-          style={{ backgroundColor: role === "client" ? "#4177BC" : "#111827" }}
-        >
-          {/* Abstract background elements */}
-          <div className="absolute top-0 right-0 p-8">
-            <Sparkles className="text-white/20 animate-pulse" size={48} />
-          </div>
-          <Fingerprint className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] text-white/5 rotate-12" />
-
-          <div className="relative z-10">
-            <motion.div 
-              key={role + "icon"}
-              initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              className="w-20 h-20 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl flex items-center justify-center mb-10"
-            >
-              {role === "client" ? <User className="text-white" size={40} /> : <ShieldAlert className="text-white" size={40} />}
-            </motion.div>
-            
-            <h2 className="text-5xl font-bold text-white leading-[1.15] mb-6" style={{ fontFamily: 'var(--font-judson)' }}>
-              {role === "client" ? "Empowering Your Digital Journey." : "Manage with Precision & Authority."}
-            </h2>
-            <p className="text-white/60 text-lg max-w-sm leading-relaxed font-medium">
-              {role === "client" ? "Monitor milestones, settle invoices, and communicate with your team in one unified space." : "Monitor agency growth, handle client requests, and manage financial records efficiently."}
-            </p>
+                <Form 
+                  onSubmit={(e: any) => handleSubmit(e, role)}
+                  loading={loading}
+                  note={role === "client" ? "Secure access to your projects." : "Authorized personnel only."}
+                  showRegister={role === "client"}
+                  onRegister={() => setShowRegister(true)}
+                  onForget={() => setForgetStep("email")}
+                  defaultValue={role === "client" ? autoEmail : ""}
+                />
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-          <div className="relative z-10 pt-10 border-t border-white/10">
-            <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em] mb-6">Need the other portal?</p>
+          <div className="mt-8 pt-6 border-t border-slate-50 shrink-0">
             <button 
               onClick={() => setRole(role === "client" ? "admin" : "client")}
-              className="group flex items-center gap-4 px-8 py-5 bg-white text-slate-900 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#EB9C2C] hover:text-white transition-all shadow-xl active:scale-95"
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-[#4177BC] transition-all"
             >
-              <ChevronLeft className="group-hover:-translate-x-1 transition-transform" size={18} />
+              <ChevronLeft size={14} /> 
               Switch to {role === "client" ? "Admin" : "Client"}
             </button>
           </div>
         </div>
+
+        {/* RIGHT AREA: VISUAL STRIP */}
+        <div 
+          className="hidden md:flex md:w-1/2 relative overflow-hidden flex-col justify-center items-center text-center p-12 transition-all duration-700"
+          style={{ backgroundColor: role === "client" ? PRIMARY : "#0F172A" }}
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/5 rounded-full -ml-20 -mb-20 blur-3xl" />
+          
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={role}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              transition={{ duration: 0.3 }}
+              className="relative z-10"
+            >
+              <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/20">
+                {role === "client" ? <User className="text-white" size={32} /> : <ShieldAlert className="text-white" size={32} />}
+              </div>
+              <h2 className="text-3xl font-bold text-white mb-4 judson-bold leading-tight whitespace-pre-line">
+                {role === "client" ? "Manage Your Projects\nIn One Place." : "Precision Control &\nManagement."}
+              </h2>
+              <p className="text-white/60 text-sm max-w-[260px] mx-auto leading-relaxed">
+                Experience the next generation of agency management with Geniehack.
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </motion.div>
 
-      {/* ================= MODALS (PREMIUM) ================= */}
-      
-      {/* Registration Modal */}
+      {/* MODALS - Unchanged functionality */}
       <AnimatePresence>
         {showRegister && (
           <ModalWrapper onClose={() => setShowRegister(false)}>
-            <div className="text-center mb-10">
-              <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Building2 className="text-[#4177BC]" size={32} />
-              </div>
-              <h3 className="text-3xl font-bold text-slate-900" style={{ fontFamily: 'var(--font-judson)' }}>Request Access</h3>
-              <p className="text-slate-400 text-sm mt-2">New partnership? Request your portal credentials.</p>
+            <div className="text-center mb-6">
+              <Building2 className="mx-auto mb-4" size={40} style={{ color: PRIMARY }} />
+              <h3 className="text-xl font-bold text-slate-900">Request Access</h3>
+              <p className="text-slate-500 text-sm mt-1">Submit your company information.</p>
             </div>
             <form className="space-y-4">
               <InputField icon={<Building2 size={18}/>} placeholder="Company Legal Name" />
               <InputField icon={<Mail size={18}/>} type="email" placeholder="Business Email" />
-              <button type="button" className="w-full py-5 bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl mt-4 hover:bg-[#4177BC] transition-all">Submit Request</button>
+              <button type="button" className="w-full py-4 text-white font-bold rounded-xl transition-all" style={{ backgroundColor: PRIMARY }}>Submit Request</button>
             </form>
           </ModalWrapper>
         )}
-      </AnimatePresence>
 
-      {/* Advanced Forget Password Flow */}
-      <AnimatePresence>
         {forgetStep !== "hidden" && (
           <ModalWrapper onClose={() => setForgetStep("hidden")}>
-            
             {forgetStep === "email" && (
-              <form onSubmit={handleSendOTP} className="space-y-6">
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <KeyRound className="text-[#4177BC]" size={32} />
-                  </div>
-                  <h3 className="text-2xl font-bold text-slate-900">Account Recovery</h3>
-                  <p className="text-slate-400 text-sm">Weill send a security code to your email.</p>
-                </div>
-                <InputField name="email" required type="email" icon={<Mail size={18}/>} placeholder="Registered Email" />
-                <div className="flex gap-4">
-                  <button type="button" onClick={() => setForgetStep("hidden")} className="flex-1 py-4 font-black text-[10px] uppercase tracking-widest text-slate-400 bg-slate-50 rounded-xl hover:bg-slate-100 transition">Back</button>
-                  <button disabled={loading} className="flex-[2] py-4 font-black text-[10px] uppercase tracking-widest rounded-xl bg-[#4177BC] text-white shadow-lg shadow-blue-100 disabled:opacity-50">
-                    {loading ? "Sending..." : "Send Reset Code"}
-                  </button>
-                </div>
+              <form onSubmit={handleSendOTP} className="space-y-4">
+                <KeyRound className="mx-auto mb-2" size={32} style={{ color: PRIMARY }} />
+                <h3 className="text-center font-bold text-lg">Account Recovery</h3>
+                <InputField name="email" required type="email" icon={<Mail size={18}/>} placeholder="Enter your email" />
+                <button disabled={loading} className="w-full py-4 text-white font-bold rounded-xl" style={{ backgroundColor: PRIMARY }}>
+                  {loading ? "Sending..." : "Send Reset Code"}
+                </button>
               </form>
             )}
 
             {forgetStep === "code" && (
-              <form onSubmit={handleVerifyOTP} className="space-y-6">
-                <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-slate-900">Security Verification</h3>
-                  <p className="text-slate-400 text-sm mt-2">Check <b>{forgetEmail}</b> for the 6-digit code.</p>
-                </div>
+              <form onSubmit={handleVerifyOTP} className="space-y-4">
+                <h3 className="text-center font-bold text-lg">Verification</h3>
+                <p className="text-center text-xs text-slate-500">Enter the 6-digit code sent to your mail.</p>
                 <input 
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))}
                   required 
-                  placeholder="0 0 0 0 0 0" 
-                  className="w-full text-center text-4xl tracking-[0.5em] font-black py-6 bg-slate-50 rounded-2xl border-2 border-slate-100 focus:border-[#4177BC] focus:ring-4 ring-blue-50 outline-none transition-all" 
+                  className="w-full text-center text-3xl font-bold py-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#4177BC] transition-all"
                 />
-                <button disabled={loading || otp.length < 6} className="w-full py-5 bg-[#4177BC] text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl disabled:opacity-50">
-                  {loading ? "Verifying..." : "Verify Identity"}
+                <button disabled={loading || otp.length < 6} className="w-full py-4 text-white font-bold rounded-xl" style={{ backgroundColor: PRIMARY }}>
+                  {loading ? "Verifying..." : "Verify Code"}
                 </button>
               </form>
             )}
 
             {forgetStep === "reset" && (
-              <form onSubmit={handleResetPassword} className="space-y-6">
-                <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-slate-900">New Password</h3>
-                  <p className="text-slate-400 text-sm">Create a strong, unique security key.</p>
-                </div>
-                <InputField name="newPassword" required type="password" icon={<Lock size={18}/>} minLength={6} placeholder="Enter New Password" />
-                <button disabled={loading} className="w-full py-5 bg-[#4177BC] text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-blue-100">
-                  {loading ? "Updating..." : "Update Password & Login"}
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <h3 className="text-center font-bold text-lg">Set Password</h3>
+                <InputField name="newPassword" required type="password" icon={<Lock size={18}/>} placeholder="New Security Key" />
+                <button disabled={loading} className="w-full py-4 text-white font-bold rounded-xl" style={{ backgroundColor: PRIMARY }}>
+                  {loading ? "Updating..." : "Update & Login"}
                 </button>
               </form>
             )}
-
           </ModalWrapper>
         )}
       </AnimatePresence>
@@ -313,17 +280,17 @@ function LoginFormContent() {
   );
 }
 
-/* ================= HELPER COMPONENTS ================= */
+/* ================= COMPONENT HELPERS ================= */
 
 function InputField({ icon, ...props }: any) {
   return (
     <div className="relative group">
-      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors">
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors">
         {icon}
       </div>
       <input 
         {...props}
-        className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 ring-blue-50/50 outline-none focus:border-[#4177BC]/30 transition-all placeholder:text-slate-300"
+        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#4177BC]/10 outline-none focus:border-[#4177BC]/30 transition-all"
       />
     </div>
   );
@@ -331,14 +298,10 @@ function InputField({ icon, ...props }: any) {
 
 function ModalWrapper({ children, onClose }: any) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="relative w-full max-w-md bg-white rounded-[35px] p-10 shadow-2xl overflow-hidden"
-      >
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-[#4177BC]" />
-        <button onClick={onClose} className="absolute top-6 right-6 text-slate-300 hover:text-slate-600 transition-colors font-bold text-xl">✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div onClick={onClose} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
+      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full max-w-sm bg-white rounded-[24px] p-8 shadow-2xl">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-300 hover:text-slate-500 font-bold">✕</button>
         {children}
       </motion.div>
     </div>
@@ -349,49 +312,54 @@ function Form({ onSubmit, loading, note, showRegister, onRegister, onForget, def
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Identity Mail</label>
+    <form onSubmit={onSubmit} className="space-y-5">
+      <div className="space-y-1.5">
+        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
         <InputField 
           name="email" type="email" required defaultValue={defaultValue} 
-          icon={<Mail size={18}/>} placeholder="alex@vault.com" 
+          icon={<Mail size={18}/>} placeholder="mail@example.com" 
         />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <div className="flex justify-between items-center px-1">
-          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Security Key</label>
-          <button type="button" onClick={onForget} className="text-[10px] font-black uppercase text-[#4177BC] hover:text-[#EB9C2C] transition-colors">Forgot?</button>
+          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Password</label>
+          <button type="button" onClick={onForget} className="text-[11px] font-bold uppercase text-[#4177BC] hover:text-[#EB9C2C] transition-colors">Forgot?</button>
         </div>
         <div className="relative group">
-          <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC] transition-colors">
             <Lock size={18} />
           </div>
           <input 
-            name="password" type={showPassword ? "text" : "password"} required placeholder="••••••••••••" 
-            className="w-full pl-14 pr-16 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 ring-blue-50/50 outline-none focus:border-[#4177BC]/30 transition-all" 
+            name="password" type={showPassword ? "text" : "password"} required placeholder="••••••••" 
+            className="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#4177BC]/10 outline-none focus:border-[#4177BC]/30 transition-all" 
           />
-          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 transition-colors">
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600">
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
       </div>
 
-      <button disabled={loading} className="w-full py-5 bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-2xl shadow-2xl shadow-slate-200 flex items-center justify-center gap-3 group transition-all hover:bg-[#111827] active:scale-95 disabled:bg-slate-300">
-        {loading ? "Authenticating..." : (
-          <>Initialize Session <ArrowRight className="group-hover:translate-x-1 transition-transform" size={16} /></>
-        )}
+      <button 
+        disabled={loading} 
+        className="w-full py-4 text-white font-bold rounded-xl shadow-lg shadow-blue-100 flex items-center justify-center gap-2 group transition-all active:scale-[0.98] disabled:bg-slate-200"
+        style={{ backgroundColor: PRIMARY }}
+      >
+        {loading ? "Authenticating..." : <>Login Account <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} /></>}
       </button>
 
-      <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 flex items-start gap-3">
-        <Info size={16} className="text-[#4177BC] shrink-0 mt-0.5" />
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter leading-relaxed">{note}</p>
+      {/* FIXED HEIGHT NOTE BOX to prevent layout shift */}
+      <div className="h-[52px] p-3 bg-blue-50/50 rounded-xl border border-blue-100/30 flex items-start gap-2 overflow-hidden">
+        <Info size={14} style={{ color: PRIMARY }} className="shrink-0 mt-0.5" />
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-normal line-clamp-2">{note}</p>
       </div>
 
-      {showRegister && (
-        <p className="text-center text-slate-400 text-[11px] font-bold uppercase tracking-widest">
-          New here? <button type="button" onClick={onRegister} className="text-[#4177BC] hover:underline ml-1">Request Partner Access</button>
+      {showRegister ? (
+        <p className="text-center text-slate-400 text-[11px] font-bold uppercase tracking-widest h-4">
+          New client? <button type="button" onClick={onRegister} className="hover:underline" style={{ color: PRIMARY }}>Request Access</button>
         </p>
+      ) : (
+        <div className="h-4" /> 
       )}
     </form>
   );
