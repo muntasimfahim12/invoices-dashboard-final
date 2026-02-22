@@ -6,25 +6,15 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard,
-  Users,
-  Briefcase,
-  Receipt,
-  CreditCard,
-  BarChart,
-  Settings,
-  Sparkles,
-  ChevronDown,
-  PlusCircle,
-  FolderOpen
+  LayoutDashboard, Users, Briefcase, Receipt, CreditCard, BarChart, Settings, Sparkles, ChevronDown, PlusCircle, FolderOpen
 } from "lucide-react";
 
 const menu = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Clients", href: "/admin/all-clients", icon: Users },
-  { 
-    name: "Projects", 
-    href: "/admin/projects", 
+  {
+    name: "Projects",
+    href: "/admin/projects",
     icon: Briefcase,
     isDropdown: true,
     subItems: [
@@ -51,13 +41,13 @@ const LogoBrand = () => (
         }}
         className="relative z-10 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center"
       >
-        <Image 
-          src="/logo.PNG" 
-          alt="GenieHack Logo" 
-          width={48} 
-          height={48} 
-          className="object-contain" 
-          priority 
+        <Image
+          src="/logo.PNG"
+          alt="GenieHack Logo"
+          width={48}
+          height={48}
+          className="object-contain"
+          priority
         />
         <motion.div
           animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.5] }}
@@ -103,8 +93,8 @@ export default function AdminSidebar() {
               Main Menu
             </p>
             {menu.map((item) => {
-              const active = item.isDropdown 
-                ? pathname.includes(item.href) 
+              const active = item.isDropdown
+                ? pathname.includes(item.href)
                 : pathname === item.href;
 
               if (item.isDropdown) {
@@ -116,8 +106,8 @@ export default function AdminSidebar() {
                         ${active ? "text-[#4177BC]" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"}`}
                     >
                       <div className="flex items-center gap-3.5">
-                         <item.icon size={20} className={active ? "text-[#4177BC]" : "text-slate-400 group-hover:text-slate-600"} />
-                         <span>{item.name}</span>
+                        <item.icon size={20} className={active ? "text-[#4177BC]" : "text-slate-400 group-hover:text-slate-600"} />
+                        <span>{item.name}</span>
                       </div>
                       <ChevronDown size={16} className={`transition-transform duration-300 ${projectOpen ? "rotate-180" : ""}`} />
                       {active && !projectOpen && (

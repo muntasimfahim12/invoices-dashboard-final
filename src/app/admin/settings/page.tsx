@@ -124,7 +124,7 @@ export default function AdminSettingsPage() {
                 { id: "invoice", label: "Invoicing", icon: <Receipt size={18}/> },
                 { id: "payment", label: "Payments", icon: <CreditCard size={18}/> },
                 { id: "advanced", label: "Advanced", icon: <Server size={18}/> },
-                { id: "team", label: "Security", icon: <Users size={18}/> },
+                { id: "team", label: "Add-Admin", icon: <Users size={18}/> },
               ].map((tab) => (
                 <button 
                   key={tab.id}

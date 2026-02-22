@@ -49,7 +49,7 @@ export default function InvoiceDetails({ params }: PageProps) {
     if (!invoice) return <div className="p-20 text-center font-bold">Invoice not found.</div>;
 
     return (
-        <div className="min-h-screen bg-slate-50 py-10 px-4 print:bg-white print:p-0">
+        <div className="min-h-screen  py-10 px-4 print:bg-white print:p-0">
             <div className="max-w-[850px] mx-auto">
                 
                 {/* Actions Bar */}

@@ -100,70 +100,85 @@ export default function ProfessionalPaymentsManager() {
         setPaymentMethod("Bank Transfer");
     };
 
-    const handleUpdatePayment = async () => {
-        if (!selectedClient || !selectedProject || !selectedInvoice || !newPaymentAmount) {
-            toast.error("Please ensure a project and milestone are selected.");
-            return;
-        }
+   const handleUpdatePayment = async () => {
+    if (!selectedClient || !selectedProject || !selectedInvoice || !newPaymentAmount) {
+        toast.error("Please ensure a project and milestone are selected.");
+        return;
+    }
 
-        setIsUpdating(true);
-        const loadingToast = toast.loading("Processing payment...");
+    setIsUpdating(true);
+    const loadingToast = toast.loading("Processing payment & syncing system...");
 
-        try {
-            const payload = {
-                projectId: selectedProject._id,
-                invoiceId: selectedInvoice._id,
-                amount: Number(newPaymentAmount),
-                method: paymentMethod,
-                clientEmail: selectedClient.email, 
-                clientName: selectedClient.name,
-                projectName: selectedProject.name,
-                milestoneName: selectedInvoice.name,
-                date: new Date().toISOString()
-            };
+    try {
+        const paymentAmount = Number(newPaymentAmount);
+        const milestoneTotal = Number(selectedInvoice.amount);
 
-            const res = await axios.put(`${API_BASE}/clinets/${selectedClient._id}/payment`, payload);
+        const payload = {
+            projectId: selectedProject._id,
+            invoiceId: selectedInvoice._id, 
+            amount: paymentAmount,
+            method: paymentMethod || "Bank Transfer",
+            clientEmail: selectedClient.email,
+            clientName: selectedClient.name,
+            projectName: selectedProject.name,
+            milestoneName: selectedInvoice.name,
+            date: new Date().toISOString(),
+            
+            invoiceData: {
+                invoiceId: `INV-${Date.now().toString().slice(-6)}`,
+                grandTotal: milestoneTotal,
+                receivedAmount: paymentAmount,
+                remainingDue: Math.max(0, milestoneTotal - paymentAmount),
+                currency: "$", 
+                status: paymentAmount >= milestoneTotal ? "Paid" : "Partial"
+            }
+        };
 
-            if (res.status === 200) {
-                toast.success(`Success! Email sent to ${selectedClient.name}`, { id: loadingToast });
+    
+        const res = await axios.put(`${API_BASE}/clinets/${selectedClient._id}/payment`, payload);
 
-                // ১. সরাসরি ব্যাকএন্ড থেকে এই নির্দিষ্ট ক্লায়েন্টের ফ্রেশ ডেটা আনুন
-                const freshRes = await axios.get(`${API_BASE}/clinets`);
-                const allUpdatedClients = Array.isArray(freshRes.data) ? freshRes.data : [];
-                setClients(allUpdatedClients);
+        if (res.status === 200) {
+            toast.success(`Success! Payment updated and Invoice generated.`, { id: loadingToast });
 
-                // ২. কারেন্ট অবজেক্টগুলো রি-ম্যাপ করুন যাতে UI অটো-আপডেট হয়
-                const updatedClient = allUpdatedClients.find((c: any) => c._id === selectedClient._id);
-                if (updatedClient) {
-                    const updatedProject = updatedClient.projects?.find((p: any) => p._id === selectedProject._id);
+            // ৪. ডাটা রি-ফেচ করা (UI আপডেট করার জন্য)
+            const freshRes = await axios.get(`${API_BASE}/clinets`);
+            const allUpdatedClients = Array.isArray(freshRes.data) ? freshRes.data : [];
+            setClients(allUpdatedClients);
+
+            // ৫. কারেন্ট স্টেট আপডেট করা (যাতে মোডাল পরবর্তী মাইলস্টোন দেখায়)
+            const updatedClient = allUpdatedClients.find((c: any) => c._id === selectedClient._id);
+            
+            if (updatedClient) {
+                const updatedProject = updatedClient.projects?.find((p: any) => p._id === selectedProject._id);
+                
+                if (updatedProject) {
+                    // getFirstUnpaidMilestone আপনার ডিফাইন করা হেল্পার ফাংশন হতে হবে
+                    const nextUnpaid = getFirstUnpaidMilestone(updatedProject);
                     
-                    if (updatedProject) {
-                        const nextUnpaid = getFirstUnpaidMilestone(updatedProject);
-                        
-                        if (nextUnpaid) {
-                            // আরও মাইলস্টোন থাকলে সেগুলো সেট করো
-                            setSelectedClient(updatedClient);
-                            setSelectedProject(updatedProject);
-                            setSelectedInvoice(nextUnpaid);
-                            setNewPaymentAmount(nextUnpaid.amount?.toString() || "");
-                        } else {
-                            // কোনো আনপেইড মাইলস্টোন না থাকলে মোডাল বন্ধ করো
-                            toast.success("All milestones cleared for this project!");
-                            closePaymentModal();
-                        }
+                    if (nextUnpaid) {
+                        setSelectedClient(updatedClient);
+                        setSelectedProject(updatedProject);
+                        setSelectedInvoice(nextUnpaid);
+                        setNewPaymentAmount(nextUnpaid.amount?.toString() || "");
                     } else {
+                        toast.success("All milestones cleared for this project!");
                         closePaymentModal();
                     }
                 } else {
                     closePaymentModal();
                 }
+            } else {
+                closePaymentModal();
             }
-        } catch (error: any) {
-            toast.error(error.response?.data?.error || "Payment failed.", { id: loadingToast });
-        } finally {
-            setIsUpdating(false);
         }
-    };
+    } catch (error: any) {
+        console.error("Payment Sync Error:", error.response?.data);
+        const errorMsg = error.response?.data?.error || error.response?.data?.message || "Payment failed.";
+        toast.error(errorMsg, { id: loadingToast });
+    } finally {
+        setIsUpdating(false);
+    }
+};
 
     // Stats calculation based on totalPaid field from backend
     const stats = useMemo(() => {
