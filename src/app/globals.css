@@ -305,3 +305,40 @@ html {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Buttons */
+.btn-primary {
+  @apply flex items-center gap-2 bg-[#4177BC] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition;
+}
+
+.btn-dark {
+  @apply flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition;
+}
+
+/* Cards */
+.card {
+  @apply bg-white p-5 rounded-2xl border shadow-sm space-y-3;
+}
+
+.card-xl {
+  @apply bg-white p-8 rounded-3xl border shadow-lg min-h-[600px];
+}
+
+/* Inputs */
+.input {
+  @apply w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm
+  focus:ring-2 focus:ring-[#4177BC]/20 outline-none;
+}
+
+.input-sm {
+  @apply px-3 py-2 rounded-lg border border-slate-200 text-xs outline-none;
+}
+
+/* Buttons */
+.icon-btn {
+  @apply h-8 w-8 flex items-center justify-center rounded-lg bg-[#4177BC] text-white hover:opacity-90;
+}
+
+.delete-btn {
+  @apply absolute -top-2 -right-2 p-1 bg-white border rounded-full text-rose-500 opacity-0 group-hover:opacity-100;
+}
