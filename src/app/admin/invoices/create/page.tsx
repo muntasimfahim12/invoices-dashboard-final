@@ -1,294 +1,235 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
-import axios from "axios";
+import React, { useState, useMemo } from 'react';
+import { 
+  Plus, Trash2, Save, Download, Briefcase, 
+  User as UserIcon, Percent, Loader2, Mail 
+} from 'lucide-react';
+import axios from 'axios';
+import { toast, Toaster } from 'react-hot-toast';
 
-/* =========================
-   TYPES
-========================= */
+// আপনার ব্যাকএন্ড পোর্টের সাথে মিলিয়ে নিন
+const API_URL = 'http://localhost:5000'; 
 
-type Client = {
-  _id: string;
-  name: string;
-  email: string;
-};
-
-type Project = {
-  _id: string;
-  name: string;
-  totalAmount: number;
-  paidAmount: number;
-  paymentType: "full" | "installment" | "monthly";
-  totalInstallments?: number;
-  milestones?: Milestone[];
-};
-
-type Milestone = {
-  _id: string;
-  name: string;
-  amount: number;
-  status: "Unpaid" | "Paid";
-};
-
-type InvoiceForm = {
-  adminEmail: string;
-  clientEmail: string;
-  projectTitle: string;
-  invoiceId: string;
-  grandTotal: number;
-  currency: string;
-  description?: string;
-  sendEmail: boolean;
-  markAsPaid: boolean;
-};
-
-const InvoiceCreatePage = () => {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [selectedClient, setSelectedClient] = useState<string>("");
-  const [selectedProject, setSelectedProject] = useState<string>("");
-  const [selectedMilestone, setSelectedMilestone] = useState<string>("");
-
-  const [form, setForm] = useState<InvoiceForm>({
-    adminEmail: "",
-    clientEmail: "",
-    projectTitle: "",
-    invoiceId: `INV-${Date.now().toString().slice(-6)}`,
-    grandTotal: 0,
-    currency: "$",
-    description: "",
-    sendEmail: true,
-    markAsPaid: false,
-  });
-
+const InvoicePage = () => {
   const [loading, setLoading] = useState(false);
+  const [invoiceId] = useState(`INV-${Date.now().toString().slice(-6)}`);
+  
+  // Form States
+  const [clientName, setClientName] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [projectTitle, setProjectTitle] = useState('');
+  const [projectId, setProjectId] = useState(''); // Milestone sync এর জন্য
+  const [items, setItems] = useState([{ id: 1, name: '', rate: 0, qty: 1 }]);
+  const [useTax, setUseTax] = useState(true);
+  const [paymentType, setPaymentType] = useState('Full');
 
-  /* =========================
-     FETCH CLIENTS
-  ========================== */
-  useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const res = await axios.get("/clinets"); // tumi backend e client API add korte hobe
-        setClients(res.data);
-      } catch (err) {
-        console.error("Failed to fetch clients");
-      }
-    };
-    fetchClients();
-  }, []);
+  // Calculations
+  const { subTotal, taxAmount, grandTotal } = useMemo(() => {
+    const sub = items.reduce((acc, item) => acc + (item.rate * item.qty), 0);
+    const tax = useTax ? sub * 0.125 : 0;
+    return { subTotal: sub, taxAmount: tax, grandTotal: sub + tax };
+  }, [items, useTax]);
 
-  /* =========================
-     FETCH PROJECTS ON CLIENT SELECT
-  ========================== */
-  useEffect(() => {
-    if (!selectedClient) return;
-
-    const client = clients.find((c) => c._id === selectedClient);
-    if (client) setForm((prev) => ({ ...prev, clientEmail: client.email }));
-
-    const fetchProjects = async () => {
-      try {
-        const res = await axios.get(`/api/projects?clientId=${selectedClient}`);
-        setProjects(res.data);
-      } catch (err) {
-        console.error("Failed to fetch projects");
-      }
-    };
-    fetchProjects();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClient]);
-
-  /* =========================
-     SET PROJECT & MILESTONES
-  ========================== */
-  useEffect(() => {
-    const project = projects.find((p) => p._id === selectedProject);
-    if (!project) return;
-
-    setForm((prev) => ({ ...prev, projectTitle: project.name }));
-
-    if (project.milestones && project.milestones.length > 0) {
-      setMilestones(project.milestones.filter((m) => m.status === "Unpaid"));
-    } else {
-      // fallback: use totalAmount if no milestones
-      setForm((prev) => ({ ...prev, grandTotal: project.totalAmount - project.paidAmount }));
-    }
-  }, [selectedProject, projects]);
-
-  /* =========================
-     SET GRAND TOTAL ON MILESTONE SELECT
-  ========================== */
-  useEffect(() => {
-    if (!selectedMilestone) return;
-    const milestone = milestones.find((m) => m._id === selectedMilestone);
-    if (!milestone) return;
-
-    setForm((prev) => ({
-      ...prev,
-      grandTotal: milestone.amount,
-      description: milestone.name,
-    }));
-  }, [selectedMilestone, milestones]);
-
-  /* =========================
-     HANDLERS
-  ========================== */
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value, type } = e.target;
-    if (type === "checkbox") {
-      setForm((prev) => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
-    } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
-    }
+  const addItem = () => {
+    setItems([...items, { id: Date.now(), name: '', rate: 0, qty: 1 }]);
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!selectedClient || !selectedProject || form.grandTotal <= 0) {
-      alert("Please select client, project and milestone with valid amount");
-      return;
+  const removeItem = (id: number) => {
+    if (items.length > 1) setItems(items.filter(item => item.id !== id));
+  };
+
+  // --- ১০১% ব্যাকএন্ড ফ্রেন্ডলি হ্যান্ডলার ---
+  const handleCreateAndSend = async () => {
+    if (!clientEmail || !clientName || !projectTitle) {
+      return toast.error("Client Name, Email and Project Title are required!");
     }
 
     setLoading(true);
+    const mainToast = toast.loading("Processing Invoice & Syncing Dashboard...");
 
     try {
-      // 1️⃣ CREATE INVOICE
-      const createRes = await axios.post("/api/invoices", form);
+      // আপনার ব্যাকএন্ডের Route 2 (POST /invoices) অনুযায়ী ডাটা স্ট্রাকচার
+      const payload = {
+        invoiceId,
+        projectId, 
+        clientName,
+        clientEmail: clientEmail.toLowerCase().trim(),
+        adminEmail: "admin@geniehack.com", // এটি আপনার ডিফল্ট এডমিন ইমেইল
+        projectTitle,
+        items: items.map(i => ({ name: i.name, qty: i.qty, price: i.rate })),
+        subTotal,
+        taxAmount,
+        grandTotal,
+        remainingDue: grandTotal,
+        currency: "$",
+        status: "Unpaid", 
+        paymentType,
+        createdAt: new Date()
+      };
+      const res = await axios.post(`${API_URL}/invoices`, payload);
 
-      // 2️⃣ SEND EMAIL IF REQUIRED
-      if (form.sendEmail) {
-        await axios.post("/api/invoices/send-email", { ...form, invoiceId: form.invoiceId });
+      if (res.status === 201) {
+        await axios.post(`${API_URL}/invoices/send-email`, payload);
+        toast.success("✅ Invoice Saved & Sent to Client!", { id: mainToast });
       }
 
-      alert("✅ Invoice Created Successfully!");
-      // RESET FORM
-      setSelectedClient("");
-      setSelectedProject("");
-      setSelectedMilestone("");
-      setForm({
-        adminEmail: "",
-        clientEmail: "",
-        projectTitle: "",
-        invoiceId: `INV-${Date.now().toString().slice(-6)}`,
-        grandTotal: 0,
-        currency: "$",
-        description: "",
-        sendEmail: true,
-        markAsPaid: false,
-      });
-    } catch (err) {
-      console.error(err);
-      alert("Failed to create invoice");
+    } catch (error: any) {
+      console.error(error);
+      const msg = error.response?.data?.error || "Server Connection Failed!";
+      toast.error(msg, { id: mainToast });
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  /* =========================
-     UI
-  ========================== */
+  const handleDownload = () => {
+    toast("Generating PDF Download...", { icon: '📄' });
+    window.open(`${API_URL}/invoices/${invoiceId}/download`, '_blank');
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl p-8">
-        <h1 className="text-3xl font-bold mb-6">Create New Invoice</h1>
+    <div className="min-h-screen bg-[#FFFFFF] p-4 md:p-8 font-sans text-slate-700">
+      <Toaster position="top-right" />
+      <div className="max-w-5xl mx-auto bg-white border border-slate-200 shadow-xl rounded-lg overflow-hidden">
+        
+        {/* Blue Accent Header */}
+        <div className="bg-[#4177BC] p-6 text-white flex justify-between items-center">
+            <div>
+                <h1 className="text-xl font-bold tracking-tight">GENIE HACK BILLING</h1>
+                <p className="text-xs opacity-80 uppercase tracking-widest">Global Dashboard Integrated System</p>
+            </div>
+            <div className="text-right">
+                <p className="text-xs font-bold opacity-70">INVOICE NO</p>
+                <p className="text-lg font-mono">#{invoiceId}</p>
+            </div>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Client */}
-          <select
-            value={selectedClient}
-            onChange={(e) => setSelectedClient(e.target.value)}
-            className="w-full border rounded-lg p-3"
-          >
-            <option value="">Select Client</option>
-            {clients.map((client) => (
-              <option key={client._id} value={client._id}>
-                {client.name}
-              </option>
-            ))}
-          </select>
+        <div className="p-8">
+            {/* Top Row: Info */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Project Title</label>
+                    <div className="relative mt-1">
+                        <Briefcase size={14} className="absolute left-3 top-3 text-slate-300" />
+                        <input type="text" className="w-full pl-9 p-2.5 bg-slate-50 border border-slate-200 rounded text-sm outline-none focus:border-[#4177BC]" placeholder="e.g. Server Migration" onChange={e => setProjectTitle(e.target.value)} />
+                    </div>
+                </div>
+                <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Client Name</label>
+                    <div className="relative mt-1">
+                        <UserIcon size={14} className="absolute left-3 top-3 text-slate-300" />
+                        <input type="text" className="w-full pl-9 p-2.5 bg-slate-50 border border-slate-200 rounded text-sm outline-none focus:border-[#4177BC]" placeholder="John Doe" onChange={e => setClientName(e.target.value)} />
+                    </div>
+                </div>
+                <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Client Email</label>
+                    <div className="relative mt-1">
+                        <Mail size={14} className="absolute left-3 top-3 text-slate-300" />
+                        <input type="email" className="w-full pl-9 p-2.5 bg-slate-50 border border-slate-200 rounded text-sm outline-none focus:border-[#4177BC]" placeholder="client@example.com" onChange={e => setClientEmail(e.target.value)} />
+                    </div>
+                </div>
+            </div>
 
-          {/* Project */}
-          <select
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-            className="w-full border rounded-lg p-3"
-            disabled={!selectedClient}
-          >
-            <option value="">Select Project</option>
-            {projects.map((project) => (
-              <option key={project._id} value={project._id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
+            <hr className="mb-8 border-slate-100" />
 
-          {/* Milestone */}
-          {milestones.length > 0 && (
-            <select
-              value={selectedMilestone}
-              onChange={(e) => setSelectedMilestone(e.target.value)}
-              className="w-full border rounded-lg p-3"
-            >
-              <option value="">Select Milestone</option>
-              {milestones.map((m) => (
-                <option key={m._id} value={m._id}>
-                  {m.name} - ${m.amount.toFixed(2)}
-                </option>
-              ))}
-            </select>
-          )}
+            {/* Table */}
+            <div className="mb-6">
+                <table className="w-full border-collapse">
+                    <thead className="bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+                        <tr>
+                            <th className="p-3 text-left">Service Description</th>
+                            <th className="p-3 text-center w-24">Qty</th>
+                            <th className="p-3 text-center w-32">Price ($)</th>
+                            <th className="p-3 text-right w-32">Total</th>
+                            <th className="p-3 w-10"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map((item, index) => (
+                            <tr key={item.id} className="border-b border-slate-50">
+                                <td className="p-3">
+                                    <input type="text" placeholder="Service name..." className="w-full bg-transparent text-sm outline-none" onChange={e => {
+                                        const n = [...items]; n[index].name = e.target.value; setItems(n);
+                                    }} />
+                                </td>
+                                <td className="p-3">
+                                    <input type="number" value={item.qty} className="w-full text-center bg-transparent text-sm" onChange={e => {
+                                        const n = [...items]; n[index].qty = Number(e.target.value); setItems(n);
+                                    }} />
+                                </td>
+                                <td className="p-3">
+                                    <input type="number" value={item.rate} className="w-full text-center bg-transparent text-sm font-semibold" onChange={e => {
+                                        const n = [...items]; n[index].rate = Number(e.target.value); setItems(n);
+                                    }} />
+                                </td>
+                                <td className="p-3 text-right text-sm font-bold text-[#4177BC]">
+                                    ${(item.rate * item.qty).toLocaleString()}
+                                </td>
+                                <td className="p-3">
+                                    <button onClick={() => removeItem(item.id)} className="text-slate-300 hover:text-red-500"><Trash2 size={14} /></button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                <button onClick={addItem} className="mt-4 flex items-center gap-2 text-[10px] font-bold text-[#4177BC] bg-blue-50 px-3 py-1.5 rounded uppercase tracking-wider">
+                    <Plus size={12} /> Add Line
+                </button>
+            </div>
 
-          {/* Description */}
-          <textarea
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            className="w-full border rounded-lg p-3"
-            placeholder="Invoice Description"
-          />
+            {/* Totals Section */}
+            <div className="flex flex-col md:flex-row justify-between items-end gap-8 bg-slate-50 p-6 rounded-lg mt-10">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 bg-white px-4 py-2 border border-slate-200 rounded shadow-sm">
+                        <Percent size={14} className="text-[#4177BC]" />
+                        <span className="text-xs font-bold uppercase text-slate-400">Apply Tax</span>
+                        <input type="checkbox" checked={useTax} onChange={() => setUseTax(!useTax)} className="w-4 h-4" />
+                    </div>
+                    <select className="bg-white border border-slate-200 p-2 text-xs font-bold rounded shadow-sm outline-none" onChange={e => setPaymentType(e.target.value)}>
+                        <option value="Full">Full Payment</option>
+                        <option value="Milestone">Milestone Based</option>
+                    </select>
+                </div>
 
-          {/* Final Amount */}
-          <div className="bg-gray-100 p-4 rounded-xl font-semibold">
-            Final Amount: ${form.grandTotal.toFixed(2)}
-          </div>
+                <div className="w-full md:w-64 space-y-2">
+                    <div className="flex justify-between text-sm text-slate-500">
+                        <span>Subtotal</span>
+                        <span className="font-bold">${subTotal.toLocaleString()}</span>
+                    </div>
+                    {useTax && (
+                        <div className="flex justify-between text-sm text-slate-500">
+                            <span>Tax (12.5%)</span>
+                            <span className="font-bold">+ ${taxAmount.toLocaleString()}</span>
+                        </div>
+                    )}
+                    <div className="flex justify-between text-xl font-black text-[#4177BC] border-t border-slate-200 pt-2">
+                        <span>Total Due</span>
+                        <span>${grandTotal.toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>
 
-          {/* Options */}
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              name="sendEmail"
-              checked={form.sendEmail}
-              onChange={handleChange}
-            />
-            <span>Send Email</span>
-          </label>
-
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              name="markAsPaid"
-              checked={form.markAsPaid}
-              onChange={handleChange}
-            />
-            <span>Mark as Paid</span>
-          </label>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-black text-white py-3 rounded-xl"
-          >
-            {loading ? "Creating..." : "Create Invoice"}
-          </button>
-        </form>
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-4 mt-10">
+                <button onClick={handleDownload} className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-600 text-xs font-bold rounded-md hover:bg-slate-200 transition-all uppercase tracking-widest">
+                    <Download size={14} /> Preview PDF
+                </button>
+                <button 
+                  disabled={loading}
+                  onClick={handleCreateAndSend}
+                  className="flex items-center gap-2 px-8 py-3 bg-[#4177BC] text-white text-xs font-bold rounded-md hover:bg-blue-700 transition-all uppercase tracking-widest shadow-lg shadow-blue-100 disabled:bg-blue-300"
+                >
+                    {loading ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
+                    Create & Sync Globally
+                </button>
+            </div>
+        </div>
       </div>
     </div>
   );
 };
 
-export default InvoiceCreatePage;
+export default InvoicePage;
