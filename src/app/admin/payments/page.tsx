@@ -54,7 +54,7 @@ export default function ProfessionalPaymentsManager() {
         if (firstProject) {
             setSelectedProject(firstProject);
             const firstUnpaid = getFirstUnpaidMilestone(firstProject);
-            
+
             if (firstUnpaid) {
                 setSelectedInvoice(firstUnpaid);
                 setNewPaymentAmount(firstUnpaid.amount?.toString() || "");
@@ -100,85 +100,99 @@ export default function ProfessionalPaymentsManager() {
         setPaymentMethod("Bank Transfer");
     };
 
-   const handleUpdatePayment = async () => {
-    if (!selectedClient || !selectedProject || !selectedInvoice || !newPaymentAmount) {
-        toast.error("Please ensure a project and milestone are selected.");
-        return;
-    }
-
-    setIsUpdating(true);
-    const loadingToast = toast.loading("Processing payment & syncing system...");
-
-    try {
-        const paymentAmount = Number(newPaymentAmount);
-        const milestoneTotal = Number(selectedInvoice.amount);
-
-        const payload = {
-            projectId: selectedProject._id,
-            invoiceId: selectedInvoice._id, 
-            amount: paymentAmount,
-            method: paymentMethod || "Bank Transfer",
-            clientEmail: selectedClient.email,
-            clientName: selectedClient.name,
-            projectName: selectedProject.name,
-            milestoneName: selectedInvoice.name,
-            date: new Date().toISOString(),
-            
-            invoiceData: {
-                invoiceId: `INV-${Date.now().toString().slice(-6)}`,
-                grandTotal: milestoneTotal,
-                receivedAmount: paymentAmount,
-                remainingDue: Math.max(0, milestoneTotal - paymentAmount),
-                currency: "$", 
-                status: paymentAmount >= milestoneTotal ? "Paid" : "Partial"
-            }
-        };
-
-    
-        const res = await axios.put(`${API_BASE}/clinets/${selectedClient._id}/payment`, payload);
-
-        if (res.status === 200) {
-            toast.success(`Success! Payment updated and Invoice generated.`, { id: loadingToast });
-
-            // ৪. ডাটা রি-ফেচ করা (UI আপডেট করার জন্য)
-            const freshRes = await axios.get(`${API_BASE}/clinets`);
-            const allUpdatedClients = Array.isArray(freshRes.data) ? freshRes.data : [];
-            setClients(allUpdatedClients);
-
-            // ৫. কারেন্ট স্টেট আপডেট করা (যাতে মোডাল পরবর্তী মাইলস্টোন দেখায়)
-            const updatedClient = allUpdatedClients.find((c: any) => c._id === selectedClient._id);
-            
-            if (updatedClient) {
-                const updatedProject = updatedClient.projects?.find((p: any) => p._id === selectedProject._id);
-                
-                if (updatedProject) {
-                    // getFirstUnpaidMilestone আপনার ডিফাইন করা হেল্পার ফাংশন হতে হবে
-                    const nextUnpaid = getFirstUnpaidMilestone(updatedProject);
-                    
-                    if (nextUnpaid) {
-                        setSelectedClient(updatedClient);
-                        setSelectedProject(updatedProject);
-                        setSelectedInvoice(nextUnpaid);
-                        setNewPaymentAmount(nextUnpaid.amount?.toString() || "");
-                    } else {
-                        toast.success("All milestones cleared for this project!");
-                        closePaymentModal();
-                    }
-                } else {
-                    closePaymentModal();
-                }
-            } else {
-                closePaymentModal();
-            }
+    const handleUpdatePayment = async () => {
+        // ১. ডাটা ভ্যালিডেশন
+        if (!selectedClient?._id || !selectedProject?._id || !selectedInvoice?._id) {
+            toast.error("Required data missing: Please select client, project, and milestone.");
+            return;
         }
-    } catch (error: any) {
-        console.error("Payment Sync Error:", error.response?.data);
-        const errorMsg = error.response?.data?.error || error.response?.data?.message || "Payment failed.";
-        toast.error(errorMsg, { id: loadingToast });
-    } finally {
-        setIsUpdating(false);
-    }
-};
+
+        if (!newPaymentAmount || Number(newPaymentAmount) <= 0) {
+            toast.error("Please enter a valid payment amount.");
+            return;
+        }
+
+        const milestoneIndex = selectedProject.milestones?.findIndex(
+            (m: any) => m._id === selectedInvoice._id
+        );
+
+        if (milestoneIndex === -1 || milestoneIndex === undefined) {
+            toast.error("Milestone index tracking failed.");
+            return;
+        }
+
+        setIsUpdating(true);
+        const loadingToast = toast.loading("Processing Global Sync: Updating Status & Saving Invoice...");
+
+        try {
+            const paymentAmount = Number(newPaymentAmount);
+
+            // ২. পেলোড তৈরি (এখানে আমরা ব্যাকএন্ডকে বলছি ইনভয়েস জেনারেট করতে)
+            const payload = {
+                projectId: selectedProject._id,
+                milestoneIndex: milestoneIndex,
+                isCompleted: true,
+                paymentMethod: paymentMethod || "Bank Transfer",
+                amount: paymentAmount,
+                clientDetails: {
+                    id: selectedClient._id,
+                    name: selectedClient.name,
+                    email: selectedClient.email.toLowerCase().trim()
+                },
+                // নতুন ইনভয়েস তৈরির জন্য প্রয়োজনীয় তথ্য পাঠানো হচ্ছে
+                invoiceData: {
+                    projectTitle: selectedProject.title,
+                    currency: selectedProject.currency || "$",
+                    status: "Paid"
+                }
+            };
+
+            // ৩. ব্যাকএন্ড এপিআই কল
+            const res = await axios.patch(`${API_BASE}/update-milestone-status`, payload);
+
+            if (res.data.success) {
+                // ৪. সাকসেস নোটিফিকেশন
+                toast.success(`Authorized! Invoice saved & sent to ${selectedClient.email}`, {
+                    id: loadingToast,
+                    duration: 5000
+                });
+
+                // ৫. ডাটা রি-ফেচ (সব লিস্ট আপডেট করতে)
+                const freshRes = await axios.get(`${API_BASE}/clinets`); // আপনার স্পেলিং অনুযায়ী
+                const allUpdatedClients = Array.isArray(freshRes.data) ? freshRes.data : [];
+
+                if (typeof setClients === 'function') {
+                    setClients(allUpdatedClients);
+                }
+
+                // ৬. বর্তমান স্ক্রিন এবং পরবর্তী মাইলস্টোন সিলেকশন
+                const updatedClient = allUpdatedClients.find((c: any) => c._id === selectedClient._id);
+                if (updatedClient) {
+                    const updatedProject = updatedClient.projects?.find((p: any) => p._id === selectedProject._id);
+                    if (updatedProject) {
+                        const nextUnpaid = updatedProject.milestones?.find(
+                            (m: any) => !m.isCompleted && m.status?.toLowerCase() !== "paid"
+                        );
+
+                        if (nextUnpaid) {
+                            setSelectedClient(updatedClient);
+                            setSelectedProject(updatedProject);
+                            setSelectedInvoice(nextUnpaid);
+                            setNewPaymentAmount(nextUnpaid.amount?.toString() || "");
+                        } else {
+                            toast.success("Project Complete! All milestones paid.");
+                            if (typeof closePaymentModal === 'function') closePaymentModal();
+                        }
+                    }
+                }
+            }
+        } catch (error: any) {
+            console.error("Critical Error:", error.response?.data);
+            toast.error(`Sync Failed: ${error.response?.data?.message || "Check connection."}`, { id: loadingToast });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
 
     // Stats calculation based on totalPaid field from backend
     const stats = useMemo(() => {

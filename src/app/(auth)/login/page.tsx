@@ -39,7 +39,7 @@ function LoginFormContent() {
   const autoEmail = searchParams.get("email") || "";
   const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
 
-  /* ================= লজিক সেকশন (Fixed for Role Compatibility) ================= */
+  /* ================= লজিক সেকশন (Updated for Dual Session Support) ================= */
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>, currentRole: "client" | "admin") => {
     e.preventDefault();
@@ -57,16 +57,30 @@ function LoginFormContent() {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem("vault_token", data.token);
+        // ১. লোকাল স্টোরেজে ডাটা রাখা (রোল অনুযায়ী কিউ আলাদা করা যেতে পারে তবে ইমেইল দিয়ে ডাটা ফেচ করা হয় বিধায় একই রাখা হলো)
         localStorage.setItem("user_role", data.role);
         localStorage.setItem("user_name", data.name);
         localStorage.setItem("user_email", email || "");
         localStorage.setItem("user_id", data.id || "");
 
-        Cookies.set("vault_token", data.token, { expires: 1, secure: true, sameSite: 'lax' });
-        Cookies.set("user_role", data.role, { expires: 1 });
+        // ২. ডাবল সেশন লজিক: রোল অনুযায়ী আলাদা কুকি সেট করা
+        if (data.role.toLowerCase() === "admin") {
+          Cookies.set("admin_token", data.token, { expires: 1, secure: true, sameSite: 'lax' });
+          Cookies.set("admin_logged_in", "true", { expires: 1 });
+        } else {
+          Cookies.set("client_token", data.token, { expires: 1, secure: true, sameSite: 'lax' });
+          Cookies.set("client_logged_in", "true", { expires: 1 });
+        }
 
-        router.push(data.role.toLowerCase() === "admin" ? "/admin" : "/client/overview");
+        // ৩. রিডাইরেক্ট
+        const targetPath = data.role.toLowerCase() === "admin" ? "/admin" : "/client/overview";
+        router.push(targetPath);
+        
+        // ফোর্স রিফ্রেশ যাতে প্রক্সি (proxy.ts) নতুন কুকি ডিটেক্ট করতে পারে
+        setTimeout(() => {
+            window.location.href = targetPath;
+        }, 100);
+
       } else {
         alert(data.error || "Invalid Credentials");
       }
@@ -75,26 +89,21 @@ function LoginFormContent() {
     } finally { setLoading(false); }
   };
 
+  /* OTP এবং Reset Password লজিক আগের মতোই থাকবে... */
   const handleSendOTP = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.currentTarget);
     const email = (formData.get("email") as string).toLowerCase().trim();
     setForgetEmail(email);
-
     try {
       const res = await fetch(`${API_URL}/auth/forget-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role }), // Role পাঠানো হয়েছে
+        body: JSON.stringify({ email, role }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        setForgetStep("code");
-        alert("✅ A 6-digit code has been sent to your email.");
-      } else {
-        alert(data.error || "User not found!");
-      }
+      if (res.ok) { setForgetStep("code"); alert("✅ Recovery code sent!"); }
+      else { const data = await res.json(); alert(data.error || "User not found!"); }
     } catch { alert("Failed to connect."); }
     finally { setLoading(false); }
   };
@@ -106,11 +115,10 @@ function LoginFormContent() {
       const res = await fetch(`${API_URL}/auth/verify-code`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgetEmail, code: otp, role }), // Role মাস্ট
+        body: JSON.stringify({ email: forgetEmail, code: otp, role }),
       });
-      const data = await res.json();
       if (res.ok) setForgetStep("reset");
-      else alert(data.error || "Invalid code!");
+      else { const data = await res.json(); alert(data.error || "Invalid code!"); }
     } catch { alert("Verification failed."); }
     finally { setLoading(false); }
   };
@@ -123,7 +131,7 @@ function LoginFormContent() {
       const res = await fetch(`${API_URL}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgetEmail, code: otp, newPassword: newPass, role }), // Role মাস্ট
+        body: JSON.stringify({ email: forgetEmail, code: otp, newPassword: newPass, role }),
       });
       if (res.ok) {
         alert("🎉 Password updated! Please login.");
@@ -137,7 +145,7 @@ function LoginFormContent() {
     finally { setLoading(false); }
   };
 
-  /* ================= UI সেকশন (Unchanged & Polished) ================= */
+  /* ================= UI সেকশন (Unchanged) ================= */
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 font-sans">
       <motion.div
@@ -218,7 +226,7 @@ function LoginFormContent() {
         </div>
       </motion.div>
 
-      {/* MODALS */}
+      {/* MODALS (Register, Forget Password) - Unchanged */}
       <AnimatePresence>
         {showRegister && (
           <ModalWrapper onClose={() => setShowRegister(false)}>

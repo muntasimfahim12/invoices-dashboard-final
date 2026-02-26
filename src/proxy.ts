@@ -1,30 +1,36 @@
+// src/proxy.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// ১. ফাংশনের নাম 'middleware' থেকে বদলে 'proxy' করতে হবে
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get('vault_token')?.value;
-  const role = request.cookies.get('user_role')?.value;
+  // ১. আলাদা আলাদা কুকি থেকে টোকেন সংগ্রহ করা
+  const adminToken = request.cookies.get('admin_token')?.value;
+  const clientToken = request.cookies.get('client_token')?.value;
+  
   const { pathname } = request.nextUrl;
 
-  // 🛡️ Admin Route Protection
   if (pathname.startsWith('/admin')) {
-    if (!token || role !== 'admin') {
-      return NextResponse.redirect(new URL('/', request.url));
+    if (!adminToken) {
+      return NextResponse.redirect(new URL('/login', request.url));
     }
   }
 
-  // 🛡️ Client Route Protection
   if (pathname.startsWith('/client')) {
-    if (!token || role !== 'client') {
-      return NextResponse.redirect(new URL('/', request.url));
+    if (!clientToken) {
+      return NextResponse.redirect(new URL('/login', request.url));
     }
   }
+
+  
 
   return NextResponse.next();
 }
 
-// ২. কনফিগারেশনে 'matcher' আগের মতোই থাকবে
+// ৫. কনফিগারেশন
 export const config = {
-  matcher: ['/admin/:path*', '/client/:path*'],
+  matcher: [
+    '/admin/:path*', 
+    '/client/:path*', 
+    '/login'
+  ],
 };
