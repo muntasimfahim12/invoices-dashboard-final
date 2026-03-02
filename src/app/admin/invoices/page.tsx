@@ -14,6 +14,7 @@ import { toast, Toaster } from "react-hot-toast";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const ITEMS_PER_PAGE = 6;
 
+// ডাটাবেস থেকে আসা নতুন ডাটা স্ট্রাকচার অনুযায়ী ইন্টারফেস আপডেট
 interface Invoice {
     _id: string;
     invoiceId: string;
@@ -21,12 +22,11 @@ interface Invoice {
     clientEmail?: string;
     projectTitle: string;
     createdAt: string;
-    status: string; // 'Paid', 'Unpaid', 'Pending', 'Overdue'
-    currency: string;
-    grandTotal: number;
-    receivedAmount: number;
-    remainingDue: number;
-    adminEmail?: string;
+    status: string; 
+    currency?: string;
+    amount?: number; // বর্তমান পেমেন্ট এমাউন্ট
+    milestonesSnapshot?: any[]; // সব মাইলস্টোনের লিস্ট
+    remainingDue?: number; 
 }
 
 export default function InvoicesPage() {
@@ -48,7 +48,22 @@ export default function InvoicesPage() {
         setUserRole(role);
     }, []);
 
-    // 🔄 Fetch Invoices from Backend
+    // 🧮 ক্যালকুলেশন লজিক: মাইলস্টোন থেকে এমাউন্ট বের করা
+    const getFinancials = (inv: any) => {
+        const milestones = inv.milestonesSnapshot || [];
+        const grandTotal = milestones.reduce((sum: number, m: any) => sum + (Number(m.amount) || 0), 0);
+        const paidAmount = milestones
+            .filter((m: any) => m.status === "Paid")
+            .reduce((sum: number, m: any) => sum + (Number(m.amount) || 0), 0);
+        const remainingDue = grandTotal - paidAmount;
+        
+        return {
+            total: grandTotal || Number(inv.amount) || 0,
+            paid: paidAmount,
+            due: remainingDue > 0 ? remainingDue : 0
+        };
+    };
+
     const fetchInvoices = useCallback(async (signal?: AbortSignal) => {
         if (!userEmail) return;
         try {
@@ -80,7 +95,6 @@ export default function InvoicesPage() {
         return () => controller.abort();
     }, [mounted, userEmail, fetchInvoices]);
 
-    // 🗑️ Handle Delete Selected
     const handleDeleteSelected = async () => {
         if (selectedInvoices.length === 0) return;
         if (!window.confirm(`Are you sure you want to delete ${selectedInvoices.length} items?`)) return;
@@ -98,18 +112,21 @@ export default function InvoicesPage() {
         }
     }
 
-    // 📄 Pagination Logic
     const totalPages = Math.ceil(invoices.length / ITEMS_PER_PAGE);
     const paginatedInvoices = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
         return invoices.slice(start, start + ITEMS_PER_PAGE);
     }, [invoices, currentPage]);
 
-    // 📊 Analytics Stats
     const stats = useMemo(() => {
-        const total = invoices.reduce((acc, curr) => acc + (Number(curr.grandTotal) || 0), 0);
-        const paid = invoices.reduce((acc, curr) => acc + (Number(curr.receivedAmount) || 0), 0);
-        const overdueCount = invoices.filter(inv => inv.status.toLowerCase() === 'overdue').length;
+        let total = 0;
+        let paid = 0;
+        invoices.forEach(inv => {
+            const fin = getFinancials(inv);
+            total += fin.total;
+            paid += fin.paid;
+        });
+        const overdueCount = invoices.filter(inv => inv.status?.toLowerCase() === 'overdue').length;
         return { total, paid, overdueCount };
     }, [invoices]);
 
@@ -119,7 +136,6 @@ export default function InvoicesPage() {
         <div className="min-h-screen bg-[#FFFFFF] selection:bg-[#4177BC]/20 inter-medium text-slate-600 pb-20">
             <Toaster position="top-right" />
             
-            {/* Header Section */}
             <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50">
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -158,11 +174,11 @@ export default function InvoicesPage() {
                             </Link>
                         )}
                     </div>
+                    
                 </div>
             </div>
 
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 mt-8 lg:mt-12 grid grid-cols-12 gap-8">
-                {/* Stats Sidebar */}
                 <div className="col-span-12 lg:col-span-3 space-y-8">
                     <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
                         <StatCard label="Total Revenue" value={`$${stats.total.toLocaleString()}`} icon={<TrendingUp />} color="#4177BC" />
@@ -190,7 +206,6 @@ export default function InvoicesPage() {
                     </div>
                 </div>
 
-                {/* Main Content */}
                 <div className="col-span-12 lg:col-span-9 space-y-6">
                     <div className="bg-white p-2 rounded-2xl border border-slate-200/60 shadow-sm flex items-center gap-2">
                         <div className="relative flex-1">
@@ -203,7 +218,6 @@ export default function InvoicesPage() {
                         </div>
                     </div>
 
-                    {/* Desktop Table */}
                     <div className="hidden md:block bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden min-h-[500px]">
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-slate-50/80 border-b border-slate-100">
@@ -232,44 +246,49 @@ export default function InvoicesPage() {
                                             <td colSpan={5} className="py-32 text-center text-slate-400 italic font-medium">No invoices found matching your criteria.</td>
                                         </motion.tr>
                                     ) : (
-                                        paginatedInvoices.map((inv) => (
-                                            <motion.tr key={inv._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="group hover:bg-slate-50/50 transition-colors">
-                                                <td className="pl-8 py-6">
-                                                    <input
-                                                        type="checkbox" checked={selectedInvoices.includes(inv._id)}
-                                                        onChange={() => setSelectedInvoices(prev => prev.includes(inv._id) ? prev.filter(i => i !== inv._id) : [...prev, inv._id])}
-                                                        className="w-4 h-4 rounded border-slate-300 text-[#4177BC] cursor-pointer"
-                                                    />
-                                                </td>
-                                                <td className="px-6 py-6">
-                                                    <div className="flex items-start gap-4">
-                                                        <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#4177BC] group-hover:text-white transition-all duration-300">
-                                                            <FileText size={20} />
-                                                        </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <p className="inter-bold text-slate-900 text-sm">{inv.invoiceId}</p>
-                                                                <button onClick={() => {navigator.clipboard.writeText(inv.invoiceId); toast.success("ID Copied!");}} className="opacity-0 group-hover:opacity-100 text-[#4177BC] transition-all"><Copy size={12} /></button>
+                                        paginatedInvoices.map((inv) => {
+                                            const fin = getFinancials(inv);
+                                            return (
+                                                <motion.tr key={inv._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="group hover:bg-slate-50/50 transition-colors">
+                                                    <td className="pl-8 py-6">
+                                                        <input
+                                                            type="checkbox" checked={selectedInvoices.includes(inv._id)}
+                                                            onChange={() => setSelectedInvoices(prev => prev.includes(inv._id) ? prev.filter(i => i !== inv._id) : [...prev, inv._id])}
+                                                            className="w-4 h-4 rounded border-slate-300 text-[#4177BC] cursor-pointer"
+                                                        />
+                                                    </td>
+                                                    <td className="px-6 py-6">
+                                                        <div className="flex items-start gap-4">
+                                                            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#4177BC] group-hover:text-white transition-all duration-300">
+                                                                <FileText size={20} />
                                                             </div>
-                                                            <p className="text-xs text-slate-500 font-semibold">{inv.clientName || "Unknown Client"}</p>
-                                                            <p className="text-[10px] text-slate-400 mt-1 font-bold">{inv.projectTitle}</p>
+                                                            <div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="inter-bold text-slate-900 text-sm">{inv.invoiceId || "N/A"}</p>
+                                                                    <button onClick={() => {navigator.clipboard.writeText(inv.invoiceId); toast.success("ID Copied!");}} className="opacity-0 group-hover:opacity-100 text-[#4177BC] transition-all"><Copy size={12} /></button>
+                                                                </div>
+                                                                <p className="text-xs text-slate-500 font-semibold">{inv.clientName || "Unknown Client"}</p>
+                                                                <p className="text-[10px] text-slate-400 mt-1 font-bold">{inv.projectTitle}</p>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-6"><StatusBadge status={inv.status} /></td>
-                                                <td className="px-6 py-6 text-right">
-                                                    <p className="judson-bold text-lg text-slate-900 mb-1">{inv.currency} {Number(inv.grandTotal).toLocaleString()}</p>
-                                                    <p className={`text-[10px] font-bold uppercase ${inv.remainingDue > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                                        {inv.remainingDue > 0 ? `Due: ${inv.currency}${inv.remainingDue}` : 'Fully Paid'}
-                                                    </p>
-                                                </td>
-                                                <td className="pr-8 py-6 text-right">
-                                                    <Link href={`${userRole === 'admin' ? '/admin' : '/dashboard'}/invoices/${inv._id}`} className="w-9 h-9 inline-flex items-center justify-center rounded-lg bg-slate-900 text-white hover:bg-[#4177BC] transition-all shadow-sm">
-                                                        <ChevronRight size={16} />
-                                                    </Link>
-                                                </td>
-                                            </motion.tr>
-                                        ))
+                                                    </td>
+                                                    <td className="px-6 py-6"><StatusBadge status={inv.status} /></td>
+                                                    <td className="px-6 py-6 text-right">
+                                                        <p className="judson-bold text-lg text-slate-900 mb-1">
+                                                            {inv.currency || "$"} {fin.total.toLocaleString()}
+                                                        </p>
+                                                        <p className={`text-[10px] font-bold uppercase ${fin.due > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                            {fin.due > 0 ? `Due: ${inv.currency || "$"}${fin.due.toLocaleString()}` : 'Fully Paid'}
+                                                        </p>
+                                                    </td>
+                                                    <td className="pr-8 py-6 text-right">
+                                                        <Link href={`${userRole === 'admin' ? '/admin' : '/dashboard'}/invoices/${inv._id}`} className="w-9 h-9 inline-flex items-center justify-center rounded-lg bg-slate-900 text-white hover:bg-[#4177BC] transition-all shadow-sm">
+                                                            <ChevronRight size={16} />
+                                                        </Link>
+                                                    </td>
+                                                </motion.tr>
+                                            )
+                                        })
                                     )}
                                 </AnimatePresence>
                             </tbody>
@@ -277,35 +296,37 @@ export default function InvoicesPage() {
                         <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} totalItems={invoices.length} />
                     </div>
 
-                    {/* Mobile View */}
                     <div className="md:hidden space-y-4">
-                        {paginatedInvoices.map((inv) => (
-                            <div key={inv._id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex gap-3">
-                                        <input
-                                            type="checkbox" checked={selectedInvoices.includes(inv._id)}
-                                            onChange={() => setSelectedInvoices(prev => prev.includes(inv._id) ? prev.filter(i => i !== inv._id) : [...prev, inv._id])}
-                                            className="w-4 h-4 rounded border-slate-300 text-[#4177BC]"
-                                        />
-                                        <div>
-                                            <p className="inter-bold text-slate-900">{inv.invoiceId}</p>
-                                            <p className="text-xs text-slate-500 font-bold">{inv.clientName}</p>
+                        {paginatedInvoices.map((inv) => {
+                            const fin = getFinancials(inv);
+                            return (
+                                <div key={inv._id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex gap-3">
+                                            <input
+                                                type="checkbox" checked={selectedInvoices.includes(inv._id)}
+                                                onChange={() => setSelectedInvoices(prev => prev.includes(inv._id) ? prev.filter(i => i !== inv._id) : [...prev, inv._id])}
+                                                className="w-4 h-4 rounded border-slate-300 text-[#4177BC]"
+                                            />
+                                            <div>
+                                                <p className="inter-bold text-slate-900">{inv.invoiceId}</p>
+                                                <p className="text-xs text-slate-500 font-bold">{inv.clientName || "Unknown"}</p>
+                                            </div>
                                         </div>
+                                        <StatusBadge status={inv.status} />
                                     </div>
-                                    <StatusBadge status={inv.status} />
-                                </div>
-                                <div className="flex justify-between items-end border-t border-slate-100 pt-4">
-                                    <div>
-                                        <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">Total Amount</p>
-                                        <p className="judson-bold text-xl text-slate-900">{inv.currency} {inv.grandTotal.toLocaleString()}</p>
+                                    <div className="flex justify-between items-end border-t border-slate-100 pt-4">
+                                        <div>
+                                            <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">Total Amount</p>
+                                            <p className="judson-bold text-xl text-slate-900">{inv.currency || "$"} {fin.total.toLocaleString()}</p>
+                                        </div>
+                                        <Link href={`${userRole === 'admin' ? '/admin' : '/dashboard'}/invoices/${inv._id}`} className="p-2.5 bg-slate-900 text-white rounded-xl">
+                                            <ChevronRight size={20} />
+                                        </Link>
                                     </div>
-                                    <Link href={`${userRole === 'admin' ? '/admin' : '/dashboard'}/invoices/${inv._id}`} className="p-2.5 bg-slate-900 text-white rounded-xl">
-                                        <ChevronRight size={20} />
-                                    </Link>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                         <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} totalItems={invoices.length} />
                     </div>
                 </div>
@@ -314,7 +335,7 @@ export default function InvoicesPage() {
     );
 }
 
-// 📌 Internal Components
+// 📌 Internal Components (আগের মতোই রাখা হয়েছে)
 function StatCard({ label, value, icon, color }: any) {
     return (
         <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
@@ -328,7 +349,7 @@ function StatCard({ label, value, icon, color }: any) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-    const s = status?.toLowerCase();
+    const s = status?.toLowerCase() || 'unpaid';
     const config: any = {
         paid: "bg-emerald-50 border-emerald-200 text-emerald-700",
         pending: "bg-amber-50 border-amber-200 text-amber-700",
@@ -338,7 +359,7 @@ function StatusBadge({ status }: { status: string }) {
     };
     return (
         <span className={`px-3 py-1.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${config[s] || config.unpaid}`}>
-            {status}
+            {status || 'Unpaid'}
         </span>
     );
 }
