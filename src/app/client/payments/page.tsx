@@ -278,9 +278,9 @@ export default function AdvancedClientDashboard() {
                                 {selectedProject?.milestones?.map((m, i) => {
                                     // BACKEND FIX: m.dueDate ব্যবহার করা হয়েছে
                                     const isCompleted = m.isCompleted === true || m.isCompleted === "true" || m.status?.toLowerCase() === "paid" || m.status?.toLowerCase() === "completed";
-                                    
+
                                     // BACKEND FIX: সরাসরি ব্যাকএন্ড থেকে আসা isPayable লজিক ব্যবহার করা হয়েছে
-                                    const canPay = m.isPayable; 
+                                    const canPay = m.isPayable;
                                     const isLocked = m.isLocked;
 
                                     return (
@@ -306,7 +306,7 @@ export default function AdvancedClientDashboard() {
                                                             {isCompleted ? 'SUCCESSFUL' : (isLocked ? 'LOCKED' : 'READY TO PAY')}
                                                         </span>
                                                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Valued at ${Number(m.amount).toLocaleString()}</span>
-                                                        
+
                                                         {/* BACKEND FIX: m.dueDate এখানে ডিসপ্লে করা হচ্ছে */}
                                                         {!isCompleted && m.dueDate && (
                                                             <span className="text-[9px] text-[#EB9C2C] font-bold bg-[#EB9C2C]/10 px-2 py-0.5 rounded flex items-center gap-1">
@@ -336,9 +336,7 @@ export default function AdvancedClientDashboard() {
                                                             <ShieldCheck size={14} />
                                                             <span className="text-[10px] font-black uppercase tracking-widest">Verified</span>
                                                         </div>
-                                                        <button className="p-3 bg-white border border-slate-200 text-slate-500 rounded-xl hover:bg-slate-50 shadow-sm">
-                                                            <Download size={16} />
-                                                        </button>
+
                                                     </div>
                                                 )}
                                             </div>

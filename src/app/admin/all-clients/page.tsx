@@ -96,7 +96,7 @@ export default function AllClients() {
         </div>
 
         {/* Action Bar */}
-        <div className="bg-white border border-slate-100 rounded-[28px] p-2 mb-8 flex flex-col md:flex-row items-center gap-2 shadow-sm">
+        <div className="bg-white border border-slate-100 rounded-[8px] p-2 mb-8 flex flex-col md:flex-row items-center gap-2 shadow-sm">
           <div className="flex-1 flex items-center px-6 gap-3 w-full">
             <Search size={18} className="text-[#4177BC]" />
             <input
