@@ -127,7 +127,7 @@ export default function ProfessionalPaymentsManager() {
         try {
             const paymentAmount = Number(newPaymentAmount);
 
-            // ২. পেলোড তৈরি (এখানে আমরা ব্যাকএন্ডকে বলছি ইনভয়েস জেনারেট করতে)
+            // ২. পেলোড তৈরি (এখানে আমরা ব্যাকএন্ডকে বলছি ইনভয়েস জেনারেট করতে)
             const payload = {
                 projectId: selectedProject._id,
                 milestoneIndex: milestoneIndex,
@@ -139,7 +139,7 @@ export default function ProfessionalPaymentsManager() {
                     name: selectedClient.name,
                     email: selectedClient.email.toLowerCase().trim()
                 },
-                // নতুন ইনভয়েস তৈরির জন্য প্রয়োজনীয় তথ্য পাঠানো হচ্ছে
+                // নতুন ইনভয়েস তৈরির জন্য প্রয়োজনীয় তথ্য পাঠানো হচ্ছে
                 invoiceData: {
                     projectTitle: selectedProject.title,
                     currency: selectedProject.currency || "$",
@@ -158,7 +158,7 @@ export default function ProfessionalPaymentsManager() {
                 });
 
                 // ৫. ডাটা রি-ফেচ (সব লিস্ট আপডেট করতে)
-                const freshRes = await axios.get(`${API_BASE}/clinets`); // আপনার স্পেলিং অনুযায়ী
+                const freshRes = await axios.get(`${API_BASE}/clinets`); // আপনার স্পেলিং অনুযায়ী
                 const allUpdatedClients = Array.isArray(freshRes.data) ? freshRes.data : [];
 
                 if (typeof setClients === 'function') {
@@ -299,7 +299,7 @@ export default function ProfessionalPaymentsManager() {
                                                     onClick={() => handleLogPaymentClick(client)}
                                                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs hover:border-[#4177BC] hover:text-[#4177BC] transition-all"
                                                 >
-                                                    <Wallet size={14} />  Payment
+                                                    <Wallet size={14} />  Payment
                                                 </button>
                                             </td>
                                         </tr>

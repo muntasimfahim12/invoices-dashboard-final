@@ -26,7 +26,7 @@ export default function CreateProject() {
   });
 
   const [milestones, setMilestones] = useState([
-    { id: Date.now(), name: "Advance Phase", amount: "", dueDate: new Date().toISOString().split('T')[0] }
+    { id: Date.now(), name: "Advance Phase", amount: "", dueDate: new Date().toISOString().slice(0, 16) }
   ]);
 
   const totalCalculatedBudget = useMemo(() => {
@@ -39,7 +39,7 @@ export default function CreateProject() {
       .catch(err => console.error("Client fetch error:", err));
   }, []);
 
-  const addMilestone = () => setMilestones([...milestones, { id: Date.now(), name: "", amount: "", dueDate: new Date().toISOString().split('T')[0] }]);
+  const addMilestone = () => setMilestones([...milestones, { id: Date.now(), name: "", amount: "", dueDate: new Date().toISOString().slice(0, 16) }]);
 
   const removeMilestone = (id: number) => {
     if (milestones.length > 1) {
@@ -253,7 +253,7 @@ export default function CreateProject() {
                   ))}
                 </AnimatePresence>
 
-               
+
               </div>
             </div>
           </div>
@@ -313,7 +313,7 @@ export default function CreateProject() {
                     </div>
                   </div>
 
-               
+
 
                   {/* Launch Button Section */}
                   <div className="pt-4">
