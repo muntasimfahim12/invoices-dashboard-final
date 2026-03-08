@@ -2,68 +2,172 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Save, Shield, CreditCard, Receipt, Settings, RefreshCw, 
-  Eye, EyeOff, Lock, Mail, User, Link as LinkIcon, 
-  CreditCard as BankIcon, Users, Server, Globe, Bell
+import {
+  Save, ShieldCheck, CreditCard, FileText, Settings,
+  Zap, User, Link as LinkIcon, Lock, Mail,
+  Globe, Bell, Trash2, Plus, DollarSign, CheckCircle, Image as ImageIcon,
+  ChevronDown, ArrowRight, Activity, RefreshCw
 } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+
+const currencyMap: Record<string, string> = {
+  USD: "$", BDT: "৳", EUR: "€", GBP: "£", INR: "₹", CAD: "C$", AUD: "A$"
+};
+
+// --- OPTIMIZED SUB-COMPONENTS (Memoized to prevent lag) ---
+const SectionHeader = memo(({ title, desc }: any) => (
+  <div className="space-y-1 border-l-4 border-[#4177BC] pl-6 py-1">
+    <h3 className="text-2xl font-bold text-[#0F172A] judson-bold tracking-tight">{title}</h3>
+    <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">{desc}</p>
+  </div>
+));
+SectionHeader.displayName = "SectionHeader";
+
+const Input = memo(({ label, isTextArea, icon, className = "", ...props }: any) => (
+  <div className="w-full group">
+    <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-1 tracking-[0.1em] group-focus-within:text-[#4177BC] transition-colors">{label}</label>
+    <div className="relative flex items-center">
+      {icon && <span className="absolute left-6 text-slate-300 group-focus-within:text-[#4177BC] transition-colors">{icon}</span>}
+      {isTextArea ? (
+        <textarea className={`w-full p-6 ${icon ? 'pl-16' : 'pl-6'} bg-white border border-slate-100 rounded-[24px] text-sm font-bold text-slate-700 focus:border-[#4177BC] focus:ring-4 ring-[#4177BC]/5 outline-none transition-all min-h-[140px] shadow-sm ${className}`} {...props} />
+      ) : (
+        <input className={`w-full h-16 ${icon ? 'pl-16' : 'pl-6'} bg-white border border-slate-100 rounded-[20px] text-sm font-bold text-slate-700 focus:border-[#4177BC] focus:ring-4 ring-[#4177BC]/5 outline-none transition-all shadow-sm ${className}`} {...props} />
+      )}
+    </div>
+  </div>
+));
+Input.displayName = "Input";
+
+const Select = memo(({ label, children, ...props }: any) => (
+  <div className="w-full group">
+    <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-1 tracking-[0.1em] group-focus-within:text-[#4177BC] transition-colors">{label}</label>
+    <div className="relative">
+      <select className="w-full h-16 px-6 bg-white border border-slate-100 rounded-[20px] text-sm font-bold text-slate-700 outline-none focus:border-[#4177BC] transition-all cursor-pointer appearance-none shadow-sm" {...props}>
+        {children}
+      </select>
+      <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-focus-within:text-[#4177BC]" size={18} />
+    </div>
+  </div>
+));
+Select.displayName = "Select";
+
+const ToggleRow = memo(({ label, desc, isOn, onToggle }: any) => (
+  <div className="flex items-center justify-between p-8 hover:bg-slate-50/50 transition-colors">
+    <div className="space-y-1">
+      <p className="text-[13px] font-black text-[#0F172A] uppercase tracking-wide">{label}</p>
+      <p className="text-[11px] text-slate-400 font-medium max-w-[280px]">{desc}</p>
+    </div>
+    <div onClick={onToggle} className={`w-16 h-8 rounded-full p-1.5 cursor-pointer transition-all duration-500 ease-in-out ${isOn ? 'bg-[#10B981] shadow-lg shadow-emerald-100' : 'bg-slate-200'}`}>
+      <div className={`w-5 h-5 bg-white rounded-full shadow-md transition-all duration-500 transform ${isOn ? 'translate-x-8' : 'translate-x-0'}`} />
+    </div>
+  </div>
+));
+ToggleRow.displayName = "ToggleRow";
 
 export default function AdminSettingsPage() {
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useState("profile");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showKey, setShowKey] = useState(false);
 
+  // --- INITIAL STATE WITH ALL DB FIELDS ---
   const [settings, setSettings] = useState({
-    adminName: "", adminEmail: "", paymentType: "Full Payment",
-    dueDays: "7", pushNotif: true, emailNotif: true,
-    paypalLink: "", stripeLink: "", stripeSecret: "",
-    bankDetails: "", paymentNote: "", businessName: "",
-    currency: "USD", address: "", invPrefix: "INV-",
-    taxRate: "0", footerNote: "",
-    smtpHost: "smtp.gmail.com", smtpPort: "587", maintenanceMode: false,
-    twoFactorAuth: false, timeZone: "UTC+6", siteLanguage: "English"
+    id: "admin_config",
+    businessName: "",
+    businessLogo: "",
+    adminEmail: "",
+    adminName: "",
+    contactPhone: "",
+    address: "",
+    currency: "USD",
+    currencySymbol: "$",
+    invPrefix: "INV-",
+    taxRate: "0",
+    dueDays: "0",
+    termsConditions: "Payment is due within 7 days.",
+    paypalLink: "",
+    stripePublicKey: "",
+    bankDetails: "",
+    autoReminder: true,
+    installmentAutoTrigger: true,
+    emailNotif: true,
+    footerNote: "",
+    maintenanceMode: false
   });
 
   const [newAdmin, setNewAdmin] = useState({ name: "", email: "", password: "", role: "admin" });
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      if (!BASE_URL) return;
-      try {
-        const res = await fetch(`${BASE_URL}/settings`);
-        const data = await res.json();
-        if (data) setSettings(prev => ({ ...prev, ...data }));
-      } catch (err) { 
-        console.warn("Syncing defaults..."); 
-      } finally { 
-        setIsLoading(false); 
+  const fetchSettings = useCallback(async () => {
+    if (!BASE_URL) return;
+    try {
+      const res = await fetch(`${BASE_URL}/settings`);
+      const result = await res.json();
+      
+      // ব্যাকএন্ডের ডেটা স্ট্রাকচার অনুযায়ী সেট করা
+      const data = result.data || result;
+      if (data) {
+        setSettings(prev => ({ ...prev, ...data }));
       }
-    };
-    fetchSettings();
+    } catch (err) {
+      console.error("Fetch error:", err);
+      toast.error("Cloud synchronization failed.");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const handleSave = async () => {
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  const handleCurrencyChange = useCallback((code: string) => {
+    setSettings(prev => ({
+      ...prev,
+      currency: code,
+      currencySymbol: currencyMap[code] || "$"
+    }));
+  }, []);
+
+  // --- 100% FIXED SAVE LOGIC ---
+  const handleSaveSettings = useCallback(async () => {
+    if (isSaving) return;
     setIsSaving(true);
+
+    // ব্যাকএন্ডে পাঠানোর আগে ডেটা ফরম্যাট করা
+    const payload = {
+      ...settings,
+      id: "admin_config", // ID নিশ্চিত করা
+      taxRate: String(settings.taxRate || "0"), // DB-তে স্ট্রিং হিসেবে সেভ করার জন্য
+      dueDays: String(settings.dueDays || "0"),
+    };
+
     try {
       const res = await fetch(`${BASE_URL}/settings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(payload),
       });
-      if (res.ok) alert("Global System Synced!");
-    } catch (err) {
-        alert("Failed to sync settings.");
-    } finally { 
-      setIsSaving(false); 
-    }
-  };
 
-  const handleCreateAdmin = async (e: React.FormEvent) => {
+      const result = await res.json();
+
+      if (res.ok) {
+        toast.success("System Logic Globally Applied!");
+        const updatedData = result.settings || result.data || result;
+        setSettings(prev => ({ ...prev, ...updatedData }));
+      } else {
+        toast.error(result.error || "Sync Failed (Server Error)");
+      }
+    } catch (err) {
+      toast.error("Network Connection Failure.");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [settings, isSaving]);
+
+  const handleCreateAdmin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
@@ -72,66 +176,63 @@ export default function AdminSettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newAdmin),
       });
-      const data = await res.json();
       if (res.ok) {
-        alert("Success: New Admin Created!");
+        toast.success("New Administrative Identity Provisioned!");
         setNewAdmin({ name: "", email: "", password: "", role: "admin" });
       } else {
-        alert("Error: " + data.error);
+        const error = await res.json();
+        toast.error(error.error || "Provisioning Denied");
       }
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    } catch (err) { toast.error("Network interface error"); }
+    finally { setIsSaving(false); }
+  }, [newAdmin]);
 
-  if (isLoading) return (
-    <div className="h-screen flex flex-col items-center justify-center bg-white">
-        <RefreshCw className="animate-spin text-[#4177BC] mb-4" size={40} />
-        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Loading Enterprise Core</p>
-    </div>
-  );
+  const navItems = useMemo(() => [
+    { id: "profile", label: "Agency Branding", icon: <User size={18} /> },
+    { id: "billing", label: "Invoice Rules", icon: <FileText size={18} /> },
+    { id: "payments", label: "Pay Gateways", icon: <CreditCard size={18} /> },
+    { id: "automation", label: "Bot Logic", icon: <Zap size={18} /> },
+    { id: "admins", label: "Access Control", icon: <ShieldCheck size={18} /> },
+  ], []);
+
+  if (isLoading) return <SettingsSkeleton />;
 
   return (
-    <div className="min-h-screen bg-[#FFFFF] p-6 md:p-10  text-slate-900 judson-bold">
-      <div className="max-w-300 mx-auto">
-        
-        {/* HEADER */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 italic uppercase">
-              System <span className="text-[#4177BC]">Control</span>
-            </h1>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Enterprise Architecture & Financial Protocols</p>
+    <div className="min-h-screen bg-[#FFFFFF] p-6 md:p-12 font-sans selection:bg-[#4177BC] selection:text-white">
+      <Toaster position="bottom-center" />
+      <div className="max-w-6xl mx-auto">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-[#4177BC] rounded-xl text-white shadow-lg shadow-[#4177BC]/20">
+                <Settings size={20} className="animate-[spin_4s_linear_infinite]" />
+              </div>
+              <h1 className="text-5xl font-bold tracking-tighter text-[#0F172A] judson-bold">
+                <span className="text-slate-300 ">Settings</span>
+              </h1>
+            </div>
           </div>
-          
-          <button 
-            onClick={handleSave} 
-            disabled={isSaving} 
-            className="bg-[#4177BC] text-white px-8 py-4 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-[#35629c] transition-all shadow-xl shadow-blue-500/20 active:scale-95"
+          <button
+            onClick={handleSaveSettings}
+            disabled={isSaving}
+            className="group relative bg-[#0F172A] hover:bg-[#4177BC] text-white px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-4 transition-all active:scale-95 disabled:opacity-50 shadow-2xl shadow-slate-200"
           >
-            {isSaving ? <RefreshCw className="animate-spin" size={18}/> : <Save size={18}/>}
-            {isSaving ? "Syncing..." : "Apply Global Changes"}
+            {isSaving ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} className="group-hover:rotate-12 transition-transform" />}
+            {isSaving ? "Processing..." : "Commit Changes"}
           </button>
         </header>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          
-          {/* NAVIGATION */}
-          <aside className="lg:w-72 shrink-0">
-            <nav className="flex lg:flex-col gap-2 bg-white p-3 rounded-3xl border border-slate-200 shadow-sm overflow-x-auto no-scrollbar">
-              {[
-                { id: "general", label: "General", icon: <Settings size={18}/> },
-                { id: "invoice", label: "Invoicing", icon: <Receipt size={18}/> },
-                { id: "payment", label: "Payments", icon: <CreditCard size={18}/> },
-                { id: "advanced", label: "Advanced", icon: <Server size={18}/> },
-                { id: "team", label: "Add-Admin", icon: <Users size={18}/> },
-              ].map((tab) => (
-                <button 
+        <div className="flex flex-col lg:flex-row gap-16">
+          <aside className="lg:w-64 shrink-0">
+            <nav className="sticky top-12 space-y-3">
+              {navItems.map((tab) => (
+                <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-4 px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                    activeTab === tab.id ? "bg-[#4177BC] text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:bg-slate-50"
-                  }`}
+                  className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id
+                    ? "bg-[#0F172A] text-white shadow-2xl shadow-slate-300 -translate-y-1"
+                    : "text-slate-400 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
                 >
                   {tab.icon} {tab.label}
                 </button>
@@ -139,117 +240,87 @@ export default function AdminSettingsPage() {
             </nav>
           </aside>
 
-          {/* CONTENT */}
-          <main className="flex-1">
+          <main className="flex-1 max-w-3xl">
             <AnimatePresence mode="wait">
-              <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
-                
-                {/* GENERAL SETTINGS */}
-                {activeTab === "general" && (
-                  <div className="space-y-6">
-                    <Section title="Administrator Identity">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Input label="Admin Display Name" value={settings.adminName} onChange={(e:any) => setSettings({...settings, adminName: e.target.value})} />
-                        <Input label="System Email" type="email" value={settings.adminEmail} onChange={(e:any) => setSettings({...settings, adminEmail: e.target.value})} />
-                        <Select label="Time Zone" value={settings.timeZone} onChange={(e:any) => setSettings({...settings, timeZone: e.target.value})}>
-                          <option>UTC+6 (Dhaka)</option><option>UTC+0 (London)</option><option>UTC-5 (New York)</option>
-                        </Select>
-                        <Select label="Language" value={settings.siteLanguage} onChange={(e:any) => setSettings({...settings, siteLanguage: e.target.value})}>
-                          <option>English</option><option>Bengali</option><option>Spanish</option>
-                        </Select>
-                      </div>
-                    </Section>
-                    <Section title="System Status">
-                      <Toggle label="Maintenance Mode" desc="Disable public access for updates" isOn={settings.maintenanceMode} onToggle={() => setSettings({...settings, maintenanceMode: !settings.maintenanceMode})} />
-                    </Section>
-                  </div>
-                )}
-
-                {/* INVOICE SETTINGS */}
-                {activeTab === "invoice" && (
-                  <div className="space-y-6">
-                    <Section title="Business Branding">
-                      <div className="grid grid-cols-2 gap-6">
-                        <Input label="Legal Business Name" value={settings.businessName} onChange={(e:any) => setSettings({...settings, businessName: e.target.value})} />
-                        <Input label="Currency Code" value={settings.currency} onChange={(e:any) => setSettings({...settings, currency: e.target.value})} />
-                      </div>
-                      <div className="mt-6"><Input label="Registered Address" isTextArea value={settings.address} onChange={(e:any) => setSettings({...settings, address: e.target.value})} /></div>
-                    </Section>
-                    <Section title="Standardization">
-                      <div className="grid grid-cols-2 gap-6">
-                        <Input label="Invoice Prefix" value={settings.invPrefix} onChange={(e:any) => setSettings({...settings, invPrefix: e.target.value})} />
-                        <Input label="Default Tax (%)" type="number" value={settings.taxRate} onChange={(e:any) => setSettings({...settings, taxRate: e.target.value})} />
-                      </div>
-                    </Section>
-                  </div>
-                )}
-
-                {/* PAYMENT SETTINGS */}
-                {activeTab === "payment" && (
-                  <div className="space-y-6">
-                    <Section title="Payment Gateways">
-                      <div className="space-y-5">
-                        <Input 
-                          label="PayPal Identity (Email or PayPal.Me)" 
-                          icon={<LinkIcon size={16}/>} 
-                          placeholder="e.g. paypal.me/yourid or email@example.com"
-                          value={settings.paypalLink} 
-                          onChange={(e:any) => setSettings({...settings, paypalLink: e.target.value})} 
-                        />
-                        <Input label="Stripe Public Key" icon={<Globe size={16}/>} value={settings.stripeLink} onChange={(e:any) => setSettings({...settings, stripeLink: e.target.value})} />
-                        <div className="relative">
-                          <Input label="Stripe Secret API" type={showKey ? "text" : "password"} icon={<Lock size={16}/>} value={settings.stripeSecret} onChange={(e:any) => setSettings({...settings, stripeSecret: e.target.value})} />
-                          <button onClick={() => setShowKey(!showKey)} className="absolute right-5 top-11 text-[#4177BC]">{showKey ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
-                        </div>
-                      </div>
-                    </Section>
-                    <Section title="Manual Settlements">
-                      <Input label="Bank Routing & Account Details" isTextArea value={settings.bankDetails} onChange={(e:any) => setSettings({...settings, bankDetails: e.target.value})} />
-                    </Section>
-                  </div>
-                )}
-
-                {/* ADVANCED SETTINGS */}
-                {activeTab === "advanced" && (
-                  <div className="space-y-6">
-                    <Section title="SMTP Mail Server">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Input label="SMTP Host" value={settings.smtpHost} onChange={(e:any) => setSettings({...settings, smtpHost: e.target.value})} />
-                        <Input label="SMTP Port" value={settings.smtpPort} onChange={(e:any) => setSettings({...settings, smtpPort: e.target.value})} />
-                      </div>
-                    </Section>
-                    <Section title="Global Preferences">
-                       <Toggle label="Email Notifications" desc="Automated dispatch for system events" isOn={settings.emailNotif} onToggle={() => setSettings({...settings, emailNotif: !settings.emailNotif})} />
-                       <div className="my-4 border-t border-slate-100" />
-                       <Toggle label="Push Notifications" desc="Browser-level real-time alerts" isOn={settings.pushNotif} onToggle={() => setSettings({...settings, pushNotif: !settings.pushNotif})} />
-                    </Section>
-                  </div>
-                )}
-
-                {/* TEAM SECURITY SETTINGS */}
-                {activeTab === "team" && (
-                  <div className="space-y-6">
-                    <Section title="Authorization Security">
-                       <Toggle label="Two-Factor Authentication" desc="Require OTP for admin access" isOn={settings.twoFactorAuth} onToggle={() => setSettings({...settings, twoFactorAuth: !settings.twoFactorAuth})} />
-                    </Section>
-                    <Section title="Establish New Access Account">
-                      <form onSubmit={handleCreateAdmin}>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <Input icon={<User size={16}/>} label="Full Legal Name" value={newAdmin.name} onChange={(e:any) => setNewAdmin({...newAdmin, name: e.target.value})} />
-                          <Input icon={<Mail size={16}/>} label="Work Email" type="email" value={newAdmin.email} onChange={(e:any) => setNewAdmin({...newAdmin, email: e.target.value})} />
-                          <Input icon={<Lock size={16}/>} label="Temporary Password" type="password" value={newAdmin.password} onChange={(e:any) => setNewAdmin({...newAdmin, password: e.target.value})} />
-                          <Select label="Role Permission" value={newAdmin.role} onChange={(e:any) => setNewAdmin({...newAdmin, role: e.target.value})}>
-                            <option value="admin">Root Admin</option><option value="manager">Manager</option><option value="billing">Financial Officer</option>
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {activeTab === "profile" && (
+                  <div className="space-y-10">
+                    <SectionHeader title="Visual Identity" desc="Primary agency information." />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <Input label="Business Name" value={settings.businessName} onChange={(e: any) => setSettings({ ...settings, businessName: e.target.value })} />
+                      <Input label="Logo Asset URL" icon={<ImageIcon size={16} />} value={settings.businessLogo} onChange={(e: any) => setSettings({ ...settings, businessLogo: e.target.value })} />
+                      <Input label="Support Email" type="email" value={settings.adminEmail} onChange={(e: any) => setSettings({ ...settings, adminEmail: e.target.value })} />
+                      <Input label="Contact Line" value={settings.contactPhone} onChange={(e: any) => setSettings({ ...settings, contactPhone: e.target.value })} />
+                      <div className="md:col-span-2 grid grid-cols-3 gap-6 bg-slate-50 p-6 rounded-[30px] border border-dashed border-slate-200">
+                        <div className="col-span-2">
+                          <Select label="Global Currency" value={settings.currency} onChange={(e: any) => handleCurrencyChange(e.target.value)}>
+                            {Object.keys(currencyMap).map(c => <option key={c} value={c}>{c}</option>)}
                           </Select>
                         </div>
-                        <button type="submit" className="w-full mt-8 py-5 bg-[#EB9C2C] text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] shadow-xl shadow-orange-500/20 active:scale-95 transition-all">
-                          Provision Admin Account
-                        </button>
-                      </form>
-                    </Section>
+                        <Input label="Symbol" value={settings.currencySymbol} readOnly className="bg-white/50 text-center text-xl" />
+                      </div>
+                    </div>
+                    <Input label="Physical Headquarters" isTextArea value={settings.address} onChange={(e: any) => setSettings({ ...settings, address: e.target.value })} />
                   </div>
                 )}
 
+                {activeTab === "billing" && (
+                  <div className="space-y-10">
+                    <SectionHeader title="Financial Protocol" desc="Define billing rules." />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <Input label="Serial Prefix" value={settings.invPrefix} onChange={(e: any) => setSettings({ ...settings, invPrefix: e.target.value })} />
+                      <Input label="Tax Rate %" type="number" value={settings.taxRate} onChange={(e: any) => setSettings({ ...settings, taxRate: e.target.value })} />
+                      <Input label="Due Limit (Days)" type="number" value={settings.dueDays} onChange={(e: any) => setSettings({ ...settings, dueDays: e.target.value })} />
+                    </div>
+                    <Input label="Standard Terms & Conditions" isTextArea value={settings.termsConditions} onChange={(e: any) => setSettings({ ...settings, termsConditions: e.target.value })} />
+                  </div>
+                )}
+
+                {activeTab === "payments" && (
+                  <div className="space-y-10">
+                    <SectionHeader title="Gateway Integration" desc="Manage payment endpoints." />
+                    <div className="space-y-6">
+                      <Input label="PayPal Terminal" icon={<LinkIcon size={16} />} value={settings.paypalLink} onChange={(e: any) => setSettings({ ...settings, paypalLink: e.target.value })} />
+                      <Input label="Stripe Production Key" icon={<Globe size={16} />} value={settings.stripePublicKey} onChange={(e: any) => setSettings({ ...settings, stripePublicKey: e.target.value })} />
+                      <Input label="Wire Transfer Instructions" isTextArea value={settings.bankDetails} onChange={(e: any) => setSettings({ ...settings, bankDetails: e.target.value })} />
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "automation" && (
+                  <div className="space-y-10">
+                    <SectionHeader title="System Autonomy" desc="Enable background workers." />
+                    <div className="bg-white rounded-[40px] border border-slate-100 divide-y divide-slate-50 overflow-hidden shadow-sm">
+                      <ToggleRow label="Dynamic Reminders" desc="Email clients before deadline." isOn={settings.autoReminder} onToggle={() => setSettings(p => ({ ...p, autoReminder: !p.autoReminder }))} />
+                      <ToggleRow label="Auto-Installment" desc="Trigger next milestone on success." isOn={settings.installmentAutoTrigger} onToggle={() => setSettings(p => ({ ...p, installmentAutoTrigger: !p.installmentAutoTrigger }))} />
+                      <ToggleRow label="Audit Notifications" desc="Forward financial events to admin." isOn={settings.emailNotif} onToggle={() => setSettings(p => ({ ...p, emailNotif: !p.emailNotif }))} />
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "admins" && (
+                  <div className="space-y-10">
+                    <SectionHeader title="Identity Management" desc="Grant secure access." />
+                    <form onSubmit={handleCreateAdmin} className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-8 rounded-[40px] border border-slate-100">
+                      <Input label="Full Name" value={newAdmin.name} onChange={(e: any) => setNewAdmin({ ...newAdmin, name: e.target.value })} required />
+                      <Input label="Login Email" type="email" value={newAdmin.email} onChange={(e: any) => setNewAdmin({ ...newAdmin, email: e.target.value })} required />
+                      <Input label="Secure Key" type="password" value={newAdmin.password} onChange={(e: any) => setNewAdmin({ ...newAdmin, password: e.target.value })} required />
+                      <Select label="Security Clearance" value={newAdmin.role} onChange={(e: any) => setNewAdmin({ ...newAdmin, role: e.target.value })}>
+                        <option value="admin">Super Admin</option>
+                        <option value="manager">Manager</option>
+                      </Select>
+                      <button type="submit" className="md:col-span-2 flex items-center justify-center gap-3 py-5 bg-[#EB9C2C] hover:bg-orange-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] transition-all">
+                        Provision Account <ArrowRight size={14} />
+                      </button>
+                    </form>
+                  </div>
+                )}
               </motion.div>
             </AnimatePresence>
           </main>
@@ -259,55 +330,15 @@ export default function AdminSettingsPage() {
   );
 }
 
-// --- REFINED UI COMPONENTS (SAME LOGIC, UPDATED STYLE) ---
-
-function Section({ title, children }: any) {
+// --- OPTIMIZED SKELETON (Faster loading feel) ---
+function SettingsSkeleton() {
   return (
-    <div className="bg-white p-8 md:p-10 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
-      <div className="absolute top-0 left-0 w-1.5 h-full bg-[#EB9C2C]" />
-      <h3 className="text-[10px] font-black text-[#4177BC] uppercase tracking-[0.4em] mb-10 flex items-center gap-4 italic">
-        <span className="w-8 h-0.5 bg-[#4177BC]/20" /> {title}
-      </h3>
-      {children}
-    </div>
-  );
-}
-
-function Input({ label, isTextArea, icon, ...props }: any) {
-  return (
-    <div className="w-full group">
-      <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-1 tracking-widest group-focus-within:text-[#4177BC] transition-colors italic">{label}</label>
-      <div className="relative flex items-center">
-        {icon && <span className="absolute left-5 text-slate-300 group-focus-within:text-[#4177BC] transition-colors">{icon}</span>}
-        {isTextArea ? (
-          <textarea className={`w-full p-5 ${icon ? 'pl-14' : 'pl-5'} bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold text-slate-700 focus:bg-white focus:border-[#4177BC]/10 focus:ring-4 ring-blue-50/50 outline-none transition-all min-h-30 shadow-inner`} {...props} />
-        ) : (
-          <input className={`w-full h-14 ${icon ? 'pl-14' : 'pl-5'} bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold text-slate-700 focus:bg-white focus:border-[#4177BC]/10 focus:ring-4 ring-blue-50/50 outline-none transition-all shadow-inner`} {...props} />
-        )}
+    <div className="min-h-screen bg-[#FDFDFD] p-12 flex flex-col items-center justify-center gap-6">
+      <div className="relative">
+        <div className="w-16 h-16 border-4 border-slate-100 border-t-[#4177BC] rounded-full animate-spin" />
+        <Activity className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#4177BC]/30" size={20} />
       </div>
-    </div>
-  );
-}
-
-function Select({ label, children, ...props }: any) {
-  return (
-    <div className="w-full group">
-      <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-1 tracking-widest italic">{label}</label>
-      <select className="w-full h-14 px-5 bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-[#4177BC]/10 focus:ring-4 ring-blue-50/50 transition-all appearance-none cursor-pointer shadow-inner" {...props}>{children}</select>
-    </div>
-  );
-}
-
-function Toggle({ label, desc, isOn, onToggle }: any) {
-  return (
-    <div className="flex items-center justify-between p-2 group">
-      <div>
-        <p className="text-sm font-black text-slate-800 uppercase italic tracking-tighter">{label}</p>
-        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{desc}</p>
-      </div>
-      <div onClick={onToggle} className={`w-14 h-7 rounded-full p-1 cursor-pointer transition-all duration-500 shadow-inner ${isOn ? 'bg-[#4177BC]' : 'bg-slate-200'}`}>
-        <div className={`w-5 h-5 bg-white rounded-full shadow-lg transition-all duration-500 transform ${isOn ? 'translate-x-7' : 'translate-x-0'}`} />
-      </div>
+      <p className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-800 animate-pulse">Syncing Cloud Architecture</p>
     </div>
   );
 }

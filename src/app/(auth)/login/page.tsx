@@ -40,7 +40,7 @@ function LoginFormContent() {
   const autoEmail = searchParams.get("email") || "";
   const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
 
-  /* ================= FIXED LOGIC (NO UI CHANGE) ================= */
+  // ১. সাবমিট হ্যান্ডলার (লগইন)
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (loading) return;
@@ -57,7 +57,6 @@ function LoginFormContent() {
     }
 
     try {
-      console.log("Attempting login for:", email, "as", role);
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -67,34 +66,52 @@ function LoginFormContent() {
       const data = await response.json();
 
       if (response.ok) {
-        // ১. LocalStorage logic
         localStorage.setItem("vault_token", data.token);
         localStorage.setItem("user_role", data.role);
         localStorage.setItem("user_name", data.name);
         localStorage.setItem("user_email", email);
         localStorage.setItem("user_id", data.id || "");
 
-        if (data.role.toLowerCase() === "admin") {
-          Cookies.set("admin_token", data.token, { expires: 1, path: '/' });
-        } else {
-          Cookies.set("client_token", data.token, { expires: 1, path: '/' });
-        }
-
+        Cookies.set(role === "admin" ? "admin_token" : "client_token", data.token, { expires: 1, path: '/' });
         Cookies.set("vault_token", data.token, { expires: 1, path: '/' });
         Cookies.set("user_role", data.role, { expires: 1, path: '/' });
 
-        // ৩. Redirect
-        const targetPath = data.role.toLowerCase() === "admin" ? "/admin" : "/client/overview";
-
-        
-        window.location.href = targetPath;
-
+        window.location.href = data.role.toLowerCase() === "admin" ? "/admin" : "/client/overview";
       } else {
         alert(data.error || "Login failed");
       }
     } catch (err) {
-      console.error("Frontend Login error:", err);
       alert("Cannot connect to server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ২. রিকোয়েস্ট এক্সেস হ্যান্ডলার (নতুন অ্যাডমিনদের জন্য)
+  const handleRequestAccess = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name")?.toString();
+    const email = formData.get("email")?.toString();
+    const password = formData.get("password")?.toString();
+    const companyName = formData.get("companyName")?.toString();
+
+    try {
+      const res = await fetch(`${API_URL}/auth/register-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, companyName }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Success! Your request is pending for approval.");
+        setShowRegister(false);
+      } else {
+        alert(data.error || "Request failed");
+      }
+    } catch {
+      alert("Server connection failed.");
     } finally {
       setLoading(false);
     }
@@ -157,7 +174,6 @@ function LoginFormContent() {
         layout
         className="w-full max-w-[1000px] min-h-[640px] bg-white rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden flex flex-col md:flex-row items-stretch"
       >
-
         {/* LEFT AREA */}
         <div className="w-full md:w-1/2 p-8 lg:p-16 flex flex-col">
           <div className="flex items-center gap-2 mb-10 shrink-0">
@@ -185,12 +201,11 @@ function LoginFormContent() {
                   </p>
                 </div>
 
-                {/* Main Form Component */}
                 <Form
                   onSubmit={handleSubmit}
                   loading={loading}
                   note={role === "client" ? "Secure access to your projects." : "Authorized personnel only."}
-                  showRegister={role === "client"}
+                  showRegister={role === "client" || role === "admin"} // দুই রোলেই রিকোয়েস্ট অপশন দেখাবে
                   onRegister={() => setShowRegister(true)}
                   onForget={() => setForgetStep("email")}
                   defaultValue={role === "client" ? autoEmail : ""}
@@ -210,7 +225,7 @@ function LoginFormContent() {
           </div>
         </div>
 
-        {/* RIGHT AREA (DESIGN UNTOUCHED) */}
+        {/* RIGHT AREA */}
         <div
           className="hidden md:flex md:w-1/2 relative overflow-hidden flex-col justify-center items-center text-center p-12 transition-all duration-700"
           style={{ backgroundColor: role === "client" ? PRIMARY : "#0F172A" }}
@@ -250,10 +265,19 @@ function LoginFormContent() {
               <h3 className="text-xl font-bold text-slate-900">Request Access</h3>
               <p className="text-slate-500 text-sm mt-1">Submit your company information.</p>
             </div>
-            <form className="space-y-4">
-              <InputField icon={<Building2 size={18} />} placeholder="Company Legal Name" />
-              <InputField icon={<Mail size={18} />} type="email" placeholder="Business Email" />
-              <button type="button" className="w-full py-4 text-white font-bold rounded-xl transition-all" style={{ backgroundColor: PRIMARY }}>Submit Request</button>
+            <form onSubmit={handleRequestAccess} className="space-y-4">
+              <InputField name="name" required icon={<User size={18} />} placeholder="Full Name" />
+              <InputField name="companyName" required icon={<Building2 size={18} />} placeholder="Company Legal Name" />
+              <InputField name="email" required type="email" icon={<Mail size={18} />} placeholder="Business Email" />
+              <InputField name="password" required type="password" icon={<Lock size={18} />} placeholder="Set Password" />
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full py-4 text-white font-bold rounded-xl transition-all disabled:bg-slate-300" 
+                style={{ backgroundColor: PRIMARY }}
+              >
+                {loading ? "Submitting..." : "Submit Request"}
+              </button>
             </form>
           </ModalWrapper>
         )}
@@ -303,7 +327,7 @@ function LoginFormContent() {
   );
 }
 
-/* ================= HELPERS (SAME UI) ================= */
+/* ================= HELPERS (DESIGN KEPT EXACTLY SAME) ================= */
 
 function InputField({ icon, ...props }: any) {
   return (
@@ -377,12 +401,10 @@ function Form({ onSubmit, loading, note, showRegister, onRegister, onForget, def
         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-normal line-clamp-2">{note}</p>
       </div>
 
-      {showRegister ? (
+      {showRegister && (
         <p className="text-center text-slate-400 text-[11px] font-bold uppercase tracking-widest h-4">
-          New client? <button type="button" onClick={onRegister} className="hover:underline" style={{ color: PRIMARY }}>Request Access</button>
+          Need access? <button type="button" onClick={onRegister} className="hover:underline" style={{ color: PRIMARY }}>Request Access</button>
         </p>
-      ) : (
-        <div className="h-4" />
       )}
     </form>
   );

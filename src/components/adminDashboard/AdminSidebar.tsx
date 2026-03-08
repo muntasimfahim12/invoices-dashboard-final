@@ -26,6 +26,7 @@ const menu = [
   { name: "Payments", href: "/admin/payments", icon: CreditCard },
   { name: "Reports", href: "/admin/reports", icon: BarChart },
   { name: "Settings", href: "/admin/settings", icon: Settings },
+  { name: "Super-Admin ", href: "/admin/superAdmin ", icon: Settings },
 ];
 
 const mobileMenu = menu.slice(0, 5);

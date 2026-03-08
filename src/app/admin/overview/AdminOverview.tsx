@@ -28,7 +28,6 @@ export default function AdminOverview() {
     invoices: [] as any[],
     clients: [] as any[],
     projects: [] as any[],
-    stats: { totalRevenue: 0, totalDue: 0 }
   });
 
   useEffect(() => {
@@ -51,11 +50,9 @@ export default function AdminOverview() {
       const email = localStorage.getItem("user_email");
       const role = localStorage.getItem("user_role") || "admin";
 
-
-      const [invoiceRes, clientRes, statsRes] = await Promise.all([
+      const [invoiceRes, clientRes] = await Promise.all([
         axios.get(`${API_BASE}/invoices`, { params: { email, role } }),
         axios.get(`${API_BASE}/clinets`, { params: { email, role } }),
-        axios.get(`${API_BASE}/dashboard-stats`).catch(() => ({ data: null }))
       ]);
 
       const projectsList: any[] = [];
@@ -73,7 +70,6 @@ export default function AdminOverview() {
         invoices: Array.isArray(invoiceRes.data) ? invoiceRes.data : [],
         clients: clients,
         projects: projectsList,
-        stats: statsRes.data || { totalRevenue: 0, totalDue: 0 }
       });
     } catch (err: any) {
       console.error("Fetch Error:", err);
@@ -84,32 +80,58 @@ export default function AdminOverview() {
 
   useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
+  // --- নিখুঁত ক্যালকুলেশন লজিক (আপনার ডেটাবেস স্ট্রাকচার অনুযায়ী) ---
   const stats = useMemo(() => {
-    const inv = dashboardData.invoices;
+    const inv = dashboardData.invoices || [];
+    const cls = dashboardData.clients || [];
 
+    // ১. Revenue: ইনভয়েস কালেকশনে যা 'Paid' এবং যার 'amount' আছে
+    const totalRev = inv.reduce((sum, i) => {
+      if (i.status === "Paid") {
+        return sum + (Number(i.amount) || Number(i.grandTotal) || 0);
+      }
+      return sum;
+    }, 0);
 
-    const totalRev = inv.reduce((sum, i) => sum + (Number(i.receivedAmount) || 0), 0);
-
-    const totalDue = (inv.reduce((sum, i) => sum + (Number(i.grandTotal) || 0), 0) - totalRev);
+    // ২. Due: ক্লায়েন্ট মাইলস্টোন থেকে যা এখনও 'Paid' হয়নি
+    let totalDue = 0;
+    cls.forEach((client: any) => {
+      client.projects?.forEach((project: any) => {
+        project.milestones?.forEach((m: any) => {
+          if (m.status !== "Paid") {
+            totalDue += (Number(m.amount) || 0);
+          }
+        });
+      });
+    });
 
     return {
       revenue: totalRev,
-      due: totalDue < 0 ? 0 : totalDue,
-      clientCount: dashboardData.clients.length,
+      due: totalDue,
+      clientCount: cls.length,
       projectCount: dashboardData.projects.length,
     };
   }, [dashboardData]);
 
   const chartData = useMemo(() => {
-    const inv = dashboardData.invoices;
+    const inv = dashboardData.invoices || [];
     const paidCount = inv.filter(i => i.status === 'Paid').length;
-    const pendingCount = inv.filter(i => i.status !== 'Paid').length;
+
+    // Unpaid/Pending count (Clients collection থেকে)
+    let pendingCount = 0;
+    dashboardData.clients.forEach((c: any) => {
+      c.projects?.forEach((p: any) => {
+        p.milestones?.forEach((m: any) => {
+          if (m.status !== 'Paid') pendingCount++;
+        });
+      });
+    });
 
     return [
       { name: 'Collected', value: paidCount, color: '#4177BC' },
       { name: 'Pending', value: pendingCount, color: '#EB9C2C' },
     ].filter(item => item.value > 0);
-  }, [dashboardData.invoices]);
+  }, [dashboardData]);
 
   if (loading) return <DashboardSkeleton />;
 
@@ -218,8 +240,8 @@ export default function AdminOverview() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="group bg-[#F8FAFC] p-12 rounded-[50px] text-white hover:shadow-2xl hover:shadow-[#0F172A]/20 transition-all duration-500">
-                <div className="w-14 h-14 bg-[#4177BC] rounded-2xl flex items-center justify-center mb-10 rotate-3 group-hover:rotate-0 transition-transform">
+              <div className="group bg-[#F8FAFC] p-12 rounded-[50px] border border-slate-100 hover:shadow-2xl hover:shadow-[#0F172A]/5 transition-all duration-500">
+                <div className="w-14 h-14 bg-[#4177BC] rounded-2xl flex items-center justify-center mb-10 rotate-3 group-hover:rotate-0 transition-transform text-white">
                   <TrendingUp size={28} />
                 </div>
                 <h3 className="text-3xl text-black font-bold tracking-tight mb-4 leading-tight judson-bold">Momentum <br /> Analysis</h3>
@@ -301,9 +323,9 @@ export default function AdminOverview() {
 
             <div className="space-y-3">
               <div className="flex items-center gap-3 px-4 mb-4">
-                <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-200 to-transparent" />
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
                 <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-300 inter-bold whitespace-nowrap">Command Center</h3>
-                <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-200 to-transparent" />
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
               </div>
 
               {[
@@ -334,7 +356,7 @@ export default function AdminOverview() {
           </div>
         </div>
 
-        <div className="bg-[#F8FAFC] rounded-[50px] p-10 border border-slate-100/50 mt-6 judson-bold">
+        <div className="bg-[#F8FAFC] rounded-[50px] p-10 border border-slate-100/50 mt-16 judson-bold">
           <div className="flex items-center justify-between mb-10">
             <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400 inter-bold">Key Partners</h3>
             <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm">
