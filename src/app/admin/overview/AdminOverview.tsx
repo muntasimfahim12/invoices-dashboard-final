@@ -188,10 +188,7 @@ export default function AdminOverview() {
       <main className="max-w-360 mx-auto px-6 mt-12">
         <section className="mb-20 grid grid-cols-1 lg:grid-cols-2 items-center gap-12">
           <div className="animate-scaleIn">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#4177BC]/5 rounded-full mb-8 border border-[#4177BC]/10">
-              <span className="w-2 h-2 bg-[#4177BC] rounded-full animate-pulse"></span>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#4177BC] inter-bold">Enterprise Financial Hub v2.0</span>
-            </div>
+
             <h1 className="text-5xl md:text-6xl font-bold text-[#0F172A] tracking-tighter leading-[0.9] mb-8 judson-bold">
               Billing
               <span className="text-slate-300">Simplified.</span>
