@@ -6,7 +6,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  TrendingUp, DollarSign, History, Zap, Search, 
+  TrendingUp, DollarSign, History, Zap, Search,
   FileSpreadsheet, Activity, ArrowRight, ShieldCheck
 } from "lucide-react";
 
@@ -25,14 +25,13 @@ export default function ReportsPage() {
       const storedEmail = localStorage.getItem("user_email");
       const storedRole = localStorage.getItem("user_role") || "admin";
 
-      // আপনার আগের backend লজিক অনুযায়ী API কল
-      const response = await axios.get(`${API_URL}/invoices`, {
+      const response = await axios.get(`${API_URL.replace(/\/$/, "")}/invoices`, {
         params: { email: storedEmail, role: storedRole }
       });
 
-      const data = Array.isArray(response.data) ? response.data : 
-                   (response.data?.invoices || []);
-      
+      const data = Array.isArray(response.data) ? response.data :
+        (response.data?.invoices || []);
+
       setInvoices(data);
     } catch (error) {
       console.error("Error fetching reports:", error);
@@ -48,7 +47,7 @@ export default function ReportsPage() {
   // --- CSV Export ---
   const exportData = () => {
     const headers = ["Invoice ID,Client,Date,Amount,Status\n"];
-    const rows = filteredData.map(inv => 
+    const rows = filteredData.map(inv =>
       `${inv.invoiceId},${inv.clientName || 'N/A'},${new Date(inv.createdAt).toLocaleDateString()},${inv.grandTotal || inv.amount},${inv.status}`
     );
     const blob = new Blob([headers + rows.join("\n")], { type: "text/csv" });
@@ -65,13 +64,13 @@ export default function ReportsPage() {
     return invoices.filter(inv => {
       const invDate = new Date(inv.createdAt || inv.date);
       const searchStr = searchTerm.toLowerCase();
-      const matchesSearch = (inv.clientName?.toLowerCase().includes(searchStr)) || 
-                           (inv.invoiceId?.toLowerCase().includes(searchStr));
-      
+      const matchesSearch = (inv.clientName?.toLowerCase().includes(searchStr)) ||
+        (inv.invoiceId?.toLowerCase().includes(searchStr));
+
       let matchesTime = true;
       if (timeRange === "Today") matchesTime = invDate.toDateString() === now.toDateString();
       if (timeRange === "Month") matchesTime = invDate.getMonth() === now.getMonth() && invDate.getFullYear() === now.getFullYear();
-      
+
       return matchesSearch && matchesTime;
     });
   }, [invoices, timeRange, searchTerm]);
@@ -83,7 +82,6 @@ export default function ReportsPage() {
     const monthlyData = Array(12).fill(0);
 
     filteredData.forEach(inv => {
-      // হ্যান্ডেলিং grandTotal অথবা amount (আপনার ডিবি অনুযায়ী)
       const val = Number(inv.grandTotal) || Number(inv.amount) || 0;
       gross += val;
 
@@ -107,7 +105,7 @@ export default function ReportsPage() {
   return (
     <div className="min-h-screen bg-[#FFFFFF] pb-24 font-sans text-[#0F172A]">
       <main className="max-w-[1400px] mx-auto px-6 mt-12">
-        
+
         {/* --- Hero Section --- */}
         <section className="mb-16 grid grid-cols-1 lg:grid-cols-2 items-center gap-12">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
@@ -127,9 +125,9 @@ export default function ReportsPage() {
           <div className="flex flex-col gap-4">
             <div className="relative group">
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#4177BC]" size={20} />
-              <input 
-                type="text" 
-                placeholder="Search Client or Invoice ID..." 
+              <input
+                type="text"
+                placeholder="Search Client or Invoice ID..."
                 className="w-full pl-16 pr-8 py-5 bg-slate-50 border-none rounded-[25px] text-md focus:ring-4 focus:ring-[#4177BC]/5 transition-all outline-none"
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -157,58 +155,58 @@ export default function ReportsPage() {
 
         {/* --- Analytics & Health --- */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          
-          <div className="lg:col-span-8 bg-white border border-slate-100 rounded-[45px] p-10 shadow-sm overflow-hidden group">
-             <div className="flex justify-between items-end mb-12">
-                <div>
-                   <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#4177BC] mb-2">Portfolio Momentum</h3>
-                   <p className="judson-bold text-3xl italic text-[#0F172A]">Revenue Velocity</p>
-                </div>
-             </div>
 
-             <div className="h-64 w-full flex items-end justify-between gap-3">
-                {stats.monthlyData.map((val, i) => {
-                   const max = Math.max(...stats.monthlyData) || 1;
-                   const height = (val / max) * 100;
-                   return (
-                      <div key={i} className="flex-1 h-full flex flex-col items-center group/bar relative">
-                         <motion.div 
-                            initial={{ height: 0 }} animate={{ height: `${height}%` }}
-                            transition={{ duration: 1 }}
-                            className="w-full max-w-[12px] bg-slate-50 group-hover/bar:bg-[#4177BC] rounded-t-full transition-all"
-                         />
-                         <span className="mt-4 text-[8px] font-black text-slate-300 uppercase">
-                            {new Date(0, i).toLocaleString('en', { month: 'short' })}
-                         </span>
-                      </div>
-                   )
-                })}
-             </div>
+          <div className="lg:col-span-8 bg-white border border-slate-100 rounded-[45px] p-10 shadow-sm overflow-hidden group">
+            <div className="flex justify-between items-end mb-12">
+              <div>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#4177BC] mb-2">Portfolio Momentum</h3>
+                <p className="judson-bold text-3xl italic text-[#0F172A]">Revenue Velocity</p>
+              </div>
+            </div>
+
+            <div className="h-64 w-full flex items-end justify-between gap-3">
+              {stats.monthlyData.map((val, i) => {
+                const max = Math.max(...stats.monthlyData) || 1;
+                const height = (val / max) * 100;
+                return (
+                  <div key={i} className="flex-1 h-full flex flex-col items-center group/bar relative">
+                    <motion.div
+                      initial={{ height: 0 }} animate={{ height: `${height}%` }}
+                      transition={{ duration: 1 }}
+                      className="w-full max-w-[12px] bg-slate-50 group-hover/bar:bg-[#4177BC] rounded-t-full transition-all"
+                    />
+                    <span className="mt-4 text-[8px] font-black text-slate-300 uppercase">
+                      {new Date(0, i).toLocaleString('en', { month: 'short' })}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-[#0F172A] p-10 rounded-[40px] text-white">
-               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#4177BC] mb-8">Asset Integrity</h3>
-               <div className="space-y-6">
-                  <HealthBar label="Collection Ratio" percent={stats.efficiency} color="#4177BC" />
-                  <HealthBar label="System Health" percent={98} color="#10B981" />
-               </div>
-               <p className="mt-10 text-[11px] text-slate-400 italic leading-relaxed">
-                 Analytics based on current fiscal data cycle.
-               </p>
+              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#4177BC] mb-8">Asset Integrity</h3>
+              <div className="space-y-6">
+                <HealthBar label="Collection Ratio" percent={stats.efficiency} color="#4177BC" />
+                <HealthBar label="System Health" percent={98} color="#10B981" />
+              </div>
+              <p className="mt-10 text-[11px] text-slate-400 italic leading-relaxed">
+                Analytics based on current fiscal data cycle.
+              </p>
             </div>
 
             <button className="w-full group flex items-center justify-between p-6 bg-slate-50 rounded-[30px] hover:bg-white border border-transparent hover:border-slate-100 transition-all">
-               <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#4177BC] shadow-sm">
-                     <Zap size={20} />
-                  </div>
-                  <div className="text-left">
-                     <p className="text-md font-bold text-[#0F172A] judson-bold">Sync Ledger</p>
-                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Live Audit</p>
-                  </div>
-               </div>
-               <ArrowRight className="text-slate-300 group-hover:text-[#4177BC] group-hover:translate-x-1 transition-all" />
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#4177BC] shadow-sm">
+                  <Zap size={20} />
+                </div>
+                <div className="text-left">
+                  <p className="text-md font-bold text-[#0F172A] judson-bold">Sync Ledger</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Live Audit</p>
+                </div>
+              </div>
+              <ArrowRight className="text-slate-300 group-hover:text-[#4177BC] group-hover:translate-x-1 transition-all" />
             </button>
           </div>
         </div>
