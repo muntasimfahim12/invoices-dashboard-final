@@ -227,7 +227,6 @@ export default function AdminInvoiceManagement() {
                                                 >
                                                     <Download size={18} />
                                                 </button>
-                                                {/* External Link আইকনটিও ডিটেইলস পেজে নিয়ে যাবে */}
                                                 <Link href={`/admin/invoices/${inv._id}`} className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-[#1A1C1E] hover:border-slate-200 hover:shadow-md rounded-xl transition-all" title="Review Context">
                                                     <ExternalLink size={18} />
                                                 </Link>
